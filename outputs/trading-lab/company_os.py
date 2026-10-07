@@ -72,6 +72,9 @@ class CompanyMemory:
         self.db.execute("""CREATE TABLE IF NOT EXISTS company_memory(
             id TEXT PRIMARY KEY, kind TEXT NOT NULL, title TEXT NOT NULL,
             payload TEXT NOT NULL, created_at REAL NOT NULL)""")
+        self.db.execute("""CREATE TABLE IF NOT EXISTS company_state(
+            id INTEGER PRIMARY KEY CHECK(id=1), payload TEXT NOT NULL,
+            updated_at REAL NOT NULL)""")
         self.db.commit()
     def put(self, kind, title, payload):
         i = uuid.uuid4().hex[:12]
@@ -86,6 +89,17 @@ class CompanyMemory:
              + "ORDER BY created_at DESC LIMIT ?")
         rows = self.db.execute(q, ((kind, limit) if kind else (limit,))).fetchall()
         return [{"id":r[0],"kind":r[1],"title":r[2],"payload":json.loads(r[3]),"created_at":r[4]} for r in rows]
+    def save_state(self, payload):
+        self.db.execute(
+            "INSERT INTO company_state(id,payload,updated_at) VALUES(1,?,?) "
+            "ON CONFLICT(id) DO UPDATE SET payload=excluded.payload, updated_at=excluded.updated_at",
+            (json.dumps(payload, sort_keys=True), time.time()))
+        self.db.commit()
+
+    def load_state(self):
+        row = self.db.execute("SELECT payload FROM company_state WHERE id=1").fetchone()
+        return json.loads(row[0]) if row else None
+
     def close(self): self.db.close()
 
 class IndependentEvaluator:
@@ -147,6 +161,30 @@ class CompanyOS:
         self.work, self.hypotheses, self.experiments, self.findings = {}, {}, {}, {}
         self.cycle_count = 0
         self.last_cycle_at = 0.0
+        self._restore_state()
+
+    def _persist_state(self):
+        self.memory.save_state({
+            "budget": asdict(self.budget),
+            "work": [asdict(w) for w in self.work.values()],
+            "hypotheses": [asdict(h) for h in self.hypotheses.values()],
+            "experiments": [asdict(e) for e in self.experiments.values()],
+            "findings": [asdict(f) for f in self.findings.values()],
+            "cycle_count": self.cycle_count,
+            "last_cycle_at": self.last_cycle_at,
+        })
+
+    def _restore_state(self):
+        payload = self.memory.load_state()
+        if not payload:
+            return
+        self.budget = ResourceBudget(**payload.get("budget", asdict(self.budget)))
+        self.work = {x["id"]: WorkOrder(**x) for x in payload.get("work", [])}
+        self.hypotheses = {x["id"]: Hypothesis(**x) for x in payload.get("hypotheses", [])}
+        self.experiments = {x["id"]: Experiment(**x) for x in payload.get("experiments", [])}
+        self.findings = {x["id"]: AuditFinding(**x) for x in payload.get("findings", [])}
+        self.cycle_count = int(payload.get("cycle_count", 0))
+        self.last_cycle_at = float(payload.get("last_cycle_at", 0.0))
 
     def create_work(self, title, department, objective, priority=50, owner="CEO"):
         if department not in self.DEPARTMENTS: raise ValueError("unknown department")
@@ -155,11 +193,11 @@ class CompanyOS:
             if existing.status != "done" and existing.title == title:
                 return existing
         w = WorkOrder(title, department, objective, priority, owner)
-        self.work[w.id] = w; self.memory.put("work_order", title, asdict(w)); return w
+        self.work[w.id] = w; self.memory.put("work_order", title, asdict(w)); self._persist_state(); return w
 
     def propose_hypothesis(self, title, statement, success_metric, baseline, proposed_by, evidence=None):
         h = Hypothesis(title, statement, success_metric, baseline, proposed_by, list(evidence or []))
-        self.hypotheses[h.id] = h; self.memory.put("hypothesis", title, asdict(h)); return h
+        self.hypotheses[h.id] = h; self.memory.put("hypothesis", title, asdict(h)); self._persist_state(); return h
 
     def plan_experiment(self, hypothesis_id, name, development_policy, evaluation_policy, embargo="lookback + max holding + latency"):
         if hypothesis_id not in self.hypotheses: raise KeyError("unknown hypothesis")
@@ -167,7 +205,7 @@ class CompanyOS:
         e = Experiment(hypothesis_id, name, development_policy, evaluation_policy, embargo)
         self.experiments[e.id] = e
         self.hypotheses[hypothesis_id].status = "scheduled"
-        self.memory.put("experiment", name, asdict(e)); return e
+        self.memory.put("experiment", name, asdict(e)); self._persist_state(); return e
 
     def department_gate(self, hypothesis_id, evidence_quality="sufficient", uncertainty="medium"):
         """Independent risk/governance gate before an experiment can advance."""
@@ -216,12 +254,13 @@ class CompanyOS:
         e = self.experiments[experiment_id]
         result = IndependentEvaluator.evaluate(e, metrics)
         self.memory.put("experiment_result", e.name, result)
+        self._persist_state()
         return result
 
     def add_audit_finding(self, category, severity, description, evidence):
         if severity not in ("info","low","medium","high","critical"): raise ValueError("invalid severity")
         f = AuditFinding(category, severity, description, evidence)
-        self.findings[f.id] = f; self.memory.put("audit", category, asdict(f)); return f
+        self.findings[f.id] = f; self.memory.put("audit", category, asdict(f)); self._persist_state(); return f
 
     def research_feedback_loop(self):
         """Turn completed experiment outcomes into bounded future research work."""
