@@ -1,5 +1,6 @@
 import unittest
 from company_os import CompanyOS, ResourceBudget, StatisticalEvaluator, CompanyScheduler
+from engine import HistoricalReplay, Settings, Scanner
 
 class CompanyOSTest(unittest.TestCase):
     def setUp(self):
@@ -115,3 +116,15 @@ class CompanyOSTest(unittest.TestCase):
         self.assertEqual(len(self.c.memory.search("audit")),1)
 
 if __name__ == "__main__": unittest.main()
+
+
+def test_historical_replay_is_point_in_time_and_deterministic():
+    settings = Settings(capital=100, ticket=20, max_exposure=.8)
+    frames = Scanner.synthetic("development")
+    replay = HistoricalReplay(settings)
+    a = replay.run(frames[:30])
+    b = replay.run(frames[:30])
+    assert a["replay"]["no_lookahead"] is True
+    assert a["replay"]["frames"] == 30
+    assert a["equity"] == b["equity"]
+    assert a["closed_trades"] == b["closed_trades"]
