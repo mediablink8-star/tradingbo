@@ -1,9 +1,4 @@
-"""Research-only parameter grid and holdout evaluation helpers.
-
-These utilities keep parameter selection inside chronological training data,
-apply minimum-quality constraints, and reserve a final untouched holdout for
-a single final evaluation.
-"""
+"""Research-only parameter grid and final holdout helpers."""
 
 
 def grid_candidates(prefix, factory_builder, parameter_grid):
@@ -31,31 +26,17 @@ def grid_candidates(prefix, factory_builder, parameter_grid):
     return candidates
 
 
-def filter_candidates(
-    scored,
-    min_trades=1,
-    max_drawdown=None,
-    min_return_pct=None,
-):
-    kept = []
-    for item in scored:
-        if item["trades"] < min_trades:
-            continue
-        if max_drawdown is not None and item["max_drawdown"] > max_drawdown:
-            continue
-        if min_return_pct is not None and item["return_pct"] < min_return_pct:
-            continue
-        kept.append(item)
-    return kept
+def filter_candidates(scored, min_trades=1, max_drawdown=None, min_return_pct=None):
+    return [
+        item for item in scored
+        if item["trades"] >= min_trades
+        and (max_drawdown is None or item["max_drawdown"] <= max_drawdown)
+        and (min_return_pct is None or item["return_pct"] >= min_return_pct)
+    ]
 
 
-def select_candidate(
-    scored,
-    metric="sharpe",
-    min_trades=1,
-    max_drawdown=None,
-    min_return_pct=None,
-):
+def select_candidate(scored, metric="sharpe", min_trades=1,
+                     max_drawdown=None, min_return_pct=None):
     eligible = filter_candidates(
         scored, min_trades=min_trades,
         max_drawdown=max_drawdown,
@@ -72,7 +53,7 @@ def final_holdout(candles, backtester, factory, train_size, holdout_size):
     if train_size + holdout_size > len(candles):
         raise ValueError("Not enough candles for final holdout")
     holdout = candles[-holdout_size:]
-    result = backtester.run(holdout, factory)
+    result = backtester.run(holdout, factory())
     return {
         "holdout_start": holdout[0].timestamp,
         "holdout_end": holdout[-1].timestamp,
