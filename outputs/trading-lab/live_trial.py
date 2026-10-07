@@ -7,6 +7,7 @@ from agents import ModelClient, ROLES, validate_output
 from token_risk import scan as scan_risk, KNOWLEDGE
 from paper_quotes import QuoteExecution, usage_cost
 import swaps
+from live_execution import ControlledLiveExecution, LiveGuard
 from market_evidence import evidence,assess
 from virtual_company import Company,MISSION
 
@@ -331,7 +332,13 @@ class LiveTrial:
                 execution=QuoteExecution(events,network_cost=network)
                 live_settings=replace(S,operating_cost_step=0,network_cost=network)
                 state['settings']=asdict(live_settings)
-                state['execution_mode']=execution.mode
+                live_guard=LiveGuard(self.path)
+                if live_guard.status()['armed'] and not live_guard.status()['halted']:
+                    execution=ControlledLiveExecution(self.path)
+                    state['execution_mode']=execution.mode
+                    events.append(dict(kind='live_execution_armed',timestamp=time.time(),mode=execution.mode,limits=live_guard.status()['limits']))
+                else:
+                    state['execution_mode']=execution.mode
                 events+=process_tick(state,rows,time.time(),None if self.stop_event.is_set() else self.decide,self.stop_event.is_set(),execution,live_settings)
                 if self.stop_event.is_set():state['enabled']=False;state['status']='paused'
                 elif state['strategy']['halted']:state['status']='loss_shutdown_exits_only'
