@@ -22,6 +22,15 @@ class CompanyOSTest(unittest.TestCase):
         self.c.plan_experiment(h2.id,"two","dev","eval")
         h3 = self.c.propose_hypothesis("C","C","C","baseline","research")
         with self.assertRaises(RuntimeError): self.c.plan_experiment(h3.id,"three","dev","eval")
+    def test_state_cycle_is_idempotent_and_throttled(self):
+        state = {"strategy": {"pnl": -1.0}}
+        ops = {"checklist": [{"key": "fresh", "ok": False}]}
+        first = self.c.cycle_from_state(state, ops, force=True)
+        second = self.c.cycle_from_state(state, ops)
+        self.assertGreaterEqual(len(first["created_work"]), 1)
+        self.assertEqual(second["skipped"], "cycle_throttled")
+        self.assertEqual(len(self.c.work), len({w.title for w in self.c.work.values()}))
+
     def test_audit_memory(self):
         f = self.c.add_audit_finding("lookahead","high","Future data reached signal path","prefix test")
         self.assertIn(f.id,self.c.findings)
