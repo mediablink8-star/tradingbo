@@ -57,6 +57,7 @@ class Experiment:
     result: Optional[dict[str, Any]] = None
 
 @dataclass
+@dataclass
 class AuditFinding:
     category: str
     severity: str
