@@ -145,7 +145,9 @@ class Swaps:
             built=request('https://api.jup.ag/swap/v2/order?'+urllib.parse.urlencode(dict(inputMint=route['inputMint'],outputMint=route['outputMint'],amount=route['inAmount'],taker=wallet,slippageBps=50)),headers={'x-api-key':credential()})
             encoded=built.get('transaction','');m=message(encoded,wallet)
             height=built.get('lastValidBlockHeight')
-            if type(height)!=int or height<=0:raise ValueError('Missing transaction expiry.')
+            expire_at=built.get('expireAt')
+            if not ((type(height)==int and height>0) or (type(expire_at) in (int,float) and math.isfinite(float(expire_at)) and float(expire_at)>time.time())):
+                raise ValueError('Missing transaction expiry.')
             simulation=rpc('simulateTransaction',[encoded,dict(encoding='base64',sigVerify=False,replaceRecentBlockhash=False,commitment='confirmed',accounts=dict(encoding='base64',addresses=[wallet]))])['value']
             if simulation.get('err') is not None:raise ValueError('On-chain simulation failed; nothing sent.')
             after=simulation.get('accounts')
@@ -170,7 +172,7 @@ class Swaps:
                 if not trade_quality['allowed']:raise ValueError('Assumed upside does not comfortably cover round-trip cost and uncertainty; buy rejected.')
             reserve=usd+fee_usd
             if risk and time.time()>risk['expires']:raise ValueError('Token risk evidence expired during preparation.')
-            record=dict(id=uuid.uuid4().hex,wallet=wallet,mint=mint,side=side,state='prepared',received=time.time(),expires=min(time.time()+45,risk['expires']) if risk else time.time()+45,token_risk=risk,lastValidBlockHeight=height,input_base_units=str(amount),expected_output_base_units=str(built.get('outAmount',route['outAmount'])),minimum_output_base_units=str(built.get('otherAmountThreshold',route['otherAmountThreshold'])),token_decimals=decimals,trade_quality=trade_quality,slippage_bps=50,reference_sol_usdc=rate,reserved_usdc=reserve,network_fee_lamports=fees,message=encode58(m),transaction=encoded,requestId=built.get('requestId'),message_hash=hashlib.sha256(m).hexdigest(),router=built.get('router'),order_mode=built.get('mode'),checks=['Basic rug-risk gate for buys; only the screened direct pool','Buy reverse route; quote impact and slippage','Wallet signer and permitted top-level programs','Simulation and wallet SOL debit','Persistent conservative purchase budget'],limitations='Basic checks sample 20 accounts; LP protection, hidden insiders and future sellability remain unverified. Amounts use a SOL/USDC quote, not a guaranteed USD price.')
+            record=dict(id=uuid.uuid4().hex,wallet=wallet,mint=mint,side=side,state='prepared',received=time.time(),expires=min(time.time()+45,risk['expires']) if risk else time.time()+45,token_risk=risk,lastValidBlockHeight=height,expireAt=expire_at,input_base_units=str(amount),expected_output_base_units=str(built.get('outAmount',route['outAmount'])),minimum_output_base_units=str(built.get('otherAmountThreshold',route['otherAmountThreshold'])),token_decimals=decimals,trade_quality=trade_quality,slippage_bps=50,reference_sol_usdc=rate,reserved_usdc=reserve,network_fee_lamports=fees,message=encode58(m),transaction=encoded,requestId=built.get('requestId'),message_hash=hashlib.sha256(m).hexdigest(),router=built.get('router'),order_mode=built.get('mode'),checks=['Basic rug-risk gate for buys; only the screened direct pool','Buy reverse route; quote impact and slippage','Wallet signer and permitted top-level programs','Simulation and wallet SOL debit','Persistent conservative purchase budget'],limitations='Basic checks sample 20 accounts; LP protection, hidden insiders and future sellability remain unverified. Amounts use a SOL/USDC quote, not a guaranteed USD price.')
             db=self.db()
             try:
                 with db:
@@ -191,7 +193,11 @@ class Swaps:
         if wallet!=record['wallet'] or record['state']!='prepared' or time.time()>record['expires']:raise ValueError('Swap expired, changed wallet or already used. Prepare again.')
         if record['side']=='buy' and (not record.get('token_risk',{}).get('allowed') or time.time()>record.get('token_risk',{}).get('expires',0)):raise ValueError('Fresh token-risk screening is required before a buy handoff.')
         if record['side']=='buy' and self.state()['buys_halted']:raise ValueError('Buy stop is latched.')
-        if rpc('getBlockHeight',[dict(commitment='confirmed')])>record['lastValidBlockHeight'] or time.time()>record['expires']:raise ValueError('Transaction blockhash expired.')
+        if time.time()>record['expires']:raise ValueError('Transaction expired.')
+        if record.get('lastValidBlockHeight') is not None:
+            if rpc('getBlockHeight',[dict(commitment='confirmed')])>record['lastValidBlockHeight']:raise ValueError('Transaction blockhash expired.')
+        elif record.get('expireAt') is not None and time.time()>float(record['expireAt']):raise ValueError('RFQ transaction expired.')
+        else:raise ValueError('Transaction expiry metadata is missing.')
         # Reserve once-only intent before the browser can open the wallet.
         record['state']='awaiting_wallet'
         db=self.db()
