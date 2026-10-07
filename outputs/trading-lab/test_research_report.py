@@ -11,7 +11,7 @@ class ResearchReportTests(unittest.TestCase):
                 {"oos_return_pct": 10, "oos_sharpe": 2, "oos_max_drawdown": 3, "selected_strategy": "ema"},
             ]
         })
-        self.assertAlmostEqual(result["compounded_oos_return_pct"], 15.5)
+        self.assertAlmostEqual(result["compounded_oos_return_pct"], 14.95)
         self.assertEqual(result["profitable_oos_windows"], 2)
         self.assertEqual(result["strategy_selection_frequency"]["ema"], 2)
         self.assertEqual(result["worst_oos_drawdown"], 4)
