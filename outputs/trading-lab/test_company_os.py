@@ -31,6 +31,14 @@ class CompanyOSTest(unittest.TestCase):
         self.assertEqual(second["skipped"], "cycle_throttled")
         self.assertEqual(len(self.c.work), len({w.title for w in self.c.work.values()}))
 
+    def test_research_feedback_creates_bounded_followup(self):
+        h = self.c.propose_hypothesis("H", "test statement", "metric", "baseline", "agent")
+        e = self.c.plan_experiment(h.id, "E", "policy", "evaluation")
+        self.c.complete_experiment(e.id, {"baseline": 1.0, "challenger": 2.0})
+        created = self.c.research_feedback_loop()
+        self.assertEqual(len(created), 1)
+        self.assertTrue(self.c.research_feedback_loop() == [])
+
     def test_department_review_and_replan(self):
         self.c.create_work("Research", "research", "x", 20)
         self.c.create_work("Audit", "audit", "x", 50)
