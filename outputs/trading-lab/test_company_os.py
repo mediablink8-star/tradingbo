@@ -31,6 +31,16 @@ class CompanyOSTest(unittest.TestCase):
         self.assertEqual(second["skipped"], "cycle_throttled")
         self.assertEqual(len(self.c.work), len({w.title for w in self.c.work.values()}))
 
+    def test_ceo_prioritizes_departments_and_budgets_research(self):
+        data = self.c.create_work("Fix feed", "data", "Improve evidence quality", 60)
+        research = self.c.create_work("Research next", "research", "Test a hypothesis", 50)
+        self.c.create_work("Audit issue", "audit", "Verify evidence", 70)
+        ranked = self.c.ceo_prioritize({"data_quality_bad": True, "open_audits": True})
+        self.assertEqual(ranked[0]["work_id"], data.id)
+        plan = self.c.ceo_resource_plan({"research_capacity": True})
+        self.assertTrue(all(x["resource"] == "research_slot" for x in plan))
+        self.assertLessEqual(len(plan), 2)
+
     def test_department_handoff(self):
         h = self.c.propose_hypothesis(
             "Handoff", "Test a bounded change", "metric", "baseline", "research",
