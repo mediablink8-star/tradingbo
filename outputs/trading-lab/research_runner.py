@@ -12,6 +12,7 @@ import os
 from backtest import FXBacktester
 from historical import load_json
 from research_report import build_research_report
+from portfolio_report import aggregate_pair_reports
 from strategies import default_strategy_candidates
 from true_walkforward import optimize_window, true_walk_forward
 
