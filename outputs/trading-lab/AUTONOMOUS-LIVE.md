@@ -39,3 +39,22 @@ The application verifies that the signed transaction contains exactly the prepar
 No private key, seed phrase, or signing secret is stored in this repository or passed to the agent process.
 
 This code establishes the integration boundary; real-money autonomous execution is still OFF until an external signer is provisioned, independently tested, funded with a dedicated low-balance wallet, and explicitly enabled.
+
+
+## Position lifecycle
+
+Autonomous buys create a persistent position record only after on-chain reconciliation
+reports a verified positive token balance delta. Autonomous sells may close all or part
+of that tracked position. The position ledger is separate from model state, so an agent
+cannot invent a position or claim an exit without a reconciled transaction.
+
+If any autonomous transaction is confirmed but reconciliation is not `verified`,
+the executor immediately latches the existing live kill switch and refuses further
+autonomous execution until an operator explicitly resets it.
+
+Endpoints:
+
+- `POST /api/autonomous/buy`
+- `POST /api/autonomous/sell`
+
+Both endpoints remain bound to the local browser origin and the autonomous/live gates.
