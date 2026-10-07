@@ -18,4 +18,5 @@ jobs:
           python -m unittest \
             test_live_control.py \
             test_shadow_execution.py \
-            test_autonomous_execution.py
+            test_autonomous_execution.py \
+            test_signing_policy.py
