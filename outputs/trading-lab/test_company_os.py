@@ -31,6 +31,15 @@ class CompanyOSTest(unittest.TestCase):
         self.assertEqual(second["skipped"], "cycle_throttled")
         self.assertEqual(len(self.c.work), len({w.title for w in self.c.work.values()}))
 
+    def test_department_review_and_replan(self):
+        self.c.create_work("Research", "research", "x", 20)
+        self.c.create_work("Audit", "audit", "x", 50)
+        review = self.c.department_performance_review()
+        self.assertIn("research", review)
+        plan = self.c.ceo_replan()
+        self.assertIn("focus_departments", plan)
+        self.assertIn("maintain_departments", plan)
+
     def test_autonomous_cycle_stays_bounded(self):
         result = self.c.autonomous_cycle(
             {"data_quality": "ok"},
