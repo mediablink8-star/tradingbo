@@ -9,6 +9,9 @@ import swaps
 from autonomous_signer import SignerClient
 from live_control import LiveControl
 
+MAX_OPEN_POSITIONS=3
+MAX_EXPOSURE_USDC=25.0
+
 class AutonomousExecutor:
     def __init__(self,path,signer=None):
         self.path=path; self.signer=signer or SignerClient(); self.guard=LiveControl(path); self._db().close()
@@ -23,15 +26,38 @@ class AutonomousExecutor:
         try:
             with db: db.execute("INSERT OR REPLACE INTO autonomous_execution VALUES(?,?,?,?,?)",(identifier,time.time(),state,json.dumps(payload.get("intent",{}),allow_nan=False),json.dumps(payload,allow_nan=False)))
         finally: db.close()
+    def _open_buy_exposure(self, wallet):
+        db=self._db()
+        try:
+            rows=db.execute("SELECT payload FROM autonomous_execution WHERE state='confirmed'").fetchall()
+        finally:
+            db.close()
+        total=0.0; count=0
+        for (raw,) in rows:
+            try:
+                payload=json.loads(raw); intent=payload.get("intent",{})
+                if intent.get("wallet")==wallet and intent.get("side")=="buy":
+                    total+=float(intent.get("reserved_usdc",0)); count+=1
+            except (TypeError,ValueError,json.JSONDecodeError):
+                raise ValueError("Autonomous ledger contains an unreadable confirmed intent; execution is halted for safety.")
+        return count,total
+
     def execute_buy(self, *, wallet, mint, usd=10):
         if os.environ.get("AUTONOMOUS_LIVE_ENABLE")!="1": raise ValueError("Autonomous live execution is disabled.")
         if not self.signer.configured(): raise ValueError("External signer is not configured.")
+        if not isinstance(wallet,str) or not wallet: raise ValueError("Trading wallet is required.")
+        if not isinstance(mint,str) or not mint: raise ValueError("Token mint is required.")
+        if isinstance(usd,bool) or not isinstance(usd,(int,float)) or not 0<usd<=10: raise ValueError("Autonomous buy must be between 0 and 10 USDC-equivalent.")
+        open_count,exposure=self._open_buy_exposure(wallet)
+        if open_count>=MAX_OPEN_POSITIONS: raise ValueError("Autonomous position limit reached.")
+        if exposure+float(usd)>MAX_EXPOSURE_USDC: raise ValueError("Autonomous exposure limit reached.")
         record=swaps.Swaps(self.path).prepare({"wallet":wallet,"mint":mint,"side":"buy","usd":usd})
         intent=record["id"]; self.guard.reserve_intent(float(record["reserved_usdc"])); swaps.Swaps(self.path).ready(intent,wallet); self._record(intent,"prepared",{"intent":record})
         try:
             signed=self.signer.sign(wallet=wallet,transaction_b64=record["transaction"],intent_id=intent,message_hash=record["message_hash"])
             raw=base64.b64decode(signed,validate=True)
-            if hashlib.sha256(raw[65:]).hexdigest()!=record["message_hash"]: raise ValueError("Signer returned a transaction with a different message.")
+            signed_message=swaps.message(signed,wallet,unsigned=False)
+            if hashlib.sha256(signed_message).hexdigest()!=record["message_hash"]: raise ValueError("Signer returned a transaction with a different message.")
             payload={"signedTransaction":signed}
             if record.get("requestId"): payload["requestId"]=record["requestId"]
             result=swaps.request("https://api.jup.ag/swap/v1/execute",payload,{"x-api-key":swaps.credential()})
