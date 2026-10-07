@@ -10,6 +10,7 @@ import swaps
 import token_risk
 from operations import Operations,journal
 from virtual_company import Company
+from company_os import CompanyOS
 from research_lab import Research
 from urllib.parse import urlparse,parse_qs
 
@@ -21,6 +22,7 @@ LIVE=LiveTrial(ROOT/'lab.sqlite',PUMP)
 SWAPS=swaps.Swaps(ROOT/'lab.sqlite')
 OPS=Operations(ROOT/'lab.sqlite')
 COMPANY=Company(ROOT/'lab.sqlite')
+COMPANY_OS=CompanyOS(ROOT/'lab.sqlite')
 RESEARCH=Research(ROOT/'lab.sqlite')
 
 def start_team(data):
@@ -63,7 +65,12 @@ class Handler(BaseHTTPRequestHandler):
         if self.path=='/api/evidence':
             state=LIVE.snapshot();self.send({'screening':state.get('screening',[]),'rows':state.get('market_rows',[]),'holders':state.get('holder_changes',{})});return
         if self.path=='/api/company':
-            state=LIVE.snapshot();self.send(COMPANY.board(state,OPS.update(state,PUMP.snapshot())));return
+            state=LIVE.snapshot();operations=OPS.update(state,PUMP.snapshot())
+            board=COMPANY.board(state,operations)
+            board['company_os']=COMPANY_OS.company_snapshot()
+            self.send(board);return
+        if self.path=='/api/company/os':
+            self.send(COMPANY_OS.company_snapshot());return
         if self.path=='/api/operations':self.send(OPS.update(LIVE.snapshot(),PUMP.snapshot()));return
         if self.path.startswith('/api/journal'):
             try:
@@ -102,7 +109,7 @@ class Handler(BaseHTTPRequestHandler):
         if not self.local_host():return
         if self.headers.get('Origin') not in (None,'http://127.0.0.1:8765','http://localhost:8765'):
             self.send({'error':'origin rejected'},403);return
-        if self.path.startswith('/api/research/') or self.path=='/api/company/config' or self.path=='/api/operations/ack' or self.path.startswith('/api/connections/') or self.path=='/api/wallet/balance' or self.path.startswith('/api/swaps/') or self.path=='/api/token-risk':
+        if self.path.startswith('/api/research/') or self.path in ('/api/company/config','/api/company/os/cycle') or self.path=='/api/operations/ack' or self.path.startswith('/api/connections/') or self.path=='/api/wallet/balance' or self.path.startswith('/api/swaps/') or self.path=='/api/token-risk':
             if self.headers.get('Origin') not in ('http://127.0.0.1:8765','http://localhost:8765'):
                 self.send({'error':'local browser origin required'},403);return
         if self.headers.get('Content-Type')!='application/json':self.send({'error':'JSON required'},400);return
@@ -116,6 +123,9 @@ class Handler(BaseHTTPRequestHandler):
                 elif self.path=='/api/research/test':self.send(RESEARCH.test_proposal(data.get('id')))
                 elif self.path=='/api/swaps/recover':self.send(SWAPS.recover(data.get('id')))
                 elif self.path=='/api/company/config':self.send(COMPANY.configure(data))
+                elif self.path=='/api/company/os/cycle':
+                    state=LIVE.snapshot();operations=OPS.update(state,PUMP.snapshot())
+                    self.send(COMPANY_OS.cycle_from_state(state,operations))
                 elif self.path=='/api/operations/ack':self.send(OPS.acknowledge(data.get('id')))
                 elif self.path=='/api/token-risk':self.send(token_risk.scan(data.get('mint'),ROOT/'lab.sqlite'))
                 elif self.path=='/api/swaps/connect':self.send(swaps.connect(data))
@@ -164,7 +174,7 @@ if __name__=='__main__':
         def monitor():
             while True:
                 try:
-                    state=LIVE.snapshot();operations=OPS.update(state,PUMP.snapshot());COMPANY.board(state,operations)
+                    state=LIVE.snapshot();operations=OPS.update(state,PUMP.snapshot());COMPANY.board(state,operations);COMPANY_OS.cycle_from_state(state,operations)
                 except Exception:pass
                 time.sleep(10)
         threading.Thread(target=monitor,daemon=True).start()
