@@ -9,6 +9,7 @@ import connections
 import swaps
 import token_risk
 from live_control import LiveControl
+from shadow_execution import ShadowLedger
 from operations import Operations,journal
 from virtual_company import Company
 from company_os import CompanyOS, CompanyScheduler
@@ -22,6 +23,7 @@ atexit.register(PUMP.stop)
 LIVE=LiveTrial(ROOT/'lab.sqlite',PUMP)
 SWAPS=swaps.Swaps(ROOT/'lab.sqlite')
 LIVE_GUARD=LiveControl(ROOT/'lab.sqlite')
+SHADOW=ShadowLedger(ROOT/'lab.sqlite')
 OPS=Operations(ROOT/'lab.sqlite')
 COMPANY=Company(ROOT/'lab.sqlite')
 COMPANY_OS=CompanyOS(ROOT/'lab.sqlite')
@@ -85,6 +87,7 @@ class Handler(BaseHTTPRequestHandler):
         if self.path=='/api/connections':self.send(connections.status());return
         if self.path=='/api/live':self.send(LIVE.snapshot());return
         if self.path=='/api/live-trading':self.send(LIVE_GUARD.status());return
+        if self.path=='/api/shadow':self.send(SHADOW.status());return
         if self.path=='/api/pump':self.send(PUMP.snapshot());return
         if self.path=='/api/pump/export':
             store=PumpStore(ROOT/'lab.sqlite')
@@ -152,6 +155,7 @@ class Handler(BaseHTTPRequestHandler):
                 elif self.path=='/api/wallet/balance':self.send(connections.wallet_balance(data.get('address')))
                 elif self.path=='/api/live/start':self.send(LIVE.start(data))
                 elif self.path=='/api/live/stop':self.send(LIVE.stop())
+                elif self.path=='/api/shadow/reconcile':self.send(SHADOW.reconcile(data.get('balances',{}),data.get('prices',{})))
                 elif self.path=='/api/live-trading/arm':self.send(LIVE_GUARD.arm())
                 elif self.path=='/api/live-trading/disarm':self.send(LIVE_GUARD.disarm())
                 elif self.path=='/api/live-trading/kill':self.send(LIVE_GUARD.kill(data.get('reason','manual kill switch')))
