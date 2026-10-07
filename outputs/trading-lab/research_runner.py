@@ -13,6 +13,7 @@ from backtest import FXBacktester
 from historical import load_json
 from research_report import build_research_report
 from portfolio_report import aggregate_pair_reports
+from portfolio_backtest import MultiPairPortfolioBacktester
 from strategies import default_strategy_candidates
 from true_walkforward import optimize_window, true_walk_forward
 
@@ -86,6 +87,40 @@ def run_pair(
         "trades": len(holdout_result["trades"]),
     }
     return build_research_report(pair, wf, holdout_report)
+
+
+def run_shared_holdout_portfolio(reports, datasets, holdout_size=100, starting_cash=10000.0):
+    """Backtest each pair's final pre-holdout selection under shared capital."""
+    if not reports:
+        raise ValueError("reports must not be empty")
+    candidates = dict(default_strategy_candidates())
+    holdout_data = {}
+    signals = {}
+    for pair, report in reports.items():
+        candles = datasets[pair]
+        if holdout_size >= len(candles):
+            raise ValueError("holdout_size must leave data before the holdout")
+        holdout_data[pair] = candles[-holdout_size:]
+        selected = report["final_holdout"]["selected_strategy"]
+        signals[pair] = candidates[selected]()
+
+    result = MultiPairPortfolioBacktester(
+        starting_cash=starting_cash,
+        per_position_notional=1000.0,
+        max_exposure=3000.0,
+        max_positions=3,
+        spread_bps=1.0,
+        slippage_bps=0.5,
+    ).run(holdout_data, signals)
+    return {
+        "starting_cash": result["starting_cash"],
+        "ending_cash": result["ending_cash"],
+        "return_pct": result["return_pct"],
+        "max_drawdown": result["max_drawdown"],
+        "sharpe": result["sharpe"],
+        "trades": len(result["trades"]),
+        "history": result["history"],
+    }
 
 
 def run_dataset(dataset_dir, pairs=DEFAULT_PAIRS, **kwargs):
