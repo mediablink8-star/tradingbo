@@ -8,7 +8,7 @@ class RiskConfig:
     max_exposure:float=3000.0
     max_positions:int=3
     max_daily_loss:float=200.0
-    stop_loss_pct:.float=0.01
+    stop_loss_pct:float=0.01
     take_profit_pct:float=0.02
     max_position_age:float=86400.0
     max_leverage:float=1.0
