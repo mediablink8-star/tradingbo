@@ -23,6 +23,7 @@ SWAPS=swaps.Swaps(ROOT/'lab.sqlite')
 OPS=Operations(ROOT/'lab.sqlite')
 COMPANY=Company(ROOT/'lab.sqlite')
 COMPANY_OS=CompanyOS(ROOT/'lab.sqlite')
+atexit.register(COMPANY_OS.close)
 RESEARCH=Research(ROOT/'lab.sqlite')
 
 def start_team(data):
@@ -125,7 +126,7 @@ class Handler(BaseHTTPRequestHandler):
                 elif self.path=='/api/company/config':self.send(COMPANY.configure(data))
                 elif self.path=='/api/company/os/cycle':
                     state=LIVE.snapshot();operations=OPS.update(state,PUMP.snapshot())
-                    self.send(COMPANY_OS.cycle_from_state(state,operations))
+                    self.send(COMPANY_OS.cycle_from_state(state,operations,force=True))
                 elif self.path=='/api/operations/ack':self.send(OPS.acknowledge(data.get('id')))
                 elif self.path=='/api/token-risk':self.send(token_risk.scan(data.get('mint'),ROOT/'lab.sqlite'))
                 elif self.path=='/api/swaps/connect':self.send(swaps.connect(data))
