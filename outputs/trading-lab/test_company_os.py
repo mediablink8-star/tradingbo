@@ -152,3 +152,13 @@ def test_experiment_config_is_frozen_and_reproducible():
         assert False
     except ValueError:
         pass
+
+
+def test_research_gate_requires_evidence_and_holdout():
+    company = CompanyOS(":memory:")
+    h = company.propose_hypothesis("Gate test", "Require evidence", {"source": "test"})
+    blocked = company.research_gate(h.id, .4, .2)
+    assert blocked["approved"] is False
+    approved = company.research_gate(h.id, .8, .2)
+    assert approved["approved"] is True
+    assert approved["requires_holdout_evaluation"] is True
