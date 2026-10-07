@@ -1,5 +1,5 @@
 import unittest
-from company_os import CompanyOS, ResourceBudget
+from company_os import CompanyOS, ResourceBudget, StatisticalEvaluator, CompanyScheduler
 
 class CompanyOSTest(unittest.TestCase):
     def setUp(self):
@@ -76,6 +76,19 @@ class CompanyOSTest(unittest.TestCase):
         next_stage = self.c.handoff(h.id)
         self.assertEqual(next_stage["stage"], "performance")
         self.assertEqual(self.c.work[next(w.id for w in self.c.work.values())].department, "performance")
+
+    def test_statistical_evaluator(self):
+        result = StatisticalEvaluator.compare([1.0, 2.0, 3.0], [2.0, 3.0, 5.0])
+        self.assertEqual(result["n"], 3)
+        self.assertAlmostEqual(result["mean_delta"], 4.0 / 3.0)
+        self.assertEqual(len(result["interval"]), 2)
+
+    def test_scheduler_throttles_and_runs(self):
+        scheduler = CompanyScheduler(self.c, interval=10)
+        first = scheduler.tick({"strategy": {"pnl": 0}}, {})
+        second = scheduler.tick({"strategy": {"pnl": 0}}, {})
+        self.assertEqual(first["status"], "ok")
+        self.assertEqual(second["status"], "throttled")
 
     def test_audit_memory(self):
         f = self.c.add_audit_finding("lookahead","high","Future data reached signal path","prefix test")
