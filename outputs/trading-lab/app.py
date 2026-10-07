@@ -160,6 +160,7 @@ class Handler(BaseHTTPRequestHandler):
                 elif self.path=='/api/live/stop':self.send(LIVE.stop())
                 elif self.path=='/api/shadow/reconcile':self.send(SHADOW.reconcile(data.get('balances',{}),data.get('prices',{})))
                 elif self.path=='/api/autonomous/buy':self.send(AUTONOMOUS.execute_buy(wallet=data.get('wallet'),mint=data.get('mint'),usd=data.get('usd',10)))
+                elif self.path=='/api/autonomous/sell':self.send(AUTONOMOUS.execute_sell(wallet=data.get('wallet'),mint=data.get('mint'),amount=data.get('amount')))
                 elif self.path=='/api/live-trading/arm':self.send(LIVE_GUARD.arm())
                 elif self.path=='/api/live-trading/disarm':self.send(LIVE_GUARD.disarm())
                 elif self.path=='/api/live-trading/kill':self.send(LIVE_GUARD.kill(data.get('reason','manual kill switch')))
