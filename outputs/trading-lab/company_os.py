@@ -186,6 +186,26 @@ class CompanyOS:
         f = AuditFinding(category, severity, description, evidence)
         self.findings[f.id] = f; self.memory.put("audit", category, asdict(f)); return f
 
+    def autonomous_cycle(self, state=None, operations=None, context=None):
+        """Run one bounded organizational loop; never grants execution authority."""
+        state = state or {}
+        context = context or {}
+        cycle = self.cycle_from_state(state, operations, force=True)
+        priority = self.ceo_prioritize(context)
+        resource_plan = self.ceo_resource_plan(context)
+        self.memory.put("autonomous_cycle", f"cycle-{self.cycle_count}", {
+            "cycle": self.cycle_count,
+            "priority": priority[:5],
+            "resource_plan": resource_plan,
+            "execution_authority": "deterministic_controller_only",
+        })
+        return {
+            "cycle": cycle,
+            "priority": priority,
+            "resource_plan": resource_plan,
+            "execution_authority": "deterministic_controller_only",
+        }
+
     def ceo_prioritize(self, context=None):
         """Score bounded company work from history and current evidence."""
         context = context or {}
