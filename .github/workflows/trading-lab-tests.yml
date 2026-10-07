@@ -14,4 +14,4 @@ jobs:
           python-version: "3.12"
       - name: Run forex unit tests
         working-directory: outputs/trading-lab
-        run: python -m unittest test_forex.py
+        run: python -m unittest discover -v
