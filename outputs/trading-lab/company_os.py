@@ -112,6 +112,9 @@ class CompanyOS:
     def create_work(self, title, department, objective, priority=50, owner="CEO"):
         if department not in self.DEPARTMENTS: raise ValueError("unknown department")
         if not 0 <= priority <= 100: raise ValueError("priority must be 0..100")
+        for existing in self.work.values():
+            if existing.status != "done" and existing.title == title:
+                return existing
         w = WorkOrder(title, department, objective, priority, owner)
         self.work[w.id] = w; self.memory.put("work_order", title, asdict(w)); return w
 
@@ -163,5 +166,21 @@ class CompanyOS:
                 "open_audits":[asdict(f) for f in self.findings.values() if f.status=="open"],
                 "memory_items":len(self.memory.search(limit=500)),
                 "execution_authority":"deterministic_controller_only"}
+
+    def cycle_from_state(self, state, operations=None):
+        """Translate observed system health into bounded executive signals."""
+        operations = operations or {}
+        checklist = operations.get("checklist", [])
+        failed = {item.get("key") for item in checklist if not item.get("ok")}
+        strategy = state.get("strategy", {})
+        pnl = strategy.get("pnl")
+        signals = {
+            "data_quality_alert": bool({"fresh", "feed", "pricing"} & failed),
+            "unresolved_audit_findings": any(f.status == "open" for f in self.findings.values()),
+            "loss_review_due": isinstance(pnl, (int, float)) and pnl < 0,
+            "research_backlog_low": not any(w.department == "research" and w.status != "done" for w in self.work.values()),
+        }
+        created = self.executive_cycle(signals)
+        return {"signals": signals, "created_work": [asdict(w) for w in created]}
 
     def close(self): self.memory.close()
