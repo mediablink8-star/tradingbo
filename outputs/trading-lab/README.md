@@ -42,3 +42,17 @@ python -m unittest -v test_forex.py
 The lab includes a deterministic OHLC backtester in `backtest.py`. It models configurable spread and slippage, calculates trade P/L, win rate and maximum drawdown, and keeps strategy signals separate from execution. It is intended for research and paper evaluation only; backtest results are not evidence of future profitability. The research layer includes EMA momentum, mean-reversion and breakout baselines plus rolling walk-forward evaluation. Results should be judged on out-of-sample consistency, drawdown, Sharpe, profit factor and expectancy rather than win rate alone.
 
 Alpha Vantage documents `FX_INTRADAY` for intraday OHLC FX history at 1, 5, 15, 30 and 60 minute intervals; its intraday endpoint is a premium API. citeturn0search0
+
+## Historical research datasets
+
+The research pipeline can download a reproducible daily reference-rate dataset from a pinned provider and validate it before backtesting. Frankfurter supports date ranges and provider pinning, so the same provider/date window can be reproduced later. citeturn0search1
+
+From `outputs/trading-lab`:
+
+```
+python -c "from dataset import build_dataset; build_dataset(['EUR/USD','GBP/USD','USD/JPY','AUD/USD','USD/CHF'],'2020-01-01','2025-12-31','data/fx-daily')"
+```
+
+The pipeline writes one JSON series per pair plus `manifest.json`, and rejects duplicate or non-monotonic timestamps. Large calendar gaps are reported rather than silently filled. The source is daily reference data, not executable intraday OHLC data, so these datasets should not be treated as broker-quality fills.
+
+The next research upgrade is a true intraday OHLC adapter so the same backtester can be evaluated against higher-frequency data without fabricating highs/lows from daily reference rates.
