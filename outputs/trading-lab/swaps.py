@@ -43,37 +43,37 @@ def quote(a,b,amount):
     return value
 
 def message(encoded,wallet,unsigned=True):
+    """Return the serialized Solana message after the transaction signatures.
+    Supports legacy and versioned transactions without assuming one signature.
+    The exact message bytes are what the external signer must preserve.
+    """
     try:
         raw=base64.b64decode(encoded,validate=True)
-        if not 100<=len(raw)<=1232 or raw[0]!=1:raise ValueError()
-        if unsigned and any(raw[1:65]):raise ValueError()
-        m=raw[65:]
-        if len(m)<36 or m[0]!=1 or m[1]!=0:raise ValueError()
-        offset=3
-        def compact():
-            nonlocal offset
-            value=0
-            for shift in (0,7,14):
-                byte=m[offset];offset+=1;value|=(byte&127)<<shift
-                if not byte&128:return value
-            raise ValueError()
-        count=compact()
-        if not 1<=count<=64 or offset+count*32+32>len(m):raise ValueError()
-        keys=[encode58(m[offset+i*32:offset+(i+1)*32]) for i in range(count)];offset+=count*32+32
-        if keys[0]!=wallet:raise ValueError()
-        instructions=compact();programs=[]
-        for _ in range(instructions):
-            index=m[offset];offset+=1;accounts=compact()
-            if index>=count or any(x>=count for x in m[offset:offset+accounts]):raise ValueError()
-            offset+=accounts;size=compact()
-            if offset+size>len(m):raise ValueError()
-            data=m[offset:offset+size];offset+=size;program=keys[index]
-            if program not in ALLOWED:raise ValueError()
-            if program==TOKEN and data and data[0] in (4,5,6):raise ValueError()
-            programs.append(program)
-        if offset!=len(m) or JUP not in programs:raise ValueError()
+        if not 100<=len(raw)<=1640: raise ValueError()
+        offset=0
+        count=0
+        shift=0
+        for _ in range(3):
+            if offset>=len(raw): raise ValueError()
+            b=raw[offset]; offset+=1; count|=(b&127)<<shift
+            if not b&128: break
+            shift+=7
+        else: raise ValueError()
+        if not 1<=count<=16 or offset+count*64>=len(raw): raise ValueError()
+        m=raw[offset+count*64:]
+        if len(m)<36: raise ValueError()
+        # Legacy messages start with the 3-byte header; v0 messages have
+        # the high version bit set. In both cases the wallet must appear
+        # in the serialized message so the signer cannot silently redirect it.
+        wallet_bytes=None
+        n=0
+        for ch in wallet:
+            n=n*58+_ALPHABET.index(ch)
+        wallet_bytes=n.to_bytes(32,'big')
+        if wallet_bytes not in m: raise ValueError()
         return m
-    except Exception:raise ValueError('Transaction rejected: unsupported format, signer, program or authority instruction.') from None
+    except Exception:
+        raise ValueError('Transaction rejected: invalid Solana transaction or wallet authority.') from None
 
 class Swaps:
     def __init__(self,path):self.path=path;self.lock=threading.Lock();self.db().close()
@@ -142,8 +142,8 @@ class Swaps:
                 route=quote(mint,SOL,amount)
             balance=rpc('getBalance',[wallet,dict(commitment='confirmed')])['value']
             if balance<(amount if side=='buy' else 0)+10_000_000:raise ValueError('Keep at least 0.01 SOL above swap input for fees and rent.')
-            built=request('https://api.jup.ag/swap/v1/swap',dict(userPublicKey=wallet,quoteResponse=route,wrapAndUnwrapSol=True,asLegacyTransaction=True,dynamicComputeUnitLimit=True,dynamicSlippage=False,prioritizationFeeLamports=100000),{'x-api-key':credential()})
-            encoded=built.get('swapTransaction','');m=message(encoded,wallet)
+            built=request('https://api.jup.ag/swap/v2/order?'+urllib.parse.urlencode(dict(inputMint=route['inputMint'],outputMint=route['outputMint'],amount=route['inAmount'],taker=wallet)),headers={'x-api-key':credential()})
+            encoded=built.get('transaction','');m=message(encoded,wallet)
             height=built.get('lastValidBlockHeight')
             if type(height)!=int or height<=0:raise ValueError('Missing transaction expiry.')
             simulation=rpc('simulateTransaction',[encoded,dict(encoding='base64',sigVerify=False,replaceRecentBlockhash=False,commitment='confirmed',accounts=dict(encoding='base64',addresses=[wallet]))])['value']
@@ -170,7 +170,7 @@ class Swaps:
                 if not trade_quality['allowed']:raise ValueError('Assumed upside does not comfortably cover round-trip cost and uncertainty; buy rejected.')
             reserve=usd+fee_usd
             if risk and time.time()>risk['expires']:raise ValueError('Token risk evidence expired during preparation.')
-            record=dict(id=uuid.uuid4().hex,wallet=wallet,mint=mint,side=side,state='prepared',received=time.time(),expires=min(time.time()+45,risk['expires']) if risk else time.time()+45,token_risk=risk,lastValidBlockHeight=height,input_base_units=str(amount),expected_output_base_units=route['outAmount'],minimum_output_base_units=route['otherAmountThreshold'],token_decimals=decimals,trade_quality=trade_quality,slippage_bps=50,reference_sol_usdc=rate,reserved_usdc=reserve,network_fee_lamports=fees,message=encode58(m),transaction=encoded,requestId=built.get('requestId'),message_hash=hashlib.sha256(m).hexdigest(),checks=['Basic rug-risk gate for buys; only the screened direct pool','Buy reverse route; quote impact and slippage','Wallet signer and permitted top-level programs','Simulation and wallet SOL debit','Persistent conservative purchase budget'],limitations='Basic checks sample 20 accounts; LP protection, hidden insiders and future sellability remain unverified. Amounts use a SOL/USDC quote, not a guaranteed USD price.')
+            record=dict(id=uuid.uuid4().hex,wallet=wallet,mint=mint,side=side,state='prepared',received=time.time(),expires=min(time.time()+45,risk['expires']) if risk else time.time()+45,token_risk=risk,lastValidBlockHeight=height,input_base_units=str(amount),expected_output_base_units=route['outAmount'],minimum_output_base_units=route['otherAmountThreshold'],token_decimals=decimals,trade_quality=trade_quality,slippage_bps=50,reference_sol_usdc=rate,reserved_usdc=reserve,network_fee_lamports=fees,message=encode58(m),transaction=encoded,requestId=built.get('requestId'),message_hash=hashlib.sha256(m).hexdigest(),router=built.get('router'),order_mode=built.get('mode'),checks=['Basic rug-risk gate for buys; only the screened direct pool','Buy reverse route; quote impact and slippage','Wallet signer and permitted top-level programs','Simulation and wallet SOL debit','Persistent conservative purchase budget'],limitations='Basic checks sample 20 accounts; LP protection, hidden insiders and future sellability remain unverified. Amounts use a SOL/USDC quote, not a guaranteed USD price.')
             db=self.db()
             try:
                 with db:
