@@ -26,7 +26,8 @@ class ShadowLedgerTests(unittest.TestCase):
 
     def test_position_limit(self):
         for token in ("A","B","C"):
-            self.ledger.reserve(token,"buy",5,{})
+            intent=self.ledger.reserve(token,"buy",5,{})
+            self.ledger.fill(intent["id"],100,0.05,{"base_units":100})
         with self.assertRaises(ValueError):
             self.ledger.reserve("D","buy",5,{})
 
