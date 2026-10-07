@@ -6,13 +6,19 @@ class ForexTests(unittest.TestCase):
   r=FXRisk(RiskConfig(max_trade_notional=100,max_exposure=200,max_positions=2))
   r.validate_entry(1000,0,[],100)
   with self.assertRaises(ValueError):r.validate_entry(1000,0,[],101)
- def test_paper_roundtrip(self):
+ def test_long_and_short_roundtrip(self):
   with tempfile.TemporaryDirectory() as d:
    b=ForexPaperBroker(os.path.join(d,"fx.sqlite"))
-   p=b.open("EUR/USD",1.10,500,"buy")
-   self.assertEqual(p["side"],"buy")
-   s=b.snapshot({"EUR/USD":{"price":1.12}})
-   self.assertAlmostEqual(s["account"] if "account" in s else s["equity"],10000+500*(1.12-1.10)/1.10,places=6)
-   c=b.close(p["id"],1.12)
-   self.assertGreater(c["pnl"],0)
+   p=b.open("EUR/USD",1.10,500,"buy");s=b.snapshot({"EUR/USD":{"price":1.12}})
+   self.assertAlmostEqual(s["equity"],10000+500*(1.12-1.10)/1.10,places=6)
+   c=b.close(p["id"],1.12);self.assertGreater(c["pnl"],0)
+   p=b.open("GBP/USD",1.30,500,"sell");c=b.close(p["id"],1.28);self.assertGreater(c["pnl"],0)
+ def test_short_unrealized_pnl(self):
+  with tempfile.TemporaryDirectory() as d:
+   b=ForexPaperBroker(os.path.join(d,"fx.sqlite"));b.open("USD/JPY",150,500,"sell")
+   s=b.snapshot({"USD/JPY":{"price":149}});self.assertGreater(s["positions"][0]["unrealized_pnl"],0)
+ def test_daily_loss_and_exit_logic(self):
+  r=FXRisk(RiskConfig(max_daily_loss=50));
+  with self.assertRaises(ValueError):r.validate_daily_loss(-50)
+  p={"side":"sell","entry_price":100,"opened":0};self.assertTrue(r.exits(p,102,1))
 if __name__=="__main__":unittest.main()
