@@ -132,6 +132,49 @@ class CompanyOS:
         self.hypotheses[hypothesis_id].status = "scheduled"
         self.memory.put("experiment", name, asdict(e)); return e
 
+    def department_gate(self, hypothesis_id, evidence_quality="sufficient", uncertainty="medium"):
+        """Independent risk/governance gate before an experiment can advance."""
+        h = self.hypotheses[hypothesis_id]
+        if evidence_quality not in ("insufficient", "limited", "sufficient"):
+            raise ValueError("invalid evidence quality")
+        if uncertainty not in ("low", "medium", "high"):
+            raise ValueError("invalid uncertainty")
+        if evidence_quality == "insufficient" or uncertainty == "high":
+            decision = "blocked"
+            h.status = "gate_blocked"
+            rationale = "Insufficient evidence or excessive uncertainty."
+        else:
+            decision = "approved"
+            h.status = "gate_approved"
+            rationale = "Governance gate passed; frozen evaluation may proceed."
+        d = DepartmentDecision("risk", hypothesis_id, decision, rationale)
+        self.memory.put("department_decision", f"gate:{h.title}", asdict(d))
+        return asdict(d)
+
+    def handoff(self, hypothesis_id, experiment_id=None):
+        """Move a research item through bounded organizational stages."""
+        gate = self.department_gate(
+            hypothesis_id,
+            "sufficient" if self.hypotheses[hypothesis_id].evidence else "limited")
+        if gate["decision"] != "approved":
+            return {"stage": "risk", "gate": gate}
+        if experiment_id is None:
+            self.create_work(
+                f"Evaluate: {self.hypotheses[hypothesis_id].title}", "performance",
+                "Run the frozen evaluation and record immutable metrics.",
+                85, "Performance lead")
+            return {"stage": "performance", "gate": gate}
+        if experiment_id not in self.experiments:
+            raise KeyError("unknown experiment")
+        e = self.experiments[experiment_id]
+        if e.status != "completed":
+            return {"stage": "performance", "gate": gate, "next": "complete_experiment"}
+        self.create_work(
+            f"Audit: {e.name}", "audit",
+            "Verify evidence boundaries, accounting and reproducibility.",
+            90, "Audit lead")
+        return {"stage": "audit", "gate": gate}
+
     def complete_experiment(self, experiment_id, metrics):
         e = self.experiments[experiment_id]
         result = IndependentEvaluator.evaluate(e, metrics)
