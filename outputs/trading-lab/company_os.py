@@ -274,6 +274,9 @@ class CompanyOS:
         priority = self.ceo_prioritize(context)
         resource_plan = self.ceo_resource_plan(context)
         self.memory.put("autonomous_cycle", f"cycle-{self.cycle_count}", {
+            "feedback_work": feedback,
+            "department_review": review,
+            "ceo_replan": replan,
             "cycle": self.cycle_count,
             "priority": priority[:5],
             "resource_plan": resource_plan,
