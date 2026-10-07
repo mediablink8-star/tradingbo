@@ -90,6 +90,25 @@ class CompanyOSTest(unittest.TestCase):
         self.assertEqual(first["status"], "ok")
         self.assertEqual(second["status"], "throttled")
 
+    def test_state_survives_restart(self):
+        import tempfile, os
+        fd, path = tempfile.mkstemp()
+        os.close(fd)
+        try:
+            first = CompanyOS(path, budget=ResourceBudget(research_slots=2))
+            h = first.propose_hypothesis("Persistent", "statement", "metric", "baseline", "research")
+            e = first.plan_experiment(h.id, "Persistent experiment", "dev", "eval")
+            first.complete_experiment(e.id, {"baseline": 1.0, "challenger": 1.2})
+            first.close()
+            second = CompanyOS(path)
+            self.assertIn(h.id, second.hypotheses)
+            self.assertIn(e.id, second.experiments)
+            self.assertEqual(second.experiments[e.id].status, "completed")
+            self.assertEqual(second.budget.research_slots, 1)
+            second.close()
+        finally:
+            os.unlink(path)
+
     def test_audit_memory(self):
         f = self.c.add_audit_finding("lookahead","high","Future data reached signal path","prefix test")
         self.assertIn(f.id,self.c.findings)
