@@ -13,7 +13,7 @@ def _spread(pair):
         try:return max(0.0,float(raw))
         except ValueError:pass
     return DEFAULT_SPREAD_BPS.get(pair,1.5)
-def snapshot(pairs=DEFAULT_PAIRS):
+def _alpha_vantage(pairs):\n    key=os.environ.get("ALPHAVANTAGE_API_KEY")\n    if not key: raise ValueError("ALPHAVANTAGE_API_KEY is required for the Alpha Vantage provider.")\n    out={}\n    for pair in pairs:\n        b,q=pair.split("/",1)\n        url="https://www.alphavantage.co/query?"+urllib.parse.urlencode({"function":"CURRENCY_EXCHANGE_RATE","from_currency":b,"to_currency":q,"apikey":key})\n        raw=_fetch(url);row=raw.get("Realtime Currency Exchange Rate",{})\n        mid=float(row["5. Exchange Rate"]);stamp=row.get("6. Last Refreshed")\n        observed=time.time();spread_bps=_spread(pair);half=spread_bps/20000\n        out[pair]={"pair":pair,"price":mid,"bid":mid*(1-half),"ask":mid*(1+half),"spread_bps":spread_bps,"observed":observed,"fetched_at":observed,"provider_date":stamp,"source":"Alpha Vantage realtime FX rate"}\n    return {"observed":time.time(),"provider_date":None,"source":"Alpha Vantage realtime FX rate","pairs":out,"market_open":True}\ndef snapshot(pairs=DEFAULT_PAIRS):\n    if os.environ.get("FX_PROVIDER","").lower()=="alpha_vantage": return _alpha_vantage(pairs)
     pairs=[p.upper() for p in pairs if isinstance(p,str) and "/" in p]
     currencies=sorted({c for p in pairs for c in p.split("/")});base="USD" if "USD" in currencies else currencies[0]
     targets=[c for c in currencies if c!=base]
