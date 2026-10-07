@@ -162,3 +162,14 @@ def test_research_gate_requires_evidence_and_holdout():
     approved = company.research_gate(h.id, .8, .2)
     assert approved["approved"] is True
     assert approved["requires_holdout_evaluation"] is True
+
+
+def test_hypothesis_debate_is_non_mutating():
+    company = CompanyOS(":memory:")
+    h = company.propose_hypothesis("Debate test", "Critique it", {"source": "test"})
+    result = company.debate_hypothesis(h.id, [
+        {"role": "researcher", "verdict": "continue", "concerns": ["small sample"], "confidence": .7},
+        {"role": "auditor", "verdict": "reject", "concerns": ["confounding"], "confidence": .9},
+    ])
+    assert result["consensus"] == "continue_review"
+    assert result["policy_change"] is False
