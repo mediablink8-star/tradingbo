@@ -16,7 +16,7 @@ class ForexLab:
     def _fresh_quote(self,pair):
         data=self.tick();row=data["market"]["pairs"].get(pair.upper())
         if not row:raise ValueError("No current price for that FX pair.")
-        if time.time()-float(row["observed"])>MAX_QUOTE_AGE:raise ValueError("FX quote is stale; paper order rejected.")
+        if time.time()-float(row["observed"])>MAX_QUOTE_AGE:raise ValueError("FX quote is stale; paper order rejected.")\n        if row.get("provider_date") and time.strftime("%Y-%m-%d",time.gmtime()) != row["provider_date"]:\n            raise ValueError("Provider quote is not from the current UTC date; paper order rejected.")
         return row
     def open(self,pair,side,notional):
         row=self._fresh_quote(pair)
