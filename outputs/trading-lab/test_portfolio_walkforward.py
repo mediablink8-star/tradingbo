@@ -1,8 +1,8 @@
 import unittest
 
 from backtest import Candle
-from portfolio_walkforward import portfolio_true_walk_forward
 from portfolio_backtest import MultiPairPortfolioBacktester
+from portfolio_walkforward import portfolio_true_walk_forward
 
 
 class PortfolioWalkForwardTests(unittest.TestCase):
@@ -14,8 +14,7 @@ class PortfolioWalkForwardTests(unittest.TestCase):
         candidates = {
             pair: [
                 ("flat", lambda: (lambda history: "flat")),
-                ("buy", lambda: (lambda history: "buy"),
-                ),
+                ("buy", lambda: (lambda history: "buy")),
             ]
             for pair in candles
         }
