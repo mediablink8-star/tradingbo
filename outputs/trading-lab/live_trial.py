@@ -9,6 +9,7 @@ from paper_quotes import QuoteExecution, usage_cost
 import swaps
 from market_evidence import evidence,assess
 from virtual_company import Company,MISSION
+from shadow_execution import ShadowLedger
 
 S=Settings(capital=100,ticket=10,max_positions=3,max_exposure=.3,max_loss=.1)
 
@@ -76,7 +77,7 @@ def readiness(state,now):
         performance='Profitability unproven; compare prospective net results with the baseline.',
         real_money='AI paper only; real swaps require separate wallet approval. Basic token-risk checks do not certify safety.')
 
-def process_tick(state,rows,now,decide=None,stopping=False,execution=None,settings=None):
+def process_tick(state,rows,now,decide=None,stopping=False,execution=None,settings=None,shadow=None):
     S=settings or globals()['S']
     events=[];execution=execution or PaperExecutionAgent();screen=ScreeningAgent()
     def log(kind,**data):events.append(dict(kind=kind,timestamp=now,**data))
@@ -158,7 +159,16 @@ def process_tick(state,rows,now,decide=None,stopping=False,execution=None,settin
             try:approvals,exits=decide(candidates,fresh,state,events)
             except Exception:state['status']='ai_error';log('ai_error',message='No approval: model unavailable or invalid output.')
     for token in approvals:
-        if token in candidates:state['strategy']['pending'].append(dict(token=token,due=now+60));log('ai_entry_signal',token=token)
+        if token in candidates:
+            if shadow:
+                try:
+                    intent=shadow.reserve(token,'buy',10.0,{'source':'ai_team_decision','token':token,'timestamp':now,'eligible':True})
+                    row=fresh.get(token)
+                    units,price=execution.buy(row,S)
+                    shadow.fill(intent['id'],units,price,getattr(execution,'last_fill',{}),now)
+                    log('shadow_live_buy',token=token,intent_id=intent['id'],units=units,price=price,quote=getattr(execution,'last_fill',{}))
+                except Exception as exc: log('shadow_live_buy_rejected',token=token,reason=str(exc))
+            state['strategy']['pending'].append(dict(token=token,due=now+60));log('ai_entry_signal',token=token)
     for token in exits:
         if token in state['strategy']['positions']:state['strategy']['positions'][token].setdefault('exit_due',now+60)
     b=state['baseline']
@@ -332,7 +342,8 @@ class LiveTrial:
                 live_settings=replace(S,operating_cost_step=0,network_cost=network)
                 state['settings']=asdict(live_settings)
                 state['execution_mode']=execution.mode
-                events+=process_tick(state,rows,time.time(),None if self.stop_event.is_set() else self.decide,self.stop_event.is_set(),execution,live_settings)
+                shadow=ShadowLedger(self.path)
+                events+=process_tick(state,rows,time.time(),None if self.stop_event.is_set() else self.decide,self.stop_event.is_set(),execution,live_settings,shadow)
                 if self.stop_event.is_set():state['enabled']=False;state['status']='paused'
                 elif state['strategy']['halted']:state['status']='loss_shutdown_exits_only'
                 elif state['config']['provider']=='none':state['status']='observing_waiting_for_ai_provider'
