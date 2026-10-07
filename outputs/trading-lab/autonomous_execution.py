@@ -107,7 +107,7 @@ class AutonomousExecutor:
         policy, policy_hash = build_signing_policy(record)
         self.guard.reserve_intent(float(record["reserved_usdc"]))
         swap.ready(intent,wallet)
-        self._record(intent,"prepared",{"intent":record})
+        self._record(intent,"prepared",{"intent":record,"signing_policy":policy,"policy_hash":policy_hash})
         try:
             signed=self.signer.sign(
                 wallet=wallet,
@@ -132,7 +132,7 @@ class AutonomousExecutor:
                 raise ValueError("Jupiter did not return a transaction signature.")
             self._record(
                 intent,"broadcast",
-                {"intent":record,"signature":signature,"jupiter":result},
+                {"intent":record,"signature":signature,"jupiter":result,"policy_hash":policy_hash},
             )
             confirmed=swap.confirm(intent,signature)
             reconciliation=confirmed.get("reconciliation") or {}
