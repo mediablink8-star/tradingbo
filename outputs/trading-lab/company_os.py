@@ -149,9 +149,9 @@ class CompanyScheduler:
             return result
         except Exception as exc:
             self.failures += 1
-            self.company.memory.put("incident", f"company-cycle-{self.failures}",
-                                    {"error": str(exc), "failures": self.failures})
-            return {"status": "degraded", "error": str(exc), "failures": self.failures}
+            recovery = self.company.recover_incident(exc)
+            return {"status": "degraded", "error": str(exc), "failures": self.failures,
+                    "recovery_work_id": recovery.id}
 
 class CompanyOS:
     DEPARTMENTS = ("research","risk","data","operations","performance","audit")
@@ -286,9 +286,24 @@ class CompanyOS:
         for dept in self.DEPARTMENTS:
             active = [w for w in self.work.values() if w.department == dept and w.status != "done"]
             completed = [w for w in self.work.values() if w.department == dept and w.status == "done"]
-            review[dept] = {"active_work": len(active), "completed_work": len(completed),
-                            "open_audits": sum(1 for f in self.findings.values() if f.status == "open" and dept == "audit"),
-                            "score": min(100, len(completed) * 10 + len(active) * 3)}
+            findings = [f for f in self.findings.values() if f.status == "open" and dept == "audit"]
+            supported = [e for e in self.experiments.values()
+                         if e.status == "completed" and e.result and e.result.get("supported")]
+            completed_experiments = [e for e in self.experiments.values() if e.status == "completed"]
+            support_rate = (len(supported) / len(completed_experiments)) if completed_experiments else None
+            completion_rate = (len(completed) / (len(completed) + len(active))) if (completed or active) else 1.0
+            score = min(100, round(completion_rate * 50 + (support_rate * 30 if support_rate is not None else 0)
+                                   + (20 if not findings else 0), 2))
+            review[dept] = {
+                "active_work": len(active),
+                "completed_work": len(completed),
+                "completion_rate": round(completion_rate, 3),
+                "completed_experiments": len(completed_experiments),
+                "supported_experiments": len(supported),
+                "support_rate": None if support_rate is None else round(support_rate, 3),
+                "open_audits": len(findings),
+                "score": score,
+            }
         self.memory.put("department_performance", f"cycle-{self.cycle_count}", review)
         return review
 
@@ -415,5 +430,12 @@ class CompanyOS:
         }
         created = self.executive_cycle(signals)
         return {"signals": signals, "created_work": [asdict(w) for w in created]}
+
+    def recover_incident(self, error, component="company-cycle"):
+        self.memory.put("incident", f"{component}-failure", {"error": str(error), "component": component})
+        return self.create_work(
+            f"Recover: {component}", "operations",
+            "Diagnose the failure, reproduce it safely, and restore the research loop without changing execution authority.",
+            95, "Operations lead")
 
     def close(self): self.memory.close()
