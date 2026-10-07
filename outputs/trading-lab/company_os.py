@@ -186,7 +186,26 @@ class CompanyOS:
         f = AuditFinding(category, severity, description, evidence)
         self.findings[f.id] = f; self.memory.put("audit", category, asdict(f)); return f
 
-    def department_performance_review(self):
+    def research_feedback_loop(self):
+        """Turn completed experiment outcomes into bounded future research work."""
+        created = []
+        for e in self.experiments.values():
+            if e.status != "completed" or not e.result:
+                continue
+            key = f"feedback:{e.id}"
+            if self.memory.search(key):
+                continue
+            supported = bool(e.result.get("supported"))
+            title = ("Replicate: " if supported else "Challenge: ") + e.name
+            objective = ("Attempt an independent replication with fresh evidence."
+                         if supported else
+                         "Investigate why the hypothesis failed and define a falsifiable challenger.")
+            created.append(self.create_work(title, "research", objective, 55).id)
+            self.memory.put("research_feedback", key, {
+                "experiment_id": e.id, "supported": supported, "work_id": created[-1]})
+        return created
+
+    def autonomous_cycle(self, state=None, operations=None, context=None):
         """Measure organizational throughput without judging trading outcomes."""
         review = {}
         for dept in self.departments:
