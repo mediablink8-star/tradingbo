@@ -42,38 +42,86 @@ def quote(a,b,amount):
     except (KeyError,ValueError,TypeError):raise ValueError('No acceptable exact-input route: require 0.5% slippage and at most 1% quoted impact.') from None
     return value
 
+def _decode58(text):
+    if not isinstance(text,str) or not text or not re.fullmatch(r'[1-9A-HJ-NP-Za-km-z]+',text):
+        raise ValueError()
+    n=0
+    for ch in text:
+        n=n*58+_ALPHABET.index(ch)
+    raw=n.to_bytes((n.bit_length()+7)//8,'big') if n else b''
+    return b'\0'*(len(text)-len(text.lstrip('1')))+raw
+
+def _compact(raw,offset):
+    value=0;shift=0
+    for _ in range(3):
+        if offset>=len(raw): raise ValueError()
+        b=raw[offset];offset+=1
+        value|=(b&127)<<shift
+        if not b&128:return value,offset
+        shift+=7
+    raise ValueError()
+
+def _parse_message(message_bytes,wallet):
+    p=0
+    if not message_bytes: raise ValueError()
+    versioned=bool(message_bytes[0]&0x80)
+    if versioned:
+        if message_bytes[0]!=0x80: raise ValueError()
+        p=1
+    if p+3>len(message_bytes): raise ValueError()
+    required,readonly_signed,readonly_unsigned=message_bytes[p:p+3];p+=3
+    if required<1 or required>16 or readonly_signed>required: raise ValueError()
+    key_count,p=_compact(message_bytes,p)
+    if key_count<required or key_count>64 or p+32*key_count+32>len(message_bytes): raise ValueError()
+    keys=[message_bytes[p+i*32:p+(i+1)*32] for i in range(key_count)]
+    p+=32*key_count+32
+    instruction_count,p=_compact(message_bytes,p)
+    if instruction_count>64: raise ValueError()
+    program_indexes=[]
+    for _ in range(instruction_count):
+        program,p=_compact(message_bytes,p)
+        if program>=key_count: raise ValueError()
+        account_count,p=_compact(message_bytes,p)
+        if account_count>64 or p+account_count>len(message_bytes): raise ValueError()
+        accounts=message_bytes[p:p+account_count];p+=account_count
+        data_count,p=_compact(message_bytes,p)
+        if data_count>1024 or p+data_count>len(message_bytes): raise ValueError()
+        p+=data_count
+        program_indexes.append(program)
+        if any(i>=key_count for i in accounts): raise ValueError()
+    if versioned:
+        lookup_count,p=_compact(message_bytes,p)
+        if lookup_count>8: raise ValueError()
+        for _ in range(lookup_count):
+            if p+32>len(message_bytes): raise ValueError()
+            p+=32
+            writable,p=_compact(message_bytes,p)
+            if p+writable>len(message_bytes): raise ValueError()
+            p+=writable
+            readonly,p=_compact(message_bytes,p)
+            if p+readonly>len(message_bytes): raise ValueError()
+            p+=readonly
+    if p!=len(message_bytes): raise ValueError()
+    wallet_key=_decode58(wallet)
+    if wallet_key not in keys[:required]: raise ValueError()
+    programs={keys[i] for i in program_indexes}
+    if any(program not in {_decode58(x) for x in ALLOWED} for program in programs):
+        raise ValueError()
+    return {"versioned":versioned,"required_signers":required,"keys":keys,"programs":programs}
+
 def message(encoded,wallet,unsigned=True):
-    """Return the serialized Solana message after the transaction signatures.
-    Supports legacy and versioned transactions without assuming one signature.
-    The exact message bytes are what the external signer must preserve.
-    """
+    """Validate transaction structure and return its exact serialized message."""
     try:
         raw=base64.b64decode(encoded,validate=True)
         if not 100<=len(raw)<=1640: raise ValueError()
-        offset=0
-        count=0
-        shift=0
-        for _ in range(3):
-            if offset>=len(raw): raise ValueError()
-            b=raw[offset]; offset+=1; count|=(b&127)<<shift
-            if not b&128: break
-            shift+=7
-        else: raise ValueError()
+        count,offset=_compact(raw,0)
         if not 1<=count<=16 or offset+count*64>=len(raw): raise ValueError()
         m=raw[offset+count*64:]
-        if len(m)<36: raise ValueError()
-        # Legacy messages start with the 3-byte header; v0 messages have
-        # the high version bit set. In both cases the wallet must appear
-        # in the serialized message so the signer cannot silently redirect it.
-        wallet_bytes=None
-        n=0
-        for ch in wallet:
-            n=n*58+_ALPHABET.index(ch)
-        wallet_bytes=n.to_bytes(32,'big')
-        if wallet_bytes not in m: raise ValueError()
+        _parse_message(m,wallet)
         return m
     except Exception:
-        raise ValueError('Transaction rejected: invalid Solana transaction or wallet authority.') from None
+        raise ValueError('Transaction rejected: invalid Solana message, signer authority, or program allowlist.') from None
+
 
 class Swaps:
     def __init__(self,path):self.path=path;self.lock=threading.Lock();self.db().close()
