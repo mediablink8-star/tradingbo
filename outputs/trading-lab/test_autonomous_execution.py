@@ -1,4 +1,5 @@
-import os, tempfile, unittest
+import os, tempfile, unittest, base64
+import swaps
 from autonomous_execution import AutonomousExecutor
 from autonomous_signer import SignerClient
 
@@ -14,6 +15,12 @@ class AutonomousBoundaryTests(unittest.TestCase):
         finally:
             if old_enable is not None: os.environ["AUTONOMOUS_LIVE_ENABLE"]=old_enable
             if old_wallet is not None: os.environ["AUTONOMOUS_WALLET"]=old_wallet
+
+    def test_transaction_parser_rejects_wrong_signer(self):
+        wallet='11111111111111111111111111111111'
+        other='2'*32
+        with self.assertRaises(ValueError):
+            swaps.message(base64.b64encode(bytes([1])+bytes(64)+bytes([1,0,0,2])+bytes(32)+bytes(32)+bytes(32)+bytes([1,1,0,0])).decode(),other)
 
     def test_signer_requires_credentials(self):
         self.assertFalse(SignerClient(endpoint="",api_token="").configured())
