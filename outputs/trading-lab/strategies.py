@@ -54,9 +54,7 @@ def default_strategy_candidates():
         "slow": [x for x in grids["ema"]["slow"]],
     }
     candidates = []
-    for name, factory in grid_candidates(
-        "ema", momentum_ema, ema_grid
-    ):
+    for name, factory in grid_candidates("ema", momentum_ema, ema_grid):
         params = dict(part.split("=") for part in name[4:-1].split(","))
         if int(params["fast"]) < int(params["slow"]):
             candidates.append((name, factory))
