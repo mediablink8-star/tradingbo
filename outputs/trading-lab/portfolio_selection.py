@@ -1,18 +1,15 @@
-"""Greedy coordinate-descent portfolio strategy selection for offline research.
+"""Portfolio-aware strategy selection for offline FX research.
 
-The selector evaluates candidate combinations under the same shared-capital
-constraints as the portfolio backtester. It only sees the supplied training
-slice and never the holdout.
+Selection only sees the supplied training data. The same backtester factory can
+be used for training and holdout evaluation so capital/risk assumptions cannot
+silently change between selection and evaluation.
 """
-
 from portfolio_backtest import MultiPairPortfolioBacktester
 
 
 def _score(result, metric):
     value = result.get(metric)
-    if value is None:
-        return float("-inf")
-    return float(value)
+    return float(value) if value is not None else float("-inf")
 
 
 def select_portfolio_strategies(
@@ -23,6 +20,7 @@ def select_portfolio_strategies(
     max_drawdown=None,
     min_return_pct=None,
     max_iterations=2,
+    portfolio_backtester_factory=None,
 ):
     if not candles_by_pair:
         raise ValueError("candles_by_pair must not be empty")
@@ -32,6 +30,10 @@ def select_portfolio_strategies(
         raise ValueError("max_iterations must be positive")
 
     pairs = sorted(candles_by_pair)
+    missing = [pair for pair in pairs if pair not in candidate_map]
+    if missing:
+        raise ValueError(f"Missing candidates for pairs: {missing}")
+
     training = {}
     for pair in pairs:
         candles = candles_by_pair[pair]
@@ -42,40 +44,64 @@ def select_portfolio_strategies(
         else:
             training[pair] = candles
 
-    backtester_factory = portfolio_backtester_factory or MultiPairPortfolioBacktester\n    selected = {pair: ("__flat__", lambda history: "flat") for pair in pairs}
+    factory = portfolio_backtester_factory or MultiPairPortfolioBacktester
 
-    def evaluate():
-        factories = {
-            pair: selected[pair][1]
+    def run(selected):
+        signals = {
+            pair: selected[pair][1]()
             for pair in pairs
         }
-        return MultiPairPortfolioBacktester().run(
-            training, {pair: factory() for pair, factory in factories.items()}
-        )
+        return factory().run(training, signals)
 
+    selected = {
+        pair: ("__flat__", lambda: (lambda history: "flat"))
+        for pair in pairs
+    }
+
+    def allowed(result):
+        if max_drawdown is not None and result["max_drawdown"] > max_drawdown:
+            return False
+        if min_return_pct is not None and result["return_pct"] < min_return_pct:
+            return False
+        return True
+
+    completed_iterations = 0
     for _ in range(max_iterations):
         changed = False
+        completed_iterations += 1
         for pair in pairs:
             baseline = selected[pair]
+            baseline_result = run(selected)
             best = baseline
-            best_result = evaluate()
-            for name, factory in candidate_map[pair]:
-                selected[pair] = (name, factory)
-                result = evaluate()
-                if max_drawdown is not None and result["max_drawdown"] > max_drawdown:
+            best_result = baseline_result if allowed(baseline_result) else None
+
+            for name, candidate_factory in sorted(
+                candidate_map[pair], key=lambda item: item[0]
+            ):
+                selected[pair] = (name, candidate_factory)
+                result = run(selected)
+                if not allowed(result):
                     continue
-                if min_return_pct is not None and result["return_pct"] < min_return_pct:
-                    continue
-                if _score(result, metric) > _score(best_result, metric):
-                    best = (name, factory)
+                if best_result is None or _score(result, metric) > _score(best_result, metric):
+                    best = (name, candidate_factory)
                     best_result = result
+
             selected[pair] = best
             if best[0] != baseline[0]:
                 changed = True
+
         if not changed:
             break
 
-    final_result = evaluate()
+    final_result = run(selected)
+    if not allowed(final_result):
+        # A constrained search must still return a valid deterministic baseline.
+        selected = {
+            pair: ("__flat__", lambda: (lambda history: "flat"))
+            for pair in pairs
+        }
+        final_result = run(selected)
+
     return {
         "selected": {pair: selected[pair][0] for pair in pairs},
         "training_result": final_result,
