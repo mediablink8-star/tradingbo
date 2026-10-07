@@ -120,7 +120,7 @@ class Handler(BaseHTTPRequestHandler):
         if not self.local_host():return
         if self.headers.get('Origin') not in (None,'http://127.0.0.1:8765','http://localhost:8765'):
             self.send({'error':'origin rejected'},403);return
-        if self.path.startswith('/api/research/') or self.path in ('/api/company/config','/api/company/os/cycle') or self.path=='/api/operations/ack' or self.path.startswith('/api/connections/') or self.path=='/api/wallet/balance' or self.path.startswith('/api/swaps/') or self.path=='/api/token-risk' or self.path=='/api/autonomous/buy':
+        if self.path.startswith('/api/research/') or self.path in ('/api/company/config','/api/company/os/cycle') or self.path=='/api/operations/ack' or self.path.startswith('/api/connections/') or self.path=='/api/wallet/balance' or self.path.startswith('/api/swaps/') or self.path=='/api/token-risk' or self.path in ('/api/autonomous/buy','/api/autonomous/sell'):
             if self.headers.get('Origin') not in ('http://127.0.0.1:8765','http://localhost:8765'):
                 self.send({'error':'local browser origin required'},403);return
         if self.headers.get('Content-Type')!='application/json':self.send({'error':'JSON required'},400);return
