@@ -62,7 +62,7 @@ class AutonomousExecutor:
             if hashlib.sha256(signed_message).hexdigest()!=record["message_hash"]: raise ValueError("Signer returned a transaction with a different message.")
             payload={"signedTransaction":signed}
             if record.get("requestId"): payload["requestId"]=record["requestId"]
-            result=swaps.request("https://api.jup.ag/swap/v1/execute",payload,{"x-api-key":swaps.credential()})
+            result=swaps.request("https://api.jup.ag/swap/v2/execute",payload,{"x-api-key":swaps.credential()})
             signature=result.get("signature")
             if not isinstance(signature,str) or not signature: raise ValueError("Jupiter did not return a transaction signature.")
             self._record(intent,"broadcast",{"intent":record,"signature":signature,"jupiter":result})
