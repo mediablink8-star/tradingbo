@@ -9,12 +9,12 @@ agent decision -> live policy -> Jupiter preparation/simulation -> external sign
 Required environment:
 
 - AUTONOMOUS_LIVE_ENABLE=1
-AUTONOMOUS_API_TOKEN=<strong-random-bearer-token>
+- AUTONOMOUS_API_TOKEN=<strong-random-bearer-token>
 - SIGNER_ENDPOINT
 - SIGNER_API_TOKEN
 - JUPITER_API_KEY
 
-The external signer must be an independently operated HSM/MPC/KMS-backed service. It must authorize only the dedicated trading wallet, verify the requested message hash against its own policy, and make signing idempotent by intent ID.
+The external signer must be an independently operated HSM/MPC/KMS-backed service. It must authorize only the dedicated trading wallet, decode and independently verify the requested transaction before signing, recompute the policy from the decoded transaction, verify the requested message hash, and make signing idempotent by intent ID.
 
 Pilot limits remain enforced by the existing live control:
 
@@ -31,9 +31,11 @@ Signer contract:
 
 POST SIGNER_ENDPOINT/v1/sign
 
-Request JSON contains wallet, transaction, intent_id and message_hash.
+Request JSON contains wallet, transaction, intent_id, message_hash and policy_hash.
 
 Response JSON contains signedTransaction.
+
+Before signing, the signer must independently verify the exact transaction semantics: required signer is the dedicated wallet; expiry is valid; top-level programs are allowlisted; the intended input mint/amount and output mint/minimum are satisfied; no unexpected wallet-owned asset transfer is present; and the recomputed policy hash equals the supplied policy hash. The signer must resolve versioned address-table accounts with a trusted Solana RPC when required. The trading worker's message hash is not a substitute for these independent checks.
 
 The application verifies that the signed transaction contains exactly the prepared message before calling Jupiter execute.
 
