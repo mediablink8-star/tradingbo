@@ -128,3 +128,13 @@ def test_historical_replay_is_point_in_time_and_deterministic():
     assert a["replay"]["frames"] == 30
     assert a["equity"] == b["equity"]
     assert a["closed_trades"] == b["closed_trades"]
+
+
+def test_replay_split_has_embargo_and_held_out_evaluation():
+    settings = Settings(capital=100, ticket=20, max_exposure=.8)
+    frames = Scanner.synthetic("development")
+    replay = HistoricalReplay(settings)
+    parts = replay.split(frames, development_fraction=.7, embargo_steps=3)
+    assert parts["development"][-1]["timestamp"] < parts["evaluation"][0]["timestamp"]
+    assert len(parts["embargo"]) == 3
+    assert "held out" in parts["contract"]
