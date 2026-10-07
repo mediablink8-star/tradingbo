@@ -59,3 +59,8 @@ Continuous live-data paper trial: see LIVE-PAPER.md. Fixed initial simulated cap
 **Quote-based paper execution:** The live trial now uses conservative read-only Jupiter quotes for new paper fills and usage-priced model costs. Existing history stays intact; arbitrary observation charges stop prospectively. Configure a Jupiter key and exact model token prices to activate this path. Infrastructure and actual chain costs remain unmeasured, and quote fills are hypothetical. See [QUOTE-PAPER.md](QUOTE-PAPER.md).
 
 Performance and learning workflows: see [PERFORMANCE.md](PERFORMANCE.md).
+
+
+## Company OS upgrade
+
+The bounded virtual-company layer is now implemented in `company_os.py`. It adds executive work orchestration, persistent company memory, research hypotheses/experiments, independent evaluation, audit findings and resource budgets while preserving the existing deterministic controller as the only execution authority. See [COMPANY-ARCHITECTURE.md](COMPANY-ARCHITECTURE.md). Run the focused tests with `python -m unittest -v test_company_os.py`.
