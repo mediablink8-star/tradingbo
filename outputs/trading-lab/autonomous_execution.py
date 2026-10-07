@@ -27,6 +27,50 @@ class AutonomousExecutor:
         db.commit()
         return db
 
+    def recover(self):
+        """Recover interrupted autonomous intents without resubmitting them."""
+        db=self._db()
+        try:
+            rows=db.execute("SELECT id,state,payload FROM autonomous_execution WHERE state IN ('prepared','broadcast') ORDER BY created").fetchall()
+        finally:
+            db.close()
+        recovered=[]
+        for identifier,state,payload_text in rows:
+            try:
+                payload=json.loads(payload_text)
+                intent=payload.get("intent") or {}
+                result=swaps.Swaps(self.path).recover(identifier)
+                if result.get("state")=="confirmed":
+                    wallet=intent.get("wallet"); mint=intent.get("mint")
+                    if wallet and mint:
+                        units=self._chain_units(wallet,mint)
+                        existing=self._position(wallet,mint)
+                        ledger=self._db()
+                        try:
+                            with ledger:
+                                if intent.get("side")=="buy" and units>0 and not existing:
+                                    ledger.execute("INSERT OR IGNORE INTO autonomous_positions VALUES(?,?,?,?,?,?)",(wallet,mint,identifier,str(units),float(intent.get("reserved_usdc",0)),time.time()))
+                                elif intent.get("side")=="sell" and existing:
+                                    if units==0:
+                                        ledger.execute("DELETE FROM autonomous_positions WHERE intent_id=?",(existing[2],))
+                                    else:
+                                        ledger.execute("UPDATE autonomous_positions SET units=? WHERE intent_id=?",(str(units),existing[2]))
+                        finally:
+                            ledger.close()
+                    self._record(identifier,"recovered",{"intent":intent,"recovery":result})
+                    recovered.append({"intent":identifier,"state":"recovered"})
+                elif result.get("state")=="unresolved":
+                    self.guard.kill("Autonomous intent remained unresolved after restart: "+identifier)
+                    self._record(identifier,"recovery_halted",{"intent":intent,"recovery":result})
+                    recovered.append({"intent":identifier,"state":"halted"})
+                else:
+                    recovered.append({"intent":identifier,"state":result.get("state","unknown")})
+            except Exception as exc:
+                self.guard.kill("Autonomous recovery failed for intent "+identifier)
+                self._record(identifier,"recovery_failed",{"error":str(exc)[:500]})
+                recovered.append({"intent":identifier,"state":"recovery_failed"})
+        return {"ok":True,"recovered":recovered}
+
     def status(self):
         db=self._db()
         try:
