@@ -80,6 +80,17 @@ class AutonomousExecutor:
                 raise ValueError("Autonomous position ledger is unreadable; execution is halted for safety.")
         return count,total
 
+    def _chain_units(self,wallet,mint):
+        accounts=swaps.rpc('getTokenAccountsByOwner',[wallet,dict(mint=mint),dict(encoding='jsonParsed',commitment='confirmed')])['value']
+        total=0
+        for account in accounts:
+            info=account.get('account',{}).get('data',{}).get('parsed',{}).get('info',{})
+            amount=info.get('tokenAmount',{}).get('amount')
+            if not isinstance(amount,str) or not amount.isdigit():
+                raise ValueError('On-chain token balance is unreadable; autonomous execution is halted for safety.')
+            total+=int(amount)
+        return total
+
     def _position(self,wallet,mint):
         db=self._db()
         try:
@@ -167,7 +178,7 @@ class AutonomousExecutor:
         record=swap.prepare({"wallet":wallet,"mint":mint,"side":"buy","usd":usd})
         confirmed=self._execute_prepared(record)
         reconciliation=confirmed["reconciliation"]
-        units=str(reconciliation["realized_output"])
+        units=str(self._chain_units(wallet,mint))
         if not units.isdigit() or int(units)<=0:
             self.guard.kill("Autonomous buy reconciled without a positive token position.")
             raise ValueError("Autonomous buy did not produce a usable token position.")
@@ -207,9 +218,12 @@ class AutonomousExecutor:
         record=swap.prepare({"wallet":wallet,"mint":mint,"side":"sell","amount":amount})
         confirmed=self._execute_prepared(record)
         reconciliation=confirmed["reconciliation"]
+        remaining=self._chain_units(wallet,mint)
+        if remaining<0 or remaining>=int(position_units):
+            self.guard.kill("Autonomous sell reconciliation found an invalid remaining token balance.")
+            raise ValueError("Autonomous sell did not reduce the tracked on-chain position.")
         db=self._db()
         try:
-            remaining=int(position_units)-int(amount)
             with db:
                 if remaining==0:
                     db.execute("DELETE FROM autonomous_positions WHERE intent_id=?",(position[2],))
