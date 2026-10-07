@@ -55,4 +55,12 @@ python -c "from dataset import build_dataset; build_dataset(['EUR/USD','GBP/USD'
 
 The pipeline writes one JSON series per pair plus `manifest.json`, and rejects duplicate or non-monotonic timestamps. Large calendar gaps are reported rather than silently filled. The source is daily reference data, not executable intraday OHLC data, so these datasets should not be treated as broker-quality fills.
 
-The next research upgrade is a true intraday OHLC adapter so the same backtester can be evaluated against higher-frequency data without fabricating highs/lows from daily reference rates.
+The intraday research pipeline now supports multi-month Alpha Vantage datasets. It loads one YYYY-MM month at a time, merges and sorts candles, removes timestamp duplicates at month boundaries, validates OHLC data and writes a manifest. Example:
+
+```
+python -c "from intraday_dataset import build_dataset; build_dataset(['EUR/USD'],'2025-01','2025-12','data/fx-15m','15min')"
+```
+
+The intraday endpoint requires `ALPHAVANTAGE_API_KEY`; Alpha Vantage documents `month=YYYY-MM` plus `outputsize=full` for full historical data for a selected month. Intraday FX history is a premium endpoint. citeturn0search0
+
+Intraday gaps are reported rather than blindly filled because FX has market/session closures. The resulting candles can feed the same deterministic backtester without fabricating OHLC values.
