@@ -101,6 +101,44 @@ class IndependentEvaluator:
         experiment.result, experiment.status = result, "completed"
         return result
 
+class StatisticalEvaluator:
+    @staticmethod
+    def compare(baseline, challenger):
+        if len(baseline) != len(challenger) or not baseline:
+            raise ValueError("matched samples required")
+        import math
+        diffs = [float(b) - float(a) for a, b in zip(baseline, challenger)]
+        mean = sum(diffs) / len(diffs)
+        if len(diffs) == 1:
+            return {"n": 1, "mean_delta": mean, "std_error": 0.0, "interval": [mean, mean]}
+        variance = sum((x - mean) ** 2 for x in diffs) / (len(diffs) - 1)
+        se = math.sqrt(variance / len(diffs))
+        margin = 1.96 * se
+        return {"n": len(diffs), "mean_delta": mean, "std_error": se,
+                "interval": [mean - margin, mean + margin]}
+
+class CompanyScheduler:
+    def __init__(self, company, interval=60.0):
+        self.company = company
+        self.interval = max(10.0, float(interval))
+        self.last_run = 0.0
+        self.failures = 0
+
+    def tick(self, state, operations=None, context=None):
+        now = time.time()
+        if now - self.last_run < self.interval:
+            return {"status": "throttled", "next_in": self.interval - (now - self.last_run)}
+        try:
+            result = self.company.autonomous_cycle(state, operations, context)
+            result["status"] = "ok"
+            self.last_run, self.failures = now, 0
+            return result
+        except Exception as exc:
+            self.failures += 1
+            self.company.memory.put("incident", f"company-cycle-{self.failures}",
+                                    {"error": str(exc), "failures": self.failures})
+            return {"status": "degraded", "error": str(exc), "failures": self.failures}
+
 class CompanyOS:
     DEPARTMENTS = ("research","risk","data","operations","performance","audit")
     def __init__(self, db_path=":memory:", budget=None):
