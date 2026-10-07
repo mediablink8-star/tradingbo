@@ -31,6 +31,16 @@ class CompanyOSTest(unittest.TestCase):
         self.assertEqual(second["skipped"], "cycle_throttled")
         self.assertEqual(len(self.c.work), len({w.title for w in self.c.work.values()}))
 
+    def test_department_handoff(self):
+        h = self.c.propose_hypothesis(
+            "Handoff", "Test a bounded change", "metric", "baseline", "research",
+            evidence=["recorded evidence"])
+        review = self.c.department_gate(h.id, "sufficient", "low")
+        self.assertEqual(review["decision"], "approved")
+        next_stage = self.c.handoff(h.id)
+        self.assertEqual(next_stage["stage"], "performance")
+        self.assertEqual(self.c.work[next(w.id for w in self.c.work.values())].department, "performance")
+
     def test_audit_memory(self):
         f = self.c.add_audit_finding("lookahead","high","Future data reached signal path","prefix test")
         self.assertIn(f.id,self.c.findings)
