@@ -57,7 +57,6 @@ class Experiment:
     result: Optional[dict[str, Any]] = None
 
 @dataclass
-@dataclass
 class AuditFinding:
     category: str
     severity: str
@@ -205,21 +204,14 @@ class CompanyOS:
                 "experiment_id": e.id, "supported": supported, "work_id": created[-1]})
         return created
 
-    def autonomous_cycle(self, state=None, operations=None, context=None):
-        """Measure organizational throughput without judging trading outcomes."""
+    def department_performance_review(self):
         review = {}
-        for dept in self.departments:
-            active = [w for w in self.work.values()
-                      if w.department == dept and w.status != "done"]
-            completed = [w for w in self.work.values()
-                         if w.department == dept and w.status == "done"]
-            review[dept] = {
-                "active_work": len(active),
-                "completed_work": len(completed),
-                "open_audits": sum(1 for f in self.findings.values()
-                                   if f.status == "open" and dept == "audit"),
-                "score": min(100, len(completed) * 10 + len(active) * 3),
-            }
+        for dept in self.DEPARTMENTS:
+            active = [w for w in self.work.values() if w.department == dept and w.status != "done"]
+            completed = [w for w in self.work.values() if w.department == dept and w.status == "done"]
+            review[dept] = {"active_work": len(active), "completed_work": len(completed),
+                            "open_audits": sum(1 for f in self.findings.values() if f.status == "open" and dept == "audit"),
+                            "score": min(100, len(completed) * 10 + len(active) * 3)}
         self.memory.put("department_performance", f"cycle-{self.cycle_count}", review)
         return review
 
