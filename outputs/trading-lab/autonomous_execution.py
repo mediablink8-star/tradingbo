@@ -27,7 +27,7 @@ class AutonomousExecutor:
         if os.environ.get("AUTONOMOUS_LIVE_ENABLE")!="1": raise ValueError("Autonomous live execution is disabled.")
         if not self.signer.configured(): raise ValueError("External signer is not configured.")
         record=swaps.Swaps(self.path).prepare({"wallet":wallet,"mint":mint,"side":"buy","usd":usd})
-        intent=record["id"]; self.guard.reserve_intent(float(record["reserved_usdc"])); self._record(intent,"prepared",{"intent":record})
+        intent=record["id"]; self.guard.reserve_intent(float(record["reserved_usdc"])); swaps.Swaps(self.path).ready(intent,wallet); self._record(intent,"prepared",{"intent":record})
         try:
             signed=self.signer.sign(wallet=wallet,transaction_b64=record["transaction"],intent_id=intent,message_hash=record["message_hash"])
             raw=base64.b64decode(signed,validate=True)
