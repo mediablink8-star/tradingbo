@@ -35,3 +35,10 @@ Live broker execution is intentionally not part of this migration. A future brok
 cd outputs/trading-lab
 python -m unittest -v test_forex.py
 ```
+
+
+## Backtesting
+
+The lab includes a deterministic OHLC backtester in `backtest.py`. It models configurable spread and slippage, calculates trade P/L, win rate and maximum drawdown, and keeps strategy signals separate from execution. It is intended for research and paper evaluation only; backtest results are not evidence of future profitability.
+
+Alpha Vantage documents `FX_INTRADAY` for intraday OHLC FX history at 1, 5, 15, 30 and 60 minute intervals; its intraday endpoint is a premium API. citeturn0search0
