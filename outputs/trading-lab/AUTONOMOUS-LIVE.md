@@ -9,6 +9,7 @@ agent decision -> live policy -> Jupiter preparation/simulation -> external sign
 Required environment:
 
 - AUTONOMOUS_LIVE_ENABLE=1
+AUTONOMOUS_API_TOKEN=<strong-random-bearer-token>
 - SIGNER_ENDPOINT
 - SIGNER_API_TOKEN
 - JUPITER_API_KEY
@@ -58,3 +59,7 @@ Endpoints:
 - `POST /api/autonomous/sell`
 
 Both endpoints remain bound to the local browser origin and the autonomous/live gates.
+
+## API authentication
+
+The autonomous BUY/SELL HTTP endpoints require a bearer token in `Authorization: Bearer ...`. The token is independent of the external signer credential and must not be exposed to browser code. The server also remains bound to localhost by default. If the token is missing, autonomous HTTP execution fails closed.
