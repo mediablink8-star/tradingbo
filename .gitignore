@@ -1,0 +1,14 @@
+work/
+outputs/*
+!outputs/trading-lab/
+__pycache__/
+*.py[cod]
+*.sqlite
+*.sqlite-*
+*.log
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+node_modules/
