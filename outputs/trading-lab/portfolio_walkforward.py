@@ -55,10 +55,7 @@ def portfolio_true_walk_forward(
     while start + train_size + gap + test_size <= length:
         train = {pair: aligned[pair][start:start + train_size] for pair in pairs}
         test_start = start + train_size + gap
-        test = {
-            pair: aligned[pair][test_start:test_start + test_size]
-            for pair in pairs
-        }
+        test = {pair: aligned[pair][test_start:test_start + test_size] for pair in pairs}
         selection = select_portfolio_strategies(
             train,
             candidate_map,
@@ -69,10 +66,7 @@ def portfolio_true_walk_forward(
             portfolio_backtester_factory=lambda: factory(starting_cash),
         )
         selected = selection["selected"]
-        signals = {
-            pair: dict(candidate_map[pair])[name]()
-            for pair, name in selected.items()
-        }
+        signals = {pair: dict(candidate_map[pair])[name]() for pair, name in selected.items()}
         result = factory(cash).run(test, signals)
         windows.append({
             "train_start": aligned[pairs[0]][start].timestamp,
