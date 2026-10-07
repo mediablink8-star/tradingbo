@@ -39,6 +39,14 @@ Before signing, the signer must independently verify the exact transaction seman
 
 The application verifies that the signed transaction contains exactly the prepared message before calling Jupiter execute.
 
+### Transaction-version support
+
+The current worker intentionally accepts legacy and Solana v0 message structure only. It rejects other version prefixes rather than attempting a partial decode. This is a fail-closed boundary, not v1 support.
+
+Solana v1 transactions are now active on mainnet/devnet/testnet. v1 has a different wire layout and carries resource limits in the signed message rather than ComputeBudget instructions; it also removes Address Lookup Tables. The worker's current RPC reads and parser have not been upgraded to v1, so v1 support must not be enabled by simply changing maxSupportedTransactionVersion to 1. A future upgrade must add complete v1 parsing/semantic verification and tests before the worker opts into reading v1 transactions.
+
+For v0, the signer must fully resolve Address Lookup Tables before validating instruction accounts and program identities. Static-key parsing alone is insufficient for signer-side semantic verification.
+
 No private key, seed phrase, or signing secret is stored in this repository or passed to the agent process.
 
 This code establishes the integration boundary; real-money autonomous execution is still OFF until an external signer is provisioned, independently tested, funded with a dedicated low-balance wallet, and explicitly enabled.
@@ -51,17 +59,17 @@ reports a verified positive token balance delta. Autonomous sells may close all 
 of that tracked position. The position ledger is separate from model state, so an agent
 cannot invent a position or claim an exit without a reconciled transaction.
 
-If any autonomous transaction is confirmed but reconciliation is not `verified`,
+If any autonomous transaction is confirmed but reconciliation is not "verified",
 the executor immediately latches the existing live kill switch and refuses further
 autonomous execution until an operator explicitly resets it.
 
 Endpoints:
 
-- `POST /api/autonomous/buy`
-- `POST /api/autonomous/sell`
+- POST /api/autonomous/buy
+- POST /api/autonomous/sell
 
 Both endpoints remain bound to the local browser origin and the autonomous/live gates.
 
 ## API authentication
 
-The autonomous BUY/SELL HTTP endpoints require a bearer token in `Authorization: Bearer ...`. The token is independent of the external signer credential and must not be exposed to browser code. The server also remains bound to localhost by default. If the token is missing, autonomous HTTP execution fails closed.
+The autonomous BUY/SELL HTTP endpoints require a bearer token in Authorization: Bearer ... . The token is independent of the external signer credential and must not be exposed to browser code. The server also remains bound to localhost by default. If the token is missing, autonomous HTTP execution fails closed.
