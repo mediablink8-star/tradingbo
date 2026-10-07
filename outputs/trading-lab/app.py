@@ -8,6 +8,7 @@ from live_trial import LiveTrial
 import connections
 import swaps
 import token_risk
+from live_control import LiveControl
 from operations import Operations,journal
 from virtual_company import Company
 from company_os import CompanyOS, CompanyScheduler
@@ -20,6 +21,7 @@ PUMP=PumpFeed(ROOT/'lab.sqlite')
 atexit.register(PUMP.stop)
 LIVE=LiveTrial(ROOT/'lab.sqlite',PUMP)
 SWAPS=swaps.Swaps(ROOT/'lab.sqlite')
+LIVE_GUARD=LiveControl(ROOT/'lab.sqlite')
 OPS=Operations(ROOT/'lab.sqlite')
 COMPANY=Company(ROOT/'lab.sqlite')
 COMPANY_OS=CompanyOS(ROOT/'lab.sqlite')
@@ -82,6 +84,7 @@ class Handler(BaseHTTPRequestHandler):
         if self.path=='/api/swaps':self.send(SWAPS.state());return
         if self.path=='/api/connections':self.send(connections.status());return
         if self.path=='/api/live':self.send(LIVE.snapshot());return
+        if self.path=='/api/live-trading':self.send(LIVE_GUARD.status());return
         if self.path=='/api/pump':self.send(PUMP.snapshot());return
         if self.path=='/api/pump/export':
             store=PumpStore(ROOT/'lab.sqlite')
@@ -149,6 +152,10 @@ class Handler(BaseHTTPRequestHandler):
                 elif self.path=='/api/wallet/balance':self.send(connections.wallet_balance(data.get('address')))
                 elif self.path=='/api/live/start':self.send(LIVE.start(data))
                 elif self.path=='/api/live/stop':self.send(LIVE.stop())
+                elif self.path=='/api/live-trading/arm':self.send(LIVE_GUARD.arm())
+                elif self.path=='/api/live-trading/disarm':self.send(LIVE_GUARD.disarm())
+                elif self.path=='/api/live-trading/kill':self.send(LIVE_GUARD.kill(data.get('reason','manual kill switch')))
+                elif self.path=='/api/live-trading/reset-kill':self.send(LIVE_GUARD.reset_kill())
                 elif self.path=='/api/pump/start':self.send(PUMP.start())
                 elif self.path=='/api/pump/stop':self.send(PUMP.stop())
                 elif self.path=='/api/team/start':self.send({'job_id':start_team(data)},202)
