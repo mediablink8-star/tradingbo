@@ -186,6 +186,48 @@ class CompanyOS:
         f = AuditFinding(category, severity, description, evidence)
         self.findings[f.id] = f; self.memory.put("audit", category, asdict(f)); return f
 
+    def ceo_prioritize(self, context=None):
+        """Score bounded company work from history and current evidence."""
+        context = context or {}
+        scores = {}
+        for w in self.work.values():
+            if w.status == "done":
+                continue
+            score = float(w.priority)
+            if w.department == "risk" and context.get("uncertainty_high"):
+                score += 15
+            if w.department == "data" and context.get("data_quality_bad"):
+                score += 20
+            if w.department == "audit" and context.get("open_audits"):
+                score += 20
+            if w.department == "performance" and context.get("evaluation_due"):
+                score += 15
+            if w.department == "research" and context.get("research_capacity"):
+                score += 5
+            scores[w.id] = min(100.0, score)
+        ranked = sorted(
+            ((scores[i], self.work[i]) for i in scores),
+            key=lambda pair: (-pair[0], pair[1].created_at))
+        ranked = [{"work_id": w.id, "department": w.department,
+                   "title": w.title, "score": score} for score, w in ranked]
+        self.memory.put("ceo_priority_review", f"priority-cycle-{self.cycle_count}", {
+            "context": context, "ranked_work": ranked[:10]})
+        return ranked[:10]
+
+    def ceo_resource_plan(self, context=None):
+        """Allocate only bounded research resources; never trading capital."""
+        ranked = self.ceo_prioritize(context)
+        plan = []
+        slots = self.budget.research_slots
+        for item in ranked:
+            if slots <= 0:
+                break
+            if item["department"] in ("research", "performance"):
+                plan.append({"work_id": item["work_id"], "resource": "research_slot"})
+                slots -= 1
+        self.memory.put("ceo_resource_plan", f"resource-cycle-{self.cycle_count}", plan)
+        return plan
+
     def executive_cycle(self, signals):
         self.cycle_count += 1; created = []
         if signals.get("data_quality_alert"):
