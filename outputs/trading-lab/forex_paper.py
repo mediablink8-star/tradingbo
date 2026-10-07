@@ -19,6 +19,11 @@ class ForexPaperBroker:
         if day!=today:
             db.execute("UPDATE fx_account SET realized_pnl=0,day=? WHERE id=1",(today,));pnl=0.0
         return float(cash),float(pnl),today
+    def _quote_to_usd(self,pair,price):
+        base,quote=pair.upper().split("/",1)
+        if quote=="USD": return 1.0
+        if base=="USD": return 1.0/price
+        raise ValueError(f"No built-in USD conversion for {pair}")
     def snapshot(self,prices):
         db=self._db()
         try:
@@ -26,7 +31,7 @@ class ForexPaperBroker:
             rows=db.execute("SELECT id,pair,side,units,entry_price,opened,notional FROM fx_positions").fetchall();positions=[];equity=cash
             for iid,pair,side,units,entry,opened,notional in rows:
                 price=(prices.get(pair) or {}).get("price");u=0.0
-                if isinstance(price,(int,float)) and price>0:u=float(units)*(float(price)-float(entry))*(1 if side=="buy" else -1);equity+=u
+                if isinstance(price,(int,float)) and price>0:u=float(units)*(float(price)-float(entry))*(1 if side=="buy" else -1)*self._quote_to_usd(pair,float(price));equity+=u
                 positions.append({"id":iid,"pair":pair,"side":side,"units":units,"entry_price":entry,"opened":opened,"notional":notional,"unrealized_pnl":u})
             return {"cash":cash,"realized_pnl":pnl,"equity":equity,"positions":positions,"exposure":sum(float(p["notional"]) for p in positions)}
         finally:db.close()
@@ -53,7 +58,7 @@ class ForexPaperBroker:
                 if not row:raise ValueError("Unknown FX position.")
                 _,pair,side,units,entry=row;price=float(price)
                 if not math.isfinite(price) or price<=0:raise ValueError("Invalid FX price.")
-                pnl=float(units)*(price-float(entry))*(1 if side=="buy" else -1)
+                pnl=float(units)*(price-float(entry))*(1 if side=="buy" else -1)*self._quote_to_usd(pair,price)
                 cash,realized,_=self._account(db)
                 db.execute("UPDATE fx_account SET cash=?,realized_pnl=? WHERE id=1",(cash+pnl,realized+pnl));db.execute("DELETE FROM fx_positions WHERE id=?",(iid,))
                 return {"id":iid,"pair":pair,"side":side,"pnl":pnl,"exit_price":price}
