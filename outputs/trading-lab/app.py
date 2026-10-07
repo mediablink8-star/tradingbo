@@ -71,7 +71,7 @@ class Handler(BaseHTTPRequestHandler):
             board['company_os']=COMPANY_OS.company_snapshot()
             self.send(board);return
         if self.path=='/api/company/os':
-            self.send(COMPANY_OS.company_snapshot());return
+            self.send({**COMPANY_OS.company_snapshot(), "ceo_priority": COMPANY_OS.ceo_prioritize()});return
         if self.path=='/api/operations':self.send(OPS.update(LIVE.snapshot(),PUMP.snapshot()));return
         if self.path.startswith('/api/journal'):
             try:
@@ -126,7 +126,15 @@ class Handler(BaseHTTPRequestHandler):
                 elif self.path=='/api/company/config':self.send(COMPANY.configure(data))
                 elif self.path=='/api/company/os/cycle':
                     state=LIVE.snapshot();operations=OPS.update(state,PUMP.snapshot())
-                    self.send(COMPANY_OS.cycle_from_state(state,operations,force=True))
+                    result=COMPANY_OS.cycle_from_state(state,operations,force=True)
+                    result["ceo_priority"]=COMPANY_OS.ceo_prioritize({
+                        "data_quality_bad": result["signals"].get("data_quality_alert",False),
+                        "open_audits": result["signals"].get("unresolved_audit_findings",False),
+                        "evaluation_due": result["signals"].get("loss_review_due",False),
+                        "research_capacity": bool(COMPANY_OS.budget.research_slots)})
+                    result["ceo_resource_plan"]=COMPANY_OS.ceo_resource_plan({
+                        "research_capacity": bool(COMPANY_OS.budget.research_slots)})
+                    self.send(result)
                 elif self.path=='/api/operations/ack':self.send(OPS.acknowledge(data.get('id')))
                 elif self.path=='/api/token-risk':self.send(token_risk.scan(data.get('mint'),ROOT/'lab.sqlite'))
                 elif self.path=='/api/swaps/connect':self.send(swaps.connect(data))
