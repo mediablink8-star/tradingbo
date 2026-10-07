@@ -158,6 +158,37 @@ class ReviewAgent:
         return dict(net_pnl=curve[-1]['equity']-s.capital,equity=curve[-1]['equity'],cash=cash,drawdown=drawdown,positions=positions,exposure=curve[-1]['exposure'],halted=risk.halted,closed_trades=trades,operating_cost=cost,ai_cost_estimate=ai_cost,curve=curve,events=events,
             valuation='Conservative modeled liquidation; unavailable exits marked zero. Open positions retained.',synthetic=True)
 
+
+class HistoricalReplay:
+    """Deterministic point-in-time replay over stored observation frames."""
+    def __init__(self, settings):
+        self.settings = settings.validate()
+
+    def run(self, frames, start=None, end=None, embargo_steps=0, baseline=False):
+        if not frames:
+            raise ValueError("Replay requires at least one frame")
+        ordered = sorted(frames, key=lambda x: x["timestamp"])
+        if any(ordered[i]["timestamp"] > ordered[i+1]["timestamp"] for i in range(len(ordered)-1)):
+            raise ValueError("Frames must be chronologically ordered")
+        selected = ordered[start:end] if start is not None or end is not None else ordered
+        if not selected:
+            raise ValueError("Replay window is empty")
+        if embargo_steps < 0 or int(embargo_steps) != embargo_steps:
+            raise ValueError("embargo_steps must be a non-negative integer")
+        # Replay only consumes observations present at each timestamp. No future frame is exposed.
+        replay = ReviewAgent().run([{"timestamp": f["timestamp"], "rows": [dict(r) for r in f["rows"]]}
+                                    for f in selected], self.settings, baseline=baseline)
+        replay["replay"] = {
+            "frames": len(selected),
+            "start_timestamp": selected[0]["timestamp"],
+            "end_timestamp": selected[-1]["timestamp"],
+            "embargo_steps": int(embargo_steps),
+            "no_lookahead": True,
+            "deterministic": True,
+            "baseline": baseline,
+        }
+        return replay
+
 def run_demo(s,partition):
     s.validate()
     if partition not in ('development','evaluation'):raise ValueError('Unknown partition')
