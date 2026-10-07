@@ -1,30 +1,38 @@
-# Controlled live trading
+# Controlled live trading boundary
 
-This branch adds a separate live execution boundary to the existing paper system.
+This branch adds a persistent operator/risk gate around the repository's existing **Phantom-approved Jupiter swap pilot**. It does **not** add unattended private-key signing or automatic broadcasting.
 
 ## Authority model
 
-AI agents still only produce approvals/exits. They do not receive wallet keys, transaction builders, RPC tools, or arbitrary execution access.
+AI decision -> deterministic strategy/risk checks -> live intent gate -> exact Jupiter transaction preparation/simulation -> human wallet approval -> Solana -> confirmation/reconciliation
 
-The live path is:
-AI decision -> deterministic controller -> ControlledLiveExecution -> Jupiter preparation/simulation -> dedicated signer -> Solana RPC -> confirmation/reconciliation.
+AI agents still have no wallet keys, transaction tools, RPC execution tools, or authority to change limits.
 
-Only the strategy portfolio can be connected to the live executor. Baseline/rules portfolios remain paper-only.
+## Hard controls
 
-## Arming
+The live gate is off by default and requires LIVE_TRADING_ENABLE=1 plus an explicit arm action.
 
-Live execution is off by default. It requires LIVE_TRADING_ENABLE=1, LIVE_TRADING_KEYPAIR containing a dedicated Solana JSON keypair, PyNaCl installed, a configured Jupiter API key, and an explicit arm action.
+Current conservative limits:
+- $10 maximum per live intent
+- $25 maximum live intent budget per UTC day
+- persistent kill switch
+- wallet approval remains mandatory
+- existing Jupiter token-risk, route, simulation, signer/program, fee and minimum-output checks remain in force
 
-Never put a seed/private key in Git, chat, browser storage, SQLite, or logs. Use a dedicated low-balance hot wallet; do not use a primary wallet.
+/api/live-trading/arm, /api/live-trading/disarm, /api/live-trading/kill, and /api/live-trading/reset-kill operate the persistent gate.
 
-Hard controls: $10 maximum per buy, $25 daily live-buy budget, one live open position, and a persistent kill switch. A live buy is rejected unless the existing Jupiter preparation path passes token-risk, route, simulation, signer/program, fee, and minimum-output checks.
+The kill switch stops new handoffs. It cannot cancel a transaction already approved or broadcast by the wallet.
 
-## Kill switch
+## Secrets
 
-/api/live-trading/kill permanently latches the database guard until an operator explicitly enables LIVE_TRADING_RESET_KILL=1 and resets it. Disarming stops new live entries but does not undo a transaction already broadcast.
+No wallet private key or seed is added to the application. The existing Phantom flow remains the signer boundary. Never put a seed/private key in Git, chat, browser storage, SQLite, or logs.
 
-## Limitations
+## Verification
 
-This is a controlled execution architecture, not proof that the strategy is profitable or that token-risk checks are complete. It has not been exercised against a funded wallet in this environment. Start with a tiny dedicated wallet and compare every live transaction against the mirrored paper ledger.
+Run: python -m unittest -v test_live_control.py
 
-PyNaCl provides Ed25519 signing from a 32-byte seed. Keep that seed secret.
+The repository's existing real-swap tests remain separate. A funded-wallet end-to-end test is intentionally not claimed here.
+
+## Important limitation
+
+This architecture controls execution authority and failure modes; it does not establish profitability, token safety, or guaranteed maximum loss. Real-money operation should begin with a dedicated, low-balance wallet and human review of every transaction.
