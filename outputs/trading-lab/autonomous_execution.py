@@ -45,7 +45,9 @@ class AutonomousExecutor:
     def execute_buy(self, *, wallet, mint, usd=10):
         if os.environ.get("AUTONOMOUS_LIVE_ENABLE")!="1": raise ValueError("Autonomous live execution is disabled.")
         if not self.signer.configured(): raise ValueError("External signer is not configured.")
-        if not isinstance(wallet,str) or not wallet: raise ValueError("Trading wallet is required.")
+        expected_wallet=os.environ.get("AUTONOMOUS_WALLET","")
+        if not expected_wallet: raise ValueError("AUTONOMOUS_WALLET is not configured; autonomous execution is fail-closed.")
+        if wallet!=expected_wallet: raise ValueError("Requested wallet is not the configured autonomous trading wallet.")
         if not isinstance(mint,str) or not mint: raise ValueError("Token mint is required.")
         if isinstance(usd,bool) or not isinstance(usd,(int,float)) or not 0<usd<=10: raise ValueError("Autonomous buy must be between 0 and 10 USDC-equivalent.")
         open_count,exposure=self._open_buy_exposure(wallet)
