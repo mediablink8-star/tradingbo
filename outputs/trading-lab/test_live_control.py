@@ -19,10 +19,9 @@ class LiveControlTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             c=LiveControl(d+"/x.sqlite");old=os.environ.get("LIVE_TRADING_ENABLE");os.environ["LIVE_TRADING_ENABLE"]="1"
             try:
-                c.arm();c.reserve_intent(10)
-                with self.assertRaises(ValueError): c.reserve_intent(10)
-                c.kill("test")
-                self.assertFalse(c.status()["enabled"]);self.assertTrue(c.status()["halted"])
+                c.arm();c.reserve_intent(10);c.reserve_intent(10);c.reserve_intent(5)
+                with self.assertRaises(ValueError): c.reserve_intent(1)
+                c.kill("test");self.assertFalse(c.status()["enabled"]);self.assertTrue(c.status()["halted"])
                 with self.assertRaises(ValueError): c.arm()
             finally:
                 if old is None: os.environ.pop("LIVE_TRADING_ENABLE",None)
