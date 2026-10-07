@@ -8,7 +8,7 @@ from live_trial import LiveTrial
 import connections
 import swaps
 import token_risk
-from live_execution import LiveGuard
+from live_control import LiveControl
 from operations import Operations,journal
 from virtual_company import Company
 from company_os import CompanyOS, CompanyScheduler
@@ -21,7 +21,7 @@ PUMP=PumpFeed(ROOT/'lab.sqlite')
 atexit.register(PUMP.stop)
 LIVE=LiveTrial(ROOT/'lab.sqlite',PUMP)
 SWAPS=swaps.Swaps(ROOT/'lab.sqlite')
-LIVE_GUARD=LiveGuard(ROOT/'lab.sqlite')
+LIVE_GUARD=LiveControl(ROOT/'lab.sqlite')
 OPS=Operations(ROOT/'lab.sqlite')
 COMPANY=Company(ROOT/'lab.sqlite')
 COMPANY_OS=CompanyOS(ROOT/'lab.sqlite')
