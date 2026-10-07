@@ -1,10 +1,10 @@
 """True walk-forward parameter selection for deterministic FX strategies.
 
-Each window uses only the training candles to select the best candidate
-parameter set. The selected parameters are then evaluated once on the
-following unseen test window. No future test candles influence selection.
+Every selection decision uses only candles available before the OOS window.
+A configurable gap can be inserted between train and test to reduce leakage
+from overlapping lookback/holding periods.
 """
-from backtest import FXBacktester
+from research_selection import select_candidate
 
 
 def _score(result, metric):
@@ -14,14 +14,26 @@ def _score(result, metric):
     return float(value)
 
 
-def optimize_window(train_candles, backtester, strategy_candidates, metric="sharpe"):
+def _run_factory(backtester, factory, candles):
+    return backtester.run(candles, factory())
+
+
+def optimize_window(
+    train_candles,
+    backtester,
+    strategy_candidates,
+    metric="sharpe",
+    min_trades=1,
+    max_drawdown=None,
+    min_return_pct=None,
+):
     if not train_candles:
         raise ValueError("train_candles must not be empty")
     if not strategy_candidates:
         raise ValueError("strategy_candidates must not be empty")
     scored = []
     for name, factory in strategy_candidates:
-        result = backtester.run(train_candles, factory)
+        result = _run_factory(backtester, factory, train_candles)
         scored.append({
             "name": name,
             "metric": metric,
@@ -32,7 +44,16 @@ def optimize_window(train_candles, backtester, strategy_candidates, metric="shar
             "trades": len(result["trades"]),
         })
     scored.sort(key=lambda x: x["score"], reverse=True)
-    return scored[0], scored
+    selected = select_candidate(
+        scored,
+        metric=metric,
+        min_trades=min_trades,
+        max_drawdown=max_drawdown,
+        min_return_pct=min_return_pct,
+    )
+    if selected is None:
+        raise ValueError("No strategy candidate satisfies selection constraints")
+    return selected, scored
 
 
 def true_walk_forward(
@@ -42,24 +63,36 @@ def true_walk_forward(
     train_size=500,
     test_size=100,
     metric="sharpe",
+    gap=0,
+    min_trades=1,
+    max_drawdown=None,
+    min_return_pct=None,
 ):
-    if train_size < 2 or test_size < 1:
-        raise ValueError("train_size must be >= 2 and test_size >= 1")
+    if train_size < 2 or test_size < 1 or gap < 0:
+        raise ValueError("train_size >= 2, test_size >= 1, gap >= 0 required")
     windows = []
     start = 0
-    while start + train_size + test_size <= len(candles):
+    factories = dict(strategy_candidates)
+    while start + train_size + gap + test_size <= len(candles):
         train = candles[start:start + train_size]
-        test = candles[start + train_size:start + train_size + test_size]
+        test_start = start + train_size + gap
+        test = candles[test_start:test_start + test_size]
         trainer = backtester_factory()
         selected, ranking = optimize_window(
-            train, trainer, strategy_candidates, metric
+            train,
+            trainer,
+            strategy_candidates,
+            metric=metric,
+            min_trades=min_trades,
+            max_drawdown=max_drawdown,
+            min_return_pct=min_return_pct,
         )
-        selected_factory = dict(strategy_candidates)[selected["name"]]
         tester = backtester_factory()
-        oos = tester.run(test, selected_factory)
+        oos = _run_factory(tester, factories[selected["name"]], test)
         windows.append({
             "train_start": train[0].timestamp,
             "train_end": train[-1].timestamp,
+            "gap": gap,
             "test_start": test[0].timestamp,
             "test_end": test[-1].timestamp,
             "selected_strategy": selected["name"],
