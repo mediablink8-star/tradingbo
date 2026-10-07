@@ -164,6 +164,25 @@ class HistoricalReplay:
     def __init__(self, settings):
         self.settings = settings.validate()
 
+    def split(self, frames, development_fraction=0.7, embargo_steps=0):
+        ordered = sorted(frames, key=lambda x: x["timestamp"])
+        if not ordered:
+            raise ValueError("Cannot split empty history")
+        if not 0.5 <= development_fraction < 1:
+            raise ValueError("development_fraction must be between 0.5 and 1")
+        if embargo_steps < 0 or int(embargo_steps) != embargo_steps:
+            raise ValueError("embargo_steps must be a non-negative integer")
+        cut = max(1, min(len(ordered) - 1, int(len(ordered) * development_fraction)))
+        eval_start = min(len(ordered), cut + int(embargo_steps))
+        if eval_start >= len(ordered):
+            raise ValueError("Embargo removes the entire evaluation partition")
+        return {
+            "development": ordered[:cut],
+            "embargo": ordered[cut:eval_start],
+            "evaluation": ordered[eval_start:],
+            "contract": "Evaluation is held out and cannot be passed to parameter-selection code."
+        }
+
     def run(self, frames, start=None, end=None, embargo_steps=0, baseline=False):
         if not frames:
             raise ValueError("Replay requires at least one frame")
@@ -175,6 +194,13 @@ class HistoricalReplay:
             raise ValueError("Replay window is empty")
         if embargo_steps < 0 or int(embargo_steps) != embargo_steps:
             raise ValueError("embargo_steps must be a non-negative integer")
+        # A replay window may be explicitly partitioned into development/evaluation.
+        # Evaluation begins only after the embargo gap; evaluation frames are never fed
+        # back into parameter selection by this class.
+        if start is not None and start < 0 or end is not None and end < 0:
+            raise ValueError("Replay slices must use non-negative bounds")
+        if start is not None and end is not None and end < start:
+            raise ValueError("Replay end must not precede start")
         # Replay only consumes observations present at each timestamp. No future frame is exposed.
         replay = ReviewAgent().run([{"timestamp": f["timestamp"], "rows": [dict(r) for r in f["rows"]]}
                                     for f in selected], self.settings, baseline=baseline)
