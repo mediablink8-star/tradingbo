@@ -1,2 +1,0 @@
-# Optional dependency for the controlled live signer. Paper mode remains standard-library only.
-PyNaCl>=1.5,<2
