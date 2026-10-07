@@ -48,5 +48,37 @@ class AutonomousBoundaryTests(unittest.TestCase):
             if old_wallet is None: os.environ.pop("AUTONOMOUS_WALLET",None)
             else: os.environ["AUTONOMOUS_WALLET"]=old_wallet
 
+    def test_recovery_rebuilds_confirmed_buy_position(self):
+        from unittest.mock import patch
+        with tempfile.NamedTemporaryFile() as f:
+            executor=AutonomousExecutor(f.name,SignerClient())
+            intent={"wallet":"11111111111111111111111111111111","mint":"2"*32,"side":"buy","reserved_usdc":5}
+            executor._record("buy-1","prepared",{"intent":intent})
+            with patch.object(swaps.Swaps,"recover",return_value={"state":"confirmed","signature":"sig"}), patch.object(executor,"_chain_units",return_value=123):
+                result=executor.recover()
+            self.assertEqual(result["recovered"],[{"intent":"buy-1","state":"recovered"}])
+            self.assertIsNotNone(executor._position(intent["wallet"],intent["mint"]))
+
+    def test_recovery_latches_kill_on_unresolved_intent(self):
+        from unittest.mock import patch
+        with tempfile.NamedTemporaryFile() as f:
+            executor=AutonomousExecutor(f.name,SignerClient())
+            intent={"wallet":"11111111111111111111111111111111","mint":"2"*32,"side":"buy","reserved_usdc":5}
+            executor._record("stuck-1","broadcast",{"intent":intent})
+            with patch.object(swaps.Swaps,"recover",return_value={"state":"unresolved"}), patch.object(executor.guard,"kill") as kill:
+                result=executor.recover()
+            self.assertEqual(result["recovered"],[{"intent":"stuck-1","state":"halted"}])
+            kill.assert_called_once()
+
+    def test_recovery_never_signs_or_submits(self):
+        from unittest.mock import patch
+        with tempfile.NamedTemporaryFile() as f:
+            executor=AutonomousExecutor(f.name,SignerClient())
+            intent={"wallet":"11111111111111111111111111111111","mint":"2"*32,"side":"buy","reserved_usdc":5}
+            executor._record("recover-only","prepared",{"intent":intent})
+            with patch.object(swaps.Swaps,"recover",return_value={"state":"unresolved"}), patch.object(executor.signer,"sign") as sign:
+                executor.recover()
+            sign.assert_not_called()
+
 if __name__=="__main__":
     unittest.main()
