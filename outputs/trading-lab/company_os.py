@@ -108,6 +108,7 @@ class CompanyOS:
         self.budget = budget or ResourceBudget()
         self.work, self.hypotheses, self.experiments, self.findings = {}, {}, {}, {}
         self.cycle_count = 0
+        self.last_cycle_at = 0.0
 
     def create_work(self, title, department, objective, priority=50, owner="CEO"):
         if department not in self.DEPARTMENTS: raise ValueError("unknown department")
@@ -167,8 +168,12 @@ class CompanyOS:
                 "memory_items":len(self.memory.search(limit=500)),
                 "execution_authority":"deterministic_controller_only"}
 
-    def cycle_from_state(self, state, operations=None):
+    def cycle_from_state(self, state, operations=None, force=False, min_interval=60.0):
         """Translate observed system health into bounded executive signals."""
+        now = time.time()
+        if not force and now - self.last_cycle_at < min_interval:
+            return {"signals": {}, "created_work": [], "skipped": "cycle_throttled"}
+        self.last_cycle_at = now
         operations = operations or {}
         checklist = operations.get("checklist", [])
         failed = {item.get("key") for item in checklist if not item.get("ok")}
