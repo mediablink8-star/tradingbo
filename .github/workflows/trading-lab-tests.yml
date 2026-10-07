@@ -12,12 +12,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Install pinned transaction dependencies
+        working-directory: outputs/trading-lab
+        run: python -m pip install --require-hashes -r requirements.txt
       - name: Run trading-lab unit tests
         working-directory: outputs/trading-lab
         run: |
-          python -m unittest \
-            test_live_control.py \
-            test_shadow_execution.py \
-            test_autonomous_execution.py \
-            test_signing_policy.py \
-            test_transaction_policy.py
+          python -m unittest             test_live_control.py             test_shadow_execution.py             test_autonomous_execution.py             test_signing_policy.py             test_transaction_policy.py
