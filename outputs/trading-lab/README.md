@@ -17,7 +17,7 @@ Open the local dashboard at `http://127.0.0.1:8765`.
 
 Market data defaults to ECB reference rates through Frankfurter. Frankfurter
 supports provider pinning, so the historical pipeline can use the ECB source
-rather than a blended feed. urlFrankfurter ECB provider documentationturn2search0
+rather than a blended feed. See https://frankfurter.dev/providers/ecb/.
 
 ## Architecture
 
@@ -46,7 +46,7 @@ deterministic risk controls.
 The research layer uses chronological walk-forward evaluation rather than
 randomized cross-validation. This matters for time series because future
 observations must not leak into training; a gap can also be inserted between
-train and test windows. citeturn0search0turn0search2
+train and test windows.
 
 The joint portfolio evaluator:
 
@@ -90,7 +90,7 @@ python -c "from dataset import build_dataset; build_dataset(['EUR/USD','GBP/USD'
 ```
 
 Frankfurter provides daily rates and historical ranges and supports selecting a
-specific provider. urlFrankfurter API documentationturn2search1
+specific provider. See https://frankfurter.dev/.
 
 For intraday research, the Alpha Vantage adapter supports monthly FX intraday
 datasets at supported intervals. The resulting OHLC candles can feed the same
