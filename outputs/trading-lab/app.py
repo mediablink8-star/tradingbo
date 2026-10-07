@@ -205,6 +205,11 @@ if __name__=='__main__':
         observer=LiveObserver();observer.observe(args.quote)
         result=observer.quote(args.quote,10000000,key);store=Store(ROOT/'lab.sqlite');store.capture('jupiter_quote',result);print(json.dumps(result,indent=2))
     else:
+        if os.environ.get('AUTONOMOUS_LIVE_ENABLE')=='1':
+            try:
+                AUTONOMOUS.recover()
+            except Exception:
+                LIVE_GUARD.kill('Autonomous startup recovery failed')
         print('AI paper team + wallet-approved swap pilot: http://127.0.0.1:8765 (Ctrl+C to stop)',flush=True)
         LIVE.resume()
         def monitor():
