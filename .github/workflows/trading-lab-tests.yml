@@ -13,5 +13,9 @@ jobs:
         with:
           python-version: "3.12"
       - name: Run trading-lab unit tests
+        working-directory: outputs/trading-lab
         run: |
-          python -m unittest             outputs/trading-lab/test_live_control.py             outputs/trading-lab/test_shadow_execution.py             outputs/trading-lab/test_autonomous_execution.py
+          python -m unittest \
+            test_live_control.py \
+            test_shadow_execution.py \
+            test_autonomous_execution.py
