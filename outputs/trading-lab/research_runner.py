@@ -14,6 +14,7 @@ from historical import load_json
 from research_report import build_research_report
 from portfolio_report import aggregate_pair_reports
 from portfolio_backtest import MultiPairPortfolioBacktester
+from portfolio_selection import select_portfolio_strategies
 from strategies import default_strategy_candidates
 from true_walkforward import optimize_window, true_walk_forward
 
@@ -90,20 +91,31 @@ def run_pair(
 
 
 def run_shared_holdout_portfolio(reports, datasets, holdout_size=100, starting_cash=10000.0):
-    """Backtest each pair's final pre-holdout selection under shared capital."""
+    """Evaluate a portfolio selected jointly on pre-holdout data."""
     if not reports:
         raise ValueError("reports must not be empty")
-    candidates = dict(default_strategy_candidates())
-    holdout_data = {}
-    signals = {}
-    for pair, report in reports.items():
-        candles = datasets[pair]
-        if holdout_size >= len(candles):
-            raise ValueError("holdout_size must leave data before the holdout")
-        holdout_data[pair] = candles[-holdout_size:]
-        selected = report["final_holdout"]["selected_strategy"]
-        signals[pair] = candidates[selected]()
 
+    candidates = default_strategy_candidates()
+    pre_holdout = {
+        pair: candles[:-holdout_size]
+        for pair, candles in datasets.items()
+    }
+    holdout_data = {
+        pair: candles[-holdout_size:]
+        for pair, candles in datasets.items()
+    }
+    candidate_map = {pair: candidates for pair in datasets}
+    selection = select_portfolio_strategies(
+        pre_holdout,
+        candidate_map,
+        metric="sharpe",
+        max_iterations=2,
+    )
+    factories = dict(candidates)
+    signals = {
+        pair: factories[name]()
+        for pair, name in selection["selected"].items()
+    }
     result = MultiPairPortfolioBacktester(
         starting_cash=starting_cash,
         per_position_notional=1000.0,
@@ -113,6 +125,8 @@ def run_shared_holdout_portfolio(reports, datasets, holdout_size=100, starting_c
         slippage_bps=0.5,
     ).run(holdout_data, signals)
     return {
+        "selection": selection["selected"],
+        "selection_training": selection["training_result"],
         "starting_cash": result["starting_cash"],
         "ending_cash": result["ending_cash"],
         "return_pct": result["return_pct"],
@@ -122,55 +136,3 @@ def run_shared_holdout_portfolio(reports, datasets, holdout_size=100, starting_c
         "history": result["history"],
     }
 
-
-def run_dataset(dataset_dir, pairs=DEFAULT_PAIRS, **kwargs):
-    reports = {}
-    for pair in pairs:
-        path = _pair_file(dataset_dir, pair)
-        if not os.path.exists(path):
-            raise FileNotFoundError(path)
-        candles = load_json(path)
-        reports[pair] = run_pair(pair, candles, **kwargs)
-    return {
-        "dataset_dir": dataset_dir,
-        "pairs": reports,
-    }
-
-
-def main():
-    parser = argparse.ArgumentParser(description="Run offline FX walk-forward research")
-    parser.add_argument("dataset_dir")
-    parser.add_argument("--output", default="research-report.json")
-    parser.add_argument("--pairs", nargs="+", default=list(DEFAULT_PAIRS))
-    parser.add_argument("--train-size", type=int, default=500)
-    parser.add_argument("--test-size", type=int, default=100)
-    parser.add_argument("--gap", type=int, default=0)
-    parser.add_argument("--holdout-size", type=int, default=100)
-    parser.add_argument("--metric", default="sharpe")
-    parser.add_argument("--min-trades", type=int, default=1)
-    parser.add_argument("--max-drawdown", type=float)
-    parser.add_argument("--min-return-pct", type=float)
-    args = parser.parse_args()
-
-    report = run_dataset(
-        args.dataset_dir,
-        pairs=tuple(args.pairs),
-        train_size=args.train_size,
-        test_size=args.test_size,
-        gap=args.gap,
-        holdout_size=args.holdout_size,
-        metric=args.metric,
-        min_trades=args.min_trades,
-        max_drawdown=args.max_drawdown,
-        min_return_pct=args.min_return_pct,
-    )
-    with open(args.output, "w", encoding="utf-8") as f:
-        json.dump(report, f, indent=2)
-    print(json.dumps({
-        "output": args.output,
-        "pairs": list(report["pairs"]),
-    }, indent=2))
-
-
-if __name__ == "__main__":
-    main()
