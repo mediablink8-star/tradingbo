@@ -66,7 +66,7 @@ def portfolio_true_walk_forward(
             portfolio_backtester_factory=lambda: factory(starting_cash),
         )
         selected = selection["selected"]
-        signals = {pair: dict(candidate_map[pair])[name]() for pair, name in selected.items()}
+        signals = {\n            pair: (dict(candidate_map[pair])[name]() if name != "__flat__" else (lambda history: "flat"))\n            for pair, name in selected.items()\n        }
         result = factory(cash).run(test, signals)
         windows.append({
             "train_start": aligned[pairs[0]][start].timestamp,
