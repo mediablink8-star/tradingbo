@@ -107,7 +107,9 @@ class FXBacktester:
         base_to_usd, _ = self._conversion_rates(candle.timestamp, candle.close)
         if base_to_usd <= 0 or entry_price <= 0:
             raise ValueError("invalid conversion or entry price")
-        base_units = self.notional / (entry_price * base_to_usd)
+        # Notional is expressed in account USD. Convert that USD amount to
+        # base-currency units; entry price is not part of this conversion.
+        base_units = self.notional / base_to_usd
         return {
             "side": side,
             "entry_time": candle.timestamp,
