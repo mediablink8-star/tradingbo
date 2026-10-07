@@ -138,3 +138,17 @@ def test_replay_split_has_embargo_and_held_out_evaluation():
     assert parts["development"][-1]["timestamp"] < parts["evaluation"][0]["timestamp"]
     assert len(parts["embargo"]) == 3
     assert "held out" in parts["contract"]
+
+
+def test_experiment_config_is_frozen_and_reproducible():
+    company = CompanyOS(":memory:")
+    h = company.propose_hypothesis("Frozen test", "Keep one config unchanged", {"source": "test"})
+    exp = company.plan_experiment(h.id, {"momentum": .03}, {"momentum": .05})
+    company.complete_experiment(exp.id, {"mean_delta": .1})
+    assert exp.result["config_hash"]
+    assert company.verify_experiment_config(exp.id, {"momentum": .03}, {"momentum": .05})
+    try:
+        company.verify_experiment_config(exp.id, {"momentum": .04}, {"momentum": .05})
+        assert False
+    except ValueError:
+        pass
