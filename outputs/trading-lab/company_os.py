@@ -186,6 +186,34 @@ class CompanyOS:
         f = AuditFinding(category, severity, description, evidence)
         self.findings[f.id] = f; self.memory.put("audit", category, asdict(f)); return f
 
+    def department_performance_review(self):
+        """Measure organizational throughput without judging trading outcomes."""
+        review = {}
+        for dept in self.departments:
+            active = [w for w in self.work.values()
+                      if w.department == dept and w.status != "done"]
+            completed = [w for w in self.work.values()
+                         if w.department == dept and w.status == "done"]
+            review[dept] = {
+                "active_work": len(active),
+                "completed_work": len(completed),
+                "open_audits": sum(1 for f in self.findings.values()
+                                   if f.status == "open" and dept == "audit"),
+                "score": min(100, len(completed) * 10 + len(active) * 3),
+            }
+        self.memory.put("department_performance", f"cycle-{self.cycle_count}", review)
+        return review
+
+    def ceo_replan(self, context=None):
+        """Rebalance organizational attention from the latest performance review."""
+        review = self.department_performance_review()
+        ranked = sorted(review.items(), key=lambda x: x[1]["score"])
+        weakest = [d for d, _ in ranked[:2]]
+        strongest = [d for d, _ in ranked[-2:]]
+        plan = {"focus_departments": weakest, "maintain_departments": strongest}
+        self.memory.put("ceo_replan", f"cycle-{self.cycle_count}", plan)
+        return plan
+
     def autonomous_cycle(self, state=None, operations=None, context=None):
         """Run one bounded organizational loop; never grants execution authority."""
         state = state or {}
