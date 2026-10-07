@@ -42,7 +42,7 @@ def select_portfolio_strategies(
         else:
             training[pair] = candles
 
-    selected = {pair: ("__flat__", lambda history: "flat") for pair in pairs}
+    backtester_factory = portfolio_backtester_factory or MultiPairPortfolioBacktester\n    selected = {pair: ("__flat__", lambda history: "flat") for pair in pairs}
 
     def evaluate():
         factories = {
@@ -79,5 +79,5 @@ def select_portfolio_strategies(
     return {
         "selected": {pair: selected[pair][0] for pair in pairs},
         "training_result": final_result,
-        "iterations": max_iterations,
+        "iterations": completed_iterations,
     }
