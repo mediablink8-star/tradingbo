@@ -24,7 +24,7 @@ class ResearchSelectionTests(unittest.TestCase):
         candles = [Candle(i, 100+i, 100+i, 100+i, 100+i) for i in range(10)]
         result = final_holdout(
             candles, FXBacktester(spread_bps=0, slippage_bps=0),
-            lambda h: "flat", train_size=7, holdout_size=3
+            lambda: (lambda h: "flat"), train_size=7, holdout_size=3
         )
         self.assertEqual(result["holdout_start"], 7)
         self.assertEqual(result["holdout_end"], 9)
