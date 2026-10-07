@@ -8,8 +8,8 @@ class RiskConfig:
     max_exposure:float=3000.0
     max_positions:int=3
     max_daily_loss:float=200.0
-    stop_loss_pct:float=.01
-    take_profit_pct:float=.02
+    stop_loss_pct:.float=0.01
+    take_profit_pct:float=0.02
     max_position_age:float=86400.0
     max_leverage:float=1.0
 class FXRisk:
@@ -19,9 +19,10 @@ class FXRisk:
         if not math.isfinite(notional) or not 0<notional<=c.max_trade_notional:raise ValueError("Trade exceeds the FX per-trade notional limit.")
         if len(positions)>=c.max_positions:raise ValueError("Maximum open FX positions reached.")
         if exposure+notional>c.max_exposure:raise ValueError("Maximum FX exposure reached.")
-        if notional>cash*c.max_leverage:raise ValueError("Insufficient cash under the configured leverage limit.")
+        if not math.isfinite(cash) or cash<0 or notional>cash*c.max_leverage:raise ValueError("Insufficient cash under the configured leverage limit.")
     def validate_daily_loss(self,daily_pnl):
-        if daily_pnl<=-self.config.max_daily_loss:raise ValueError("Daily FX loss limit reached; trading is halted.")
+        if not math.isfinite(daily_pnl) or daily_pnl<=-self.config.max_daily_loss:raise ValueError("Daily FX loss limit reached; trading is halted.")
     def exits(self,p,price,now=None):
-        now=now or time.time();change=price/p["entry_price"]-1;c=self.config
-        return change<=-c.stop_loss_pct or change>=c.take_profit_pct or now-p["opened"]>=c.max_position_age
+        now=time.time() if now is None else now
+        change=(float(price)/float(p["entry_price"])-1)*(1 if p["side"]=="buy" else -1);c=self.config
+        return change<=-c.stop_loss_pct or change>=c.take_profit_pct or now-float(p["opened"])>=c.max_position_age
