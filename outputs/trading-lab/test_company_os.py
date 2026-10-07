@@ -31,6 +31,15 @@ class CompanyOSTest(unittest.TestCase):
         self.assertEqual(second["skipped"], "cycle_throttled")
         self.assertEqual(len(self.c.work), len({w.title for w in self.c.work.values()}))
 
+    def test_autonomous_cycle_stays_bounded(self):
+        result = self.c.autonomous_cycle(
+            {"data_quality": "ok"},
+            operations={"paper": "healthy"},
+            context={"research_capacity": True})
+        self.assertIn("priority", result)
+        self.assertIn("resource_plan", result)
+        self.assertEqual(result["execution_authority"], "deterministic_controller_only")
+
     def test_ceo_prioritizes_departments_and_budgets_research(self):
         data = self.c.create_work("Fix feed", "data", "Improve evidence quality", 60)
         research = self.c.create_work("Research next", "research", "Test a hypothesis", 50)
