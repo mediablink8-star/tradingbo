@@ -14,7 +14,7 @@ class SignerClient:
     def configured(self):
         return bool(self.endpoint and self.api_token)
 
-    def sign(self, *, wallet, transaction_b64, intent_id, message_hash):
+    def sign(self, *, wallet, transaction_b64, intent_id, message_hash, policy_hash):
         if not self.configured():
             raise ValueError("External signer is not configured.")
         if not re.fullmatch(r"[1-9A-HJ-NP-Za-km-z]{32,44}", wallet):
@@ -23,12 +23,15 @@ class SignerClient:
             raise ValueError("Missing transaction.")
         if not re.fullmatch(r"[0-9a-f]{64}", message_hash):
             raise ValueError("Invalid message hash.")
+        if not re.fullmatch(r"[0-9a-f]{64}", policy_hash):
+            raise ValueError("Invalid policy hash.")
 
         payload={
             "wallet":wallet,
             "transaction":transaction_b64,
             "intent_id":intent_id,
             "message_hash":message_hash,
+            "policy_hash":policy_hash,
         }
         req=urllib.request.Request(
             self.endpoint+"/v1/sign",
