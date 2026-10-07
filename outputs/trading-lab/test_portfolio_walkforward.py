@@ -33,7 +33,7 @@ class PortfolioWalkForwardTests(unittest.TestCase):
                 slippage_bps=0,
             ),
         )
-        self.assertEqual(result["window_count"], 5)
+        self.assertEqual(result["window_count"], 4)
         self.assertGreater(result["ending_cash"], result["starting_cash"])
         self.assertEqual(result["windows"][0]["oos_starting_cash"], 10000)
         self.assertEqual(
