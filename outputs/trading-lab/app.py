@@ -1,4 +1,4 @@
-import json, argparse, os, time, threading, uuid, atexit
+import json, argparse, os, time, threading, uuid, atexit, hmac
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from engine import Settings, Store, run_demo, LiveObserver
@@ -116,8 +116,18 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(200);self.send_header('Content-Type','text/css; charset=utf-8' if name.endswith('.css') else 'text/javascript; charset=utf-8');self.send_header('Cache-Control','no-store');self.send_header('X-Content-Type-Options','nosniff');self.end_headers();self.wfile.write(content);return
         if self.path!='/':self.send({'error':'not found'},404);return
         self.send_response(200);self.send_header('Content-Type','text/html; charset=utf-8');self.end_headers();self.wfile.write((ROOT/'index.html').read_bytes())
+    def autonomous_auth(self):
+        expected=os.environ.get('AUTONOMOUS_API_TOKEN','')
+        auth=self.headers.get('Authorization','')
+        if not expected or not auth.startswith('Bearer '):
+            self.send({'error':'autonomous API authentication is not configured'},503);return False
+        supplied=auth[7:]
+        if not hmac.compare_digest(supplied,expected):
+            self.send({'error':'autonomous API authentication failed'},401);return False
+        return True
     def do_POST(self):
         if not self.local_host():return
+        if self.path in ('/api/autonomous/buy','/api/autonomous/sell') and not self.autonomous_auth():return
         if self.headers.get('Origin') not in (None,'http://127.0.0.1:8765','http://localhost:8765'):
             self.send({'error':'origin rejected'},403);return
         if self.path.startswith('/api/research/') or self.path in ('/api/company/config','/api/company/os/cycle') or self.path=='/api/operations/ack' or self.path.startswith('/api/connections/') or self.path=='/api/wallet/balance' or self.path.startswith('/api/swaps/') or self.path=='/api/token-risk' or self.path in ('/api/autonomous/buy','/api/autonomous/sell'):
