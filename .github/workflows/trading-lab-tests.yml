@@ -14,4 +14,4 @@ jobs:
           python-version: "3.12"
       - name: Run forex unit tests
         working-directory: outputs/trading-lab
-        run: python -m unittest -v test_forex.py test_backtest.py test_strategies.py test_robustness.py test_historical.py test_dataset.py test_intraday.py test_intraday_dataset.py test_true_walkforward.py test_research_selection.py test_research_report.py
+        run: python -m unittest -v test_forex.py test_backtest.py test_strategies.py test_robustness.py test_historical.py test_dataset.py test_intraday.py test_intraday_dataset.py test_true_walkforward.py test_research_selection.py test_research_report.py test_research_runner.py test_portfolio_report.py test_portfolio_backtest.py test_portfolio_selection.py
