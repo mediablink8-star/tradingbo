@@ -10,7 +10,7 @@ import swaps
 import token_risk
 from operations import Operations,journal
 from virtual_company import Company
-from company_os import CompanyOS
+from company_os import CompanyOS, CompanyScheduler
 from research_lab import Research
 from urllib.parse import urlparse,parse_qs
 
@@ -23,6 +23,7 @@ SWAPS=swaps.Swaps(ROOT/'lab.sqlite')
 OPS=Operations(ROOT/'lab.sqlite')
 COMPANY=Company(ROOT/'lab.sqlite')
 COMPANY_OS=CompanyOS(ROOT/'lab.sqlite')
+COMPANY_SCHEDULER=CompanyScheduler(COMPANY_OS, interval=60)
 atexit.register(COMPANY_OS.close)
 RESEARCH=Research(ROOT/'lab.sqlite')
 
@@ -71,7 +72,7 @@ class Handler(BaseHTTPRequestHandler):
             board['company_os']=COMPANY_OS.company_snapshot()
             self.send(board);return
         if self.path=='/api/company/os':
-            self.send({**COMPANY_OS.company_snapshot(), "ceo_priority": COMPANY_OS.ceo_prioritize()});return
+            self.send({**COMPANY_OS.company_snapshot(), "ceo_priority": COMPANY_OS.ceo_prioritize(), "scheduler": {"interval": COMPANY_SCHEDULER.interval, "last_run": COMPANY_SCHEDULER.last_run, "failures": COMPANY_SCHEDULER.failures}});return
         if self.path=='/api/operations':self.send(OPS.update(LIVE.snapshot(),PUMP.snapshot()));return
         if self.path.startswith('/api/journal'):
             try:
@@ -183,7 +184,7 @@ if __name__=='__main__':
         def monitor():
             while True:
                 try:
-                    state=LIVE.snapshot();operations=OPS.update(state,PUMP.snapshot());COMPANY.board(state,operations);COMPANY_OS.cycle_from_state(state,operations)
+                    state=LIVE.snapshot();operations=OPS.update(state,PUMP.snapshot());COMPANY.board(state,operations);COMPANY_SCHEDULER.tick(state,operations)
                 except Exception:pass
                 time.sleep(10)
         threading.Thread(target=monitor,daemon=True).start()
