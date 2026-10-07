@@ -8,6 +8,7 @@ import hashlib, json, os, sqlite3, time
 import swaps
 from autonomous_signer import SignerClient
 from live_control import LiveControl
+from signing_policy import build as build_signing_policy
 
 MAX_OPEN_POSITIONS=3
 MAX_EXPOSURE_USDC=25.0
@@ -103,6 +104,7 @@ class AutonomousExecutor:
         intent=record["id"]
         wallet=record["wallet"]
         swap=swaps.Swaps(self.path)
+        policy, policy_hash = build_signing_policy(record)
         self.guard.reserve_intent(float(record["reserved_usdc"]))
         swap.ready(intent,wallet)
         self._record(intent,"prepared",{"intent":record})
@@ -112,6 +114,7 @@ class AutonomousExecutor:
                 transaction_b64=record["transaction"],
                 intent_id=intent,
                 message_hash=record["message_hash"],
+                policy_hash=policy_hash,
             )
             signed_message=swaps.message(signed,wallet,unsigned=False)
             if hashlib.sha256(signed_message).hexdigest()!=record["message_hash"]:
