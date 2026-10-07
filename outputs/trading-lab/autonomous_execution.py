@@ -8,7 +8,6 @@ import hashlib, json, os, sqlite3, time
 import swaps
 from autonomous_signer import SignerClient
 from live_control import LiveControl
-from signing_policy import build as build_signing_policy
 from transaction_policy import build as build_transaction_policy
 
 MAX_OPEN_POSITIONS=3
@@ -160,7 +159,6 @@ class AutonomousExecutor:
         intent=record["id"]
         wallet=record["wallet"]
         swap=swaps.Swaps(self.path)
-        policy, legacy_policy_hash = build_signing_policy(record)
         policy, policy_hash = build_transaction_policy(record, record["message_hash"])
         self.guard.reserve_intent(float(record["reserved_usdc"]))
         swap.ready(intent,wallet)
