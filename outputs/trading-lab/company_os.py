@@ -268,6 +268,9 @@ class CompanyOS:
         state = state or {}
         context = context or {}
         cycle = self.cycle_from_state(state, operations, force=True)
+        feedback = self.research_feedback_loop()
+        review = self.department_performance_review()
+        replan = self.ceo_replan(context)
         priority = self.ceo_prioritize(context)
         resource_plan = self.ceo_resource_plan(context)
         self.memory.put("autonomous_cycle", f"cycle-{self.cycle_count}", {
