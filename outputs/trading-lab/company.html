@@ -16,13 +16,13 @@ header .tools{flex-wrap:wrap;justify-content:flex-end}
 .sidebar{position:sticky;top:12px;border-radius:18px;box-shadow:0 20px 60px #0005}
 .sidebar h2{letter-spacing:-.025em}
 .stats span{border-color:#ffffff12}
-.roster{gap:8px}
+.roster{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:8px}
 .roster button{border-radius:9px}
 #detail{line-height:1.65}
 #feed li{line-height:1.55}
 #office-status{line-height:1.6}
 @media(max-width:900px){.layout{grid-template-columns:minmax(0,1fr)}.sidebar{position:relative;top:auto}.world canvas{max-height:none}}
-@media(max-width:560px){header{align-items:flex-start}header .tools{width:100%;justify-content:flex-start}header .tools>*{max-width:100%}.layout{padding:9px;gap:10px}.world,.sidebar{border-radius:13px}.sidebar{padding:13px}.roster{padding:0 8px 10px}.stats{gap:6px}.stats span{font-size:10px}}
+@media(max-width:560px){.world canvas{min-height:340px;object-fit:fill}header{align-items:flex-start}header .tools{width:100%;justify-content:flex-start}header .tools>*{max-width:100%}.layout{padding:9px;gap:10px}.world,.sidebar{border-radius:13px}.sidebar{padding:13px}.roster{padding:0 8px 10px}.stats{gap:6px}.stats span{font-size:10px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
 
 
@@ -51,8 +51,17 @@ button:focus-visible,select:focus-visible{outline-color:#ff7785!important}
 @media(max-width:760px){.sidebar{background:linear-gradient(160deg,#210b11,#0b0608)!important}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
 
+
+/* Rendering and motion safeguards: keep the people visible and controls usable. */
+header .tools{display:flex;flex-wrap:wrap;gap:9px;align-items:center;max-width:100%}
+header .tools button,header .tools select{min-height:40px;max-width:100%;white-space:normal}
+.world canvas{display:block;width:100%;height:auto;aspect-ratio:960/620;min-height:0}
+.roster button{min-width:0;min-height:42px;white-space:normal;text-align:left;line-height:1.3}
+#office{background:#10070a}
+#office-status{overflow-wrap:anywhere}
+@media(max-width:560px){.world canvas{min-height:340px}header .tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}header .tools>*{min-width:0;width:100%}#source{grid-column:1/-1}}
 </style></head><body>
-<header><div><h1>AGENT COMPANY</h1><small>Your paper-trading team, on the office floor</small></div><span class="badge" id="mode-badge">LIVE OBSERVER</span><div class="tools"><button id="back-to-floor" onclick="location.href='index.html'">← Research floor</button><select id="source" aria-label="Activity source"><option value="live">Live paper team</option><option value="team">Experiment team</option><option value="demo">Office demo · no AI calls</option></select><button id="run-agent-cycle">Run agent cycle</button><button id="pause">Pause animation</button></div></header>
+<header><div><h1>AGENT COMPANY</h1><small>Your paper-trading team, on the office floor</small></div><span class="badge" id="mode-badge">LIVE OBSERVER</span><div class="tools"><button id="back-to-floor" onclick="location.href='index.html'">← Research floor</button><select id="source" aria-label="Activity source"><option value="live">Live paper team</option><option value="team" disabled>Experiment team · unavailable in forex build</option><option value="demo">Office demo · no AI calls</option></select><button id="run-agent-cycle">Run agent cycle</button><button id="pause">Pause animation</button></div></header>
 <p id="notice" role="status">Waiting for a dashboard update. Idle characters do not mean an AI model is running.</p>
 <div id="ceo-brief" style="margin:10px 14px;padding:12px 16px;border:1px solid #713342;border-radius:9px;background:#2a1921;color:#efbdc7;font-size:12px" role="status">CEO · Waiting for team status.</div><div class="layout"><section class="world"><canvas id="office" width="960" height="620" aria-label="Animated office with six agent workstations and a CEO supervisor. Select an agent using the buttons below."></canvas><footer id="office-status">Click a character or workstation to inspect its latest activity.</footer></section><aside class="sidebar"><h2 id="role-name">Market researcher</h2><span id="role-status">Waiting</span><p id="detail">No agent report received yet.</p><div class="stats" id="stats"></div><h2>Office activity</h2><ol id="feed"></ol><p class="muted" style="font-size:12px">Characters and handoff effects are a visualization. Only recorded reports represent AI work. The performance reviewer is deterministic accounting.</p></aside></div>
 <p class="muted" style="padding:0 18px;font-size:11px">Walking, coffee breaks and desk gestures are visual animation. Recorded reports in the activity panel identify actual AI work. Demo mode shows a sample collaboration cycle.</p><div class="roster" id="roster" aria-label="Choose agent"></div><div class="tagline">Research → screening → strategy → risk → coordination → accounting · Paper only</div>
@@ -117,8 +126,8 @@ function position(i,active){
     const scaled=progress*3,k=Math.min(2,Math.floor(scaled)),t=Math.min(1,scaled-k),a=path[k],b=path[k+1];
     return {x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,walking:progress>0&&progress<1,activity:'handoff'};
   }
-  if(cycle<22)return {x:home.x+Math.sin(visualTime*1.2+i)*1.8,y:home.y+Math.sin(visualTime*3+i)*.8,walking:false,activity:'working'};
-  const trip=(cycle-22)/16;
+  if(cycle<16)return {x:home.x+Math.sin(visualTime*1.2+i)*1.8,y:home.y+Math.sin(visualTime*3+i)*.8,walking:false,activity:'working'};
+  const trip=(cycle-16)/22;
   const routeIndex=Math.min(route.length-2,Math.floor(trip*(route.length-1))),t=(trip*(route.length-1))-routeIndex;
   const a=route[routeIndex],b=route[routeIndex+1];
   walking=routeIndex%2===0||routeIndex>4;
@@ -153,7 +162,7 @@ function floorDesk(i,d,active){
 }
 function avatar(i,x,y,walking,working){
   const phase=visualTime*10+i*2.8,step=walking?Math.sin(phase)*5:0,bob=walking?Math.abs(Math.sin(phase))*2.3:working?Math.sin(visualTime*5+i)*.7:0;
-  ctx.save();ctx.translate(x,y-bob);
+  ctx.save();ctx.translate(x,y-bob);ctx.scale(1.12,1.12);
   ctx.fillStyle='#0006';ctx.beginPath();ctx.ellipse(0,28,16,5,0,0,Math.PI*2);ctx.fill();
   // Legs animate independently, with shoes and a readable silhouette.
   line(-5,10,-6+step,24,'#202936',6);line(5,10,6-step,24,'#202936',6);
@@ -169,6 +178,23 @@ function avatar(i,x,y,walking,working){
   rounded(-4,-10,8,7,'#e8edf4',2);ctx.fillStyle='#b73d58';ctx.fillRect(-2,-8,4,2);
   if(i===selected){ctx.strokeStyle=colors[i];ctx.lineWidth=1.6;ctx.beginPath();ctx.ellipse(0,28,22,7,0,0,Math.PI*2);ctx.stroke()}
   ctx.restore();
+}
+function capitalDisplay(){
+  const account=live?.account||{};
+  const equity=Number(account.equity);
+  const pnl=Number(account.daily_pnl??account.realized_pnl??0);
+  return {
+    amount:Number.isFinite(equity)?equity.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'—',
+    change:'P/L '+(Number.isFinite(pnl)&&pnl>0?'+':'')+(Number.isFinite(pnl)?pnl.toFixed(2):'—'),
+    status:account.daily_halted?'RISK HALT':'PAPER ONLY'
+  };
+}
+function capitalScreen(){
+  const d=capitalDisplay();
+  rounded(720,29,194,53,'#1b090f',8,'#ff465833');
+  floorText('PAPER EQUITY',734,43,'#c38b93',8,'left');
+  floorText(d.amount,734,61,'#ffe2e6',15,'left');
+  floorText(d.change+' · '+d.status,900,43,d.status==='RISK HALT'?'#ff9b73':'#ff6472',8,'right');
 }
 function draw(){
   ctx.clearRect(0,0,960,620);
@@ -236,7 +262,7 @@ function draw(){
   rounded(170,578,620,22,'#09131e',7,'#ffffff12');
   floorText(mode==='demo'?'DEMO COLLABORATION  ·  NO AI CALLS':mode==='live'?'LIVE PAPER OFFICE  ·  VISUAL ROUTINES ARE SIMULATED':'EXPERIMENT TEAM  ·  SYNTHETIC MARKET DATA',480,592,'#d6a0a7',9,'center');
 }
-function frame(now){const delta=lastFrame?Math.min(.1,(now-lastFrame)/1000):0;lastFrame=now;if(!paused&&!document.hidden){visualTime+=delta;if(mode==='demo'){const step=Math.floor(visualTime/3);if(step!==demoStep){demoStep=step;const i=step%7;for(const a of staff)a.status='Waiting';apply([{agent:roles[i],status:'Demo handoff',summary:demoReports[i],concerns:[],approve:[],timestamp:Date.now()/1000}],false);staff[i].activeUntil=visualTime+12;selected=i;renderDetails()}}}if(mode==='live'&&lastSeen&&Date.now()-lastSeen>20000){supervise();}if(mode==='live'&&lastSeen&&Date.now()-lastSeen>20000)$('notice').textContent='Dashboard updates are stale. Displaying last received state; this is not current AI activity.';draw();requestAnimationFrame(frame)}
+function frame(now){const delta=lastFrame?Math.min(.1,(now-lastFrame)/1000):0;lastFrame=now;if(!paused&&!document.hidden){visualTime+=delta;if(mode==='demo'){const step=Math.floor(visualTime/3);if(step!==demoStep){demoStep=step;const i=step%7;for(const a of staff)a.status='Waiting';apply([{agent:roles[i],status:'Demo handoff',summary:demoReports[i],concerns:[],approve:[],timestamp:Date.now()/1000}],false);staff[i].activeUntil=visualTime+12;selected=i;renderDetails()}}}if(mode==='live'&&lastSeen&&Date.now()-lastSeen>20000){supervise();}if(mode==='live'&&lastSeen&&Date.now()-lastSeen>20000)$('notice').textContent='Dashboard updates are stale. Displaying last received state; this is not current AI activity.';try{draw()}catch(e){$('office-status').textContent='Office rendering error: '+e.message}requestAnimationFrame(frame)}
 async function pollStandaloneOffice(){if(window.parent!==window)return;try{let response=await fetch('/api/live',{cache:'no-store'});if(response.ok){live=await response.json();const cr=await fetch('/api/company',{cache:'no-store'});if(cr.ok){const c=await cr.json();organization={name:c.config?.name||'Trading company',open_tasks:(c.tasks||[]).filter(t=>t.status!=='done').length,budget:c.budget||{remaining:0}}}}else{const fx=await fetch('/api/forex',{cache:'no-store'});if(!fx.ok)throw Error('Forex paper API is unavailable.');const data=await fx.json(),agentResponse=await fetch('/api/forex/agents',{cache:'no-store'});if(!agentResponse.ok)throw Error('Forex agent observer API is unavailable.');const agents=await agentResponse.json(),account=agents.account||data.account||{},pairs=data.market?.pairs||{};live={config:{provider:'forex-paper'},worker_running:Boolean(agents.auto_run_enabled),strategy:{equity:Number(account.equity||0),pnl:Number(account.daily_pnl??account.realized_pnl??0),halted:Boolean(account.daily_halted)},events:agents.events||[],valid_price_snapshots:Object.values(pairs).filter(q=>q&&Number.isFinite(q.price)&&q.price>0).length,eligible_count:(agents.samples||[]).filter(s=>s.observations>=3).length,calls_today:0,last_tick:Number(data.timestamp||agents.last_cycle||0),readiness:{blockers:agents.events?.length?[]:['No agent cycle has been recorded yet. Press Run agent cycle to start the pipeline.']}};organization=null;$('office-status').textContent='Forex paper-agent runtime · '+(account.positions||[]).length+' open positions · equity '+Number(account.equity||0).toFixed(2)+' · '+live.valid_price_snapshots+' returned price rows · '+(agents.auto_run_enabled?'automatic paper cycles enabled':'manual cycles · automatic mode off');if(data.error)$('notice').textContent='Forex observer warning: '+data.error}lastSeen=Date.now();refreshSource(!seen.size);supervise();if(live.config?.provider==='forex-paper'){$('mode-badge').textContent='FOREX PAPER · '+(live.worker_running?'AUTO-RUN':'MANUAL CYCLES');$('notice').textContent=live.worker_running?'Recorded forex paper-agent reports. Automatic cycles are enabled; broker execution remains disabled.':'Forex agent runtime connected. Press Run agent cycle to create recorded work; moving characters alone are not agent activity.'}renderDetails()}catch(e){$('mode-badge').textContent='OFFICE DISCONNECTED';$('notice').textContent=e.message;$('office-status').textContent='No live dashboard connection · visual activity is not evidence of agent work.'}}
 if(window.parent===window){pollStandaloneOffice();setInterval(pollStandaloneOffice,10000)}
 $('run-agent-cycle').addEventListener('click',async()=>{const b=$('run-agent-cycle');b.disabled=true;b.textContent='Running…';try{const r=await fetch('/api/forex/agents/run',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});const data=await r.json();if(!r.ok)throw Error(data.error||'Agent cycle failed');$('notice').textContent='Cycle '+data.cycle_id+' completed · '+data.events.length+' recorded specialist reports · '+data.executed.length+' paper entries.';await pollStandaloneOffice()}catch(e){$('notice').textContent='Agent cycle error: '+e.message}finally{b.disabled=false;b.textContent='Run agent cycle'}});
