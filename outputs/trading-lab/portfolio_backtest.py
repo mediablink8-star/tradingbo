@@ -168,28 +168,52 @@ class MultiPairPortfolioBacktester:
 
                 if position is not None:
                     age = timestamp - position.entry_time
-                    move = (candle.close / position.entry_price - 1.0) * (
-                        1 if position.side == "buy" else -1
-                    )
                     reason = None
-                    if self.stop_loss_pct is not None and move <= -self.stop_loss_pct:
-                        reason = "stop_loss"
-                    elif self.take_profit_pct is not None and move >= self.take_profit_pct:
-                        reason = "take_profit"
-                    elif self.max_position_age is not None and age >= self.max_position_age:
+                    exit_reference = None
+
+                    # Use OHLC extremes for intrabar risk checks. If a candle
+                    # touches both stop and target, conservatively assume stop first.
+                    if self.stop_loss_pct is not None:
+                        if position.side == "buy":
+                            stop_price = position.entry_price * (1 - self.stop_loss_pct)
+                            if candle.low <= stop_price:
+                                reason = "stop_loss"
+                                exit_reference = min(candle.open, stop_price)
+                        else:
+                            stop_price = position.entry_price * (1 + self.stop_loss_pct)
+                            if candle.high >= stop_price:
+                                reason = "stop_loss"
+                                exit_reference = max(candle.open, stop_price)
+
+                    if reason is None and self.take_profit_pct is not None:
+                        if position.side == "buy":
+                            target_price = position.entry_price * (1 + self.take_profit_pct)
+                            if candle.high >= target_price:
+                                reason = "take_profit"
+                                exit_reference = max(candle.open, target_price)
+                        else:
+                            target_price = position.entry_price * (1 - self.take_profit_pct)
+                            if candle.low <= target_price:
+                                reason = "take_profit"
+                                exit_reference = min(candle.open, target_price)
+
+                    if reason is None and self.max_position_age is not None and age >= self.max_position_age:
                         reason = "max_position_age"
-                    elif signal in ("flat", "buy", "sell") and signal != position.side:
+                        exit_reference = candle.open
+                    elif reason is None and signal in ("flat", "buy", "sell") and signal != position.side:
                         reason = "signal"
+                        exit_reference = candle.open
+
                     if reason:
                         cash, pnl = self._close(
                             position, candle, cash, trades, timestamp, reason,
-                            price=candle.open if reason == "signal" else None,
+                            price=exit_reference,
                         )
                         daily_realized += pnl
                         del positions[pair]
                         position = None
                         closed = True
-                        if daily_realized <= -(self.max_daily_loss or float("inf")):
+                        if self.max_daily_loss is not None and daily_realized <= -self.max_daily_loss:
                             halted_day = True
 
                 if position is None and not closed and not halted_day and signal in ("buy", "sell"):
