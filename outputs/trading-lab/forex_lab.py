@@ -118,7 +118,8 @@ class ForexLab:
         return {
             "ok": True,
             "position": self.broker.open(
-                pair.upper(), execution_price, notional, side
+                pair.upper(), execution_price, notional, side,
+                prices=data["market"]["pairs"],
             ),
             "status": self.status(),
         }
