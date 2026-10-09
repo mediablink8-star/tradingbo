@@ -41,6 +41,19 @@ def _spread(pair):
     return DEFAULT_SPREAD_BPS.get(pair, 1.5)
 
 
+def _provider_timestamp(value):
+    """Parse a provider timestamp; naive provider timestamps are treated as UTC."""
+    if not value:
+        return 0.0
+    try:
+        parsed = datetime.datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=datetime.timezone.utc)
+        return parsed.timestamp()
+    except (TypeError, ValueError, OverflowError):
+        return 0.0
+
+
 def _alpha_vantage(pairs):
     key = os.environ.get("ALPHAVANTAGE_API_KEY")
     if not key:
@@ -64,7 +77,9 @@ def _alpha_vantage(pairs):
         if not math.isfinite(mid) or mid <= 0:
             raise ValueError("Alpha Vantage returned an invalid rate for " + pair)
         stamp = row.get("6. Last Refreshed")
-        observed = time.time()
+        observed = _provider_timestamp(stamp)
+        if not observed:
+            raise ValueError("Alpha Vantage returned no valid quote timestamp for " + pair)
         spread_bps = _spread(pair)
         half = spread_bps / 20000
         out[pair] = {
@@ -144,5 +159,5 @@ def snapshot(pairs=DEFAULT_PAIRS):
         "observed": provider_observed, "fetched_at": now,
         "provider_date": provider_date,
         "source": "ECB reference rate via Frankfurter",
-        "pairs": out, "market_open": False,
+        "pairs": out, "market_open": None,
     }
