@@ -11,6 +11,59 @@ button,select,input{font:inherit}.app{display:grid;grid-template-columns:220px 1
 @media(max-width:1100px){.app{grid-template-columns:70px 1fr}.sidebar{padding:18px 9px}.brand b,.brand small,.nav a span:not(.ico),.sidefoot{display:none}.brand{justify-content:center;padding-bottom:25px}.nav a{justify-content:center}.metrics{grid-template-columns:repeat(3,1fr)}.agent-row{grid-template-columns:repeat(3,1fr);padding-top:120px}.floorgrid{min-height:680px}.window{inset:0 0 58%}.city{bottom:57%}.lowergrid{grid-template-columns:1fr}}
 @media(max-width:700px){.main{padding:12px}.topright .pill{display:none}.hero{padding:18px}.hero h1{font-size:27px}.hero-actions{position:static;margin-top:15px}.metrics{grid-template-columns:repeat(2,1fr)}.agent-row{grid-template-columns:1fr 1fr;padding-top:90px}.floorgrid{min-height:980px}.window{inset:0 0 72%}.city{bottom:71%}.desk{display:none}.floorlegend{display:none}}
 @media(max-width:460px){.app{grid-template-columns:1fr}.sidebar{position:static;height:auto;display:flex;align-items:center;border-right:0;border-bottom:1px solid var(--line);padding:10px}.brand{padding:0;margin-right:8px}.nav{display:flex;overflow:auto}.nav a{padding:8px}.metrics{grid-template-columns:1fr 1fr}.agent-row{grid-template-columns:1fr}.floorgrid{min-height:1500px}}
+
+/* Visual-system refinement: sharper hierarchy, deliberate spacing, and honest runtime states. */
+:root{--panel-edge:#8aa5c51c;--panel-top:#13243a;--surface-raised:#101b2b;--focus-ring:#75e7ff}
+html{scroll-behavior:smooth;scroll-padding-top:18px}
+body{background:radial-gradient(ellipse at 75% -18%,#1d3454 0,transparent 46%),radial-gradient(ellipse at 0 55%,#101d30 0,transparent 45%),#050811}
+body:before{opacity:.13;background-size:36px 36px}
+.sidebar{background:linear-gradient(180deg,#080e18f5,#060a12f7);border-right-color:#85c7ff16;box-shadow:12px 0 45px #0002}
+.brandmark{border:1px solid #49ddff35;box-shadow:0 0 30px #49ddff14,inset 0 1px #ffffff12}
+.nav a{transition:background .18s,border-color .18s,color .18s; border:1px solid transparent}
+.nav a:hover{background:#122136;color:#eaf6ff;border-color:#ffffff0c}
+.nav a.active{border-color:#49ddff20;box-shadow:inset 2px 0 var(--cyan),0 8px 24px #0002}
+.sidefoot{border-color:#52e6a425;background:linear-gradient(135deg,#0b191b,#09111b)}
+.hero{background:radial-gradient(ellipse at 100% 0,#17334b77,transparent 45%),linear-gradient(135deg,#121f32f5,#080d17f5);border-color:#a7d8ff20}
+.hero h1{max-width:750px;font-size:clamp(28px,3vw,43px);letter-spacing:-.055em}
+.hero p{font-size:13px;max-width:760px}
+.hero-actions{z-index:1}
+.btn,.tradebtn,.close{transition:transform .16s ease,border-color .16s ease,filter .16s ease}
+.btn:hover,.tradebtn:hover:not(:disabled),.close:hover{transform:translateY(-1px);filter:brightness(1.12)}
+.btn:focus-visible,.tradebtn:focus-visible,.close:focus-visible,.field select:focus-visible,.field input:focus-visible{outline:2px solid var(--focus-ring);outline-offset:3px}
+.metrics{gap:11px}
+.metric{position:relative;overflow:hidden;border-color:#9dc7ff19;background:linear-gradient(145deg,#0e1928,#080e18);transition:transform .18s,border-color .18s}
+.metric:before{content:"";position:absolute;inset:0 auto 0 0;width:2px;background:linear-gradient(180deg,#49ddff77,transparent)}
+.metric:hover{transform:translateY(-2px);border-color:#49ddff42}
+.metric strong{font-variant-numeric:tabular-nums;letter-spacing:-.04em}
+.sectionhead{margin-bottom:11px}
+.sectionhead h2{letter-spacing:-.025em}
+.floor{border-color:#80dfff20;background:#080d16}
+.floorhead{background:linear-gradient(90deg,#101d2d,#0a111d)}
+.floorgrid{background-image:radial-gradient(ellipse at 50% 0,#1d3854 0,#0b1523 47%,#060a11 85%)}
+.agent{min-height:230px;border-color:#c5dcff18;background:linear-gradient(160deg,#101d2d,#080e18 80%);transition:transform .2s,border-color .2s,box-shadow .2s}
+.agent:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--accent) 45%,transparent);box-shadow:0 22px 50px #0009,0 0 28px color-mix(in srgb,var(--glow) 9%,transparent)}
+.avatar{border-radius:13px;background:linear-gradient(145deg,#16283b,#0a1220);flex-shrink:0}
+.status{animation:none;background:#607086;box-shadow:none}
+.agent[data-observed="true"] .status{background:var(--green);box-shadow:0 0 11px var(--green);animation:pulse 1.8s infinite}
+.agent[data-observed="false"] .status{background:var(--amber);box-shadow:0 0 9px #ffc76b33}
+.agenttask{font-size:11px}
+.agentmeta{gap:7px;flex-wrap:wrap}
+.screen{background:linear-gradient(180deg,#060b13,#0a1421);border-color:#ffffff12}
+.panel{border-color:#ffffff15;background:linear-gradient(145deg,#101a29f2,#080d17f7)}
+.event{border-color:#ffffff0c;background:linear-gradient(90deg,#0b1522,#080e17)}
+.event:hover{border-color:#49ddff22}
+.edot{background:#71839a;box-shadow:none}
+.event[data-recorded="true"] .edot{background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+.event time{white-space:nowrap}
+.risk{background:linear-gradient(120deg,#0a1a1a,#0a141c);border-color:#52e6a42b}
+.positions .pos:last-child{border-bottom:0}
+#floorStatus{padding:5px 8px;border:1px solid #49ddff20;border-radius:999px;background:#0a1a29}
+#risk{line-height:1.7}
+#error:empty{display:none}
+@media(max-width:1100px){.agent{min-height:210px}}
+@media(max-width:700px){.hero h1{font-size:29px}.hero-actions{display:flex;flex-wrap:wrap}.hero-actions .btn{flex:1 1 140px}.agent{min-height:205px}.metrics{gap:8px}.metric{padding:11px}.metric strong{font-size:16px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
 </style></head>
 <body>
 <div class="app">
@@ -32,8 +85,9 @@ button,select,input{font:inherit}.app{display:grid;grid-template-columns:220px 1
 const agents=[{name:'Market Research',role:'GLOBAL MARKET INTELLIGENCE',initial:'M',accent:'#49ddff',glow:'#49ddff',task:'Scanning price action, trend structure and data quality.',status:'SCANNING'},{name:'Macro Analysis',role:'MACRO REGIME DESK',initial:'A',accent:'#9b7cff',glow:'#9b7cff',task:'Evaluating supplied macro context and regime assumptions.',status:'ANALYZING'},{name:'Strategy Lab',role:'STRATEGY & BACKTESTING',initial:'S',accent:'#ffc76b',glow:'#ffc76b',task:'Testing candidate signals against unseen historical data.',status:'TESTING'},{name:'Risk Critic',role:'RISK & VETO DESK',initial:'R',accent:'#ff6e88',glow:'#ff6e88',task:'Challenging exposure, drawdown and concentration risk.',status:'REVIEWING'},{name:'Portfolio Coordinator',role:'SHARED CAPITAL DESK',initial:'P',accent:'#52e6a4',glow:'#52e6a4',task:'Coordinating eligible paper allocations after review.',status:'COORDINATING'}];
 let state=null;const api=(p,o)=>fetch(p,o).then(async r=>{const j=await r.json();if(!r.ok)throw Error(j.error||'Request failed');return j});const money=x=>Number(x||0).toFixed(2);
 const svg=i=>{const s=['4,42 14,37 24,40 34,25 44,29 54,18 64,23 74,10 84,15 96,4','4,36 14,34 24,28 34,31 44,18 54,24 64,14 74,16 84,8 96,11','4,43 14,31 24,35 34,19 44,27 54,12 64,17 74,8 84,14 96,5','4,20 14,28 24,15 34,23 44,12 54,18 64,9 74,15 84,6 96,10','4,41 14,35 24,37 34,27 44,29 54,19 64,22 74,11 84,14 96,7'];return '<svg class="chart" viewBox="0 0 100 48" preserveAspectRatio="none"><polyline points="'+s[i]+'"/></svg>'};
-function renderAgents(s){const ev=(s?.events||[]).filter(e=>e.agent);document.getElementById('agentRow').innerHTML=agents.map((a,i)=>{const latest=ev.filter(e=>(e.agent||'').toLowerCase().includes(a.name.split(' ')[0].toLowerCase())).slice(-1)[0];const task=latest?.summary||a.task;return '<article class="agent" style="--accent:'+a.accent+';--glow:'+a.glow+'"><div class="agenthead"><div class="avatar">'+a.initial+'</div><div><div class="agentname">'+a.name+'</div><div class="role">'+a.role+'</div></div><i class="status"></i></div><div class="agenttask">'+task+'</div><div class="screen">'+svg(i)+'</div><div class="agentmeta"><span><b>'+a.status+'</b> · HANDOFF '+(i<4?'→ NEXT':'→ PAPER')+'</span><span>LIVE</span></div></article>'}).join('')}
-function render(s){state=s;const a=s.account||{},r=s.risk||{};document.getElementById('stats').innerHTML=[['Portfolio equity','$'+money(a.equity),r.halted?'RISK HALT':'PAPER'],['Open exposure','$'+money(a.exposure),a.exposure?'DEPLOYED':'FLAT'],['Realized P/L','$'+money(a.realized_pnl),a.realized_pnl>=0?'POSITIVE':'REVIEW'],['Risk gate',r.halted?'HALTED':'ARMED',r.halted?'NEW ENTRIES STOPPED':'DETERMINISTIC'],['Research pairs','5 / 5','EUR · GBP · JPY · AUD · CHF']].map(x=>'<div class="metric"><small>'+x[0]+'</small><strong>'+x[1]+'</strong><span class="up">'+x[2]+'</span></div>').join('');document.getElementById('risk').textContent='Max trade $'+r.max_trade_notional+' · Max exposure $'+r.max_exposure+' · Max positions '+r.max_positions+' · Daily loss $'+r.max_daily_loss+' · SL '+(r.stop_loss_pct*100)+'% · TP '+(r.take_profit_pct*100)+'% · Leverage '+r.max_leverage+'x'+(r.halted?' · RISK HALT ACTIVE':'');document.getElementById('floorStatus').textContent=r.halted?'Risk shutdown':'All desks observing';const ev=(s.events||[]).filter(e=>['live_agent_report','live_agent_started','accounting_report'].includes(e.kind)).slice(-9).reverse();document.getElementById('feed').innerHTML=(ev.length?ev:agents.map(a=>({agent:a.name,summary:a.task}))).map((e,i)=>'<div class="event"><i class="edot"></i><div><b>'+ (e.agent||'Research system') +'</b><small>'+ (e.summary||'Recorded activity received.') +'</small></div><time>'+((i+1)*7)+'m</time></div>').join('');document.getElementById('positions').innerHTML=(a.positions||[]).map(p=>'<div class="pos"><div><b>'+p.pair+'</b><small>'+p.side.toUpperCase()+' · $'+money(p.notional)+'</small></div><span style="color:'+(Number(p.unrealized_pnl)>=0?'var(--green)':'var(--red)')+'">$'+money(p.unrealized_pnl)+'</span><button class="close" onclick="closePosition(\''+p.id+'\')">Close</button></div>').join('')||'<div style="color:var(--muted);font-size:9px;padding:7px 0">No open paper positions.</div>';renderAgents(s)}
+const escapeHtml=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function renderAgents(s){const ev=(s?.events||[]).filter(e=>e.agent);document.getElementById('agentRow').innerHTML=agents.map((a,i)=>{const latest=ev.filter(e=>(e.agent||'').toLowerCase().includes(a.name.split(' ')[0].toLowerCase())).slice(-1)[0];const observed=Boolean(latest);const task=latest?.summary||a.task;const label=observed?'REPORT OBSERVED':'AWAITING REPORT';return '<article class="agent" data-observed="'+observed+'" style="--accent:'+a.accent+';--glow:'+a.glow+'"><div class="agenthead"><div class="avatar">'+a.initial+'</div><div><div class="agentname">'+a.name+'</div><div class="role">'+a.role+'</div></div><i class="status" aria-label="'+(observed?'Recorded report received':'No matching report recorded')+'"></i></div><div class="agenttask">'+escapeHtml(task)+'</div><div class="screen">'+svg(i)+'</div><div class="agentmeta"><span><b>'+label+'</b> · '+(observed?'RECORDED HANDOFF':'NO RECENT HANDOFF')+'</span><span>'+(observed?'OBSERVED':'IDLE / UNKNOWN')+'</span></div></article>'}).join('')}
+function render(s){state=s;const a=s.account||{},r=s.risk||{};document.getElementById('stats').innerHTML=[['Portfolio equity','$'+money(a.equity),r.halted?'RISK HALT':'PAPER'],['Open exposure','$'+money(a.exposure),a.exposure?'DEPLOYED':'FLAT'],['Realized P/L','$'+money(a.realized_pnl),a.realized_pnl>=0?'POSITIVE':'REVIEW'],['Risk gate',r.halted?'HALTED':'ARMED',r.halted?'NEW ENTRIES STOPPED':'DETERMINISTIC'],['Research pairs','5 / 5','EUR · GBP · JPY · AUD · CHF']].map(x=>'<div class="metric"><small>'+x[0]+'</small><strong>'+x[1]+'</strong><span class="up">'+x[2]+'</span></div>').join('');document.getElementById('risk').textContent='Max trade $'+r.max_trade_notional+' · Max exposure $'+r.max_exposure+' · Max positions '+r.max_positions+' · Daily loss $'+r.max_daily_loss+' · SL '+(r.stop_loss_pct*100)+'% · TP '+(r.take_profit_pct*100)+'% · Leverage '+r.max_leverage+'x'+(r.halted?' · RISK HALT ACTIVE':'');document.getElementById('floorStatus').textContent=r.halted?'Risk shutdown':'All desks observing';const ev=(s.events||[]).filter(e=>['live_agent_report','live_agent_started','accounting_report'].includes(e.kind)).slice(-9).reverse();document.getElementById('feed').innerHTML=ev.length?ev.map(e=>'<div class="event" data-recorded="true"><i class="edot"></i><div><b>'+escapeHtml(e.agent||'Research system')+'</b><small>'+escapeHtml(e.summary||'Recorded activity received.')+'</small></div><time>RECORDED</time></div>').join(''):'<div class="event" data-recorded="false"><i class="edot"></i><div><b>Waiting for the first recorded handoff</b><small>Agent cards show their role descriptions until the runtime records real reports. Decorative motion is not evidence of model activity.</small></div><time>NO DATA</time></div>';document.getElementById('positions').innerHTML=(a.positions||[]).map(p=>'<div class="pos"><div><b>'+p.pair+'</b><small>'+p.side.toUpperCase()+' · $'+money(p.notional)+'</small></div><span style="color:'+(Number(p.unrealized_pnl)>=0?'var(--green)':'var(--red)')+'">$'+money(p.unrealized_pnl)+'</span><button class="close" onclick="closePosition(\''+p.id+'\')">Close</button></div>').join('')||'<div style="color:var(--muted);font-size:9px;padding:7px 0">No open paper positions.</div>';renderAgents(s)}
 async function refresh(){try{document.getElementById('error').textContent='';render(await api('/api/forex'))}catch(e){document.getElementById('error').textContent=e.message;renderAgents(state||{})}}
 async function openPosition(){try{render((await api('/api/forex/open',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pair:document.getElementById('pair').value,side:document.getElementById('side').value,notional:Number(document.getElementById('notional').value)})})).status)}catch(e){document.getElementById('error').textContent=e.message}}
 async function closePosition(id){try{render((await api('/api/forex/close',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})})).status)}catch(e){document.getElementById('error').textContent=e.message}}
