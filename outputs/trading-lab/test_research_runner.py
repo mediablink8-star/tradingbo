@@ -13,7 +13,7 @@ class ResearchRunnerTests(unittest.TestCase):
 
     def test_run_pair_keeps_holdout_separate(self):
         report = run_pair(
-            "EUR/USD", self._candles(), train_size=10, test_size=5, holdout_size=5,
+            "EUR/USD", self._candles(), train_size=12, test_size=5, holdout_size=5,
         )
         self.assertEqual(report["pair"], "EUR/USD")
         self.assertEqual(report["final_holdout"]["holdout_start"], 35)
@@ -26,7 +26,7 @@ class ResearchRunnerTests(unittest.TestCase):
             report = run_dataset(
                 directory,
                 pairs=("EUR/USD", "GBP/USD"),
-                train_size=10,
+                train_size=12,
                 test_size=5,
                 holdout_size=5,
             )
