@@ -15,6 +15,8 @@ python app.py
 
 Open the local dashboard at `http://127.0.0.1:8765`.
 
+The immersive office is available at `http://127.0.0.1:8765/company.html` and has a return link to the Research Floor. In this Forex Lab server, it can observe the paper account through `/api/forex`, including equity, open-position count, and mark freshness. This server does **not** run the autonomous AI-agent runtime; the office labels agent reports as unavailable instead of presenting animations as real work. The office shows live agent reports only when opened inside a dashboard that actually supplies the agent observer API.
+
 Market data defaults to ECB reference rates through Frankfurter. Frankfurter
 supports provider pinning, so the historical pipeline can use the ECB source
 rather than a blended feed. See https://frankfurter.dev/providers/ecb/.
