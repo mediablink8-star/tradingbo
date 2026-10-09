@@ -43,3 +43,26 @@ summary:hover{color:#8feaff}
 #capital-chart{max-width:100%}
 [hidden]{display:none!important}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation:none!important;transition:none!important}}
+
+
+/* Ember Capital Redline: shared red / black design tokens */
+:root{color-scheme:dark;--red:#ff4658;--surface:#10080b;--border:#3a171e;--muted:#b3979d;--accent:#ff4658;--accent-soft:#ff46581c}
+body{background:radial-gradient(ellipse at 70% -15%,#321019 0,transparent 46%),#070506!important;color:#fff0f2}
+a{color:#ff7b88}a:hover{color:#ffc0c7}
+header,nav,.sidebar,.panel,.card,.employee-card,details,.metric-card{border-color:#ff46582b!important}
+button,input,select,textarea{accent-color:#ff4658}
+button,.button,.btn{background:linear-gradient(135deg,#50101d,#1a080d);border-color:#ff46584a;color:#fff0f2}
+button:hover,.button:hover,.btn:hover{border-color:#ff7785;box-shadow:0 6px 24px #ff263c18}
+:focus-visible{outline:2px solid #ff7785!important;outline-offset:3px}
+th{background:#210b11;color:#ffd4da}
+td,th{border-bottom-color:#ff46581a}
+tbody tr:hover{background:#260b1266}
+pre{background:#0d0609;border-color:#ff465822}
+summary:hover{color:#ff8290}
+.employee-card{background:linear-gradient(145deg,#210d13,#0d0609);border-color:#ff46582b}
+.employee-card:hover{border-color:#ff46586b}
+.fact-row{border-bottom-color:#ff46581a}
+input,select,textarea{background-color:#0b0608;color:#fff0f2;border-color:#ff46582b}
+hr{border-color:#ff46581e}
+[hidden]{display:none!important}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}

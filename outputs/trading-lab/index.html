@@ -64,6 +64,51 @@ body:before{opacity:.13;background-size:36px 36px}
 @media(max-width:700px){.hero h1{font-size:29px}.hero-actions{display:flex;flex-wrap:wrap}.hero-actions .btn{flex:1 1 140px}.agent{min-height:205px}.metrics{gap:8px}.metric{padding:11px}.metric strong{font-size:16px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 
+
+/* EMBER REDLINE — unified red / black product theme */
+:root{--bg:#070607;--panel:rgba(18,10,12,.92);--line:rgba(255,92,105,.16);--text:#fff1f2;--muted:#a18d92;--cyan:#ff4658;--violet:#ff6a79;--green:#ff5967;--amber:#ff9a75;--red:#ff3048;--panel-edge:#ff46581c;--panel-top:#281015;--surface-raised:#1b0c10;--focus-ring:#ff7785}
+html,body{background:radial-gradient(ellipse at 75% -18%,#381019 0,transparent 48%),radial-gradient(ellipse at 0 55%,#1c0a10 0,transparent 46%),#050405;color:#fff0f2}
+body:before{opacity:.12;background-image:linear-gradient(#ff4a5b08 1px,transparent 1px),linear-gradient(90deg,#ff4a5b08 1px,transparent 1px)}
+.sidebar{background:linear-gradient(180deg,#100709f7,#070506fa);border-right-color:#ff4a5b22;box-shadow:12px 0 45px #0008}
+.brandmark{background:linear-gradient(135deg,#4b101a,#1b080d);color:#ff5969;border-color:#ff53664a;box-shadow:0 0 28px #ff253b18,inset 0 1px #ffffff12}
+.nav a{color:#b59ba0}.nav a:hover{background:#241015;color:#fff0f2;border-color:#ff59691c}
+.nav a.active{background:linear-gradient(90deg,#3a1019,#190a0e);color:#fff;box-shadow:inset 2px 0 #ff4658,0 8px 24px #0005;border-color:#ff46581c}
+.sidefoot{border-color:#ff46582c;background:linear-gradient(135deg,#210b10,#0e080a)}
+.online,.live{color:#ff6674}
+.hero{background:radial-gradient(ellipse at 100% 0,#52131e77,transparent 45%),linear-gradient(135deg,#241016f5,#0b0709f5);border-color:#ff718022}
+.hero:after{background:#ff263c12}
+.eyebrow{color:#ff6472}
+.btn{background:linear-gradient(135deg,#1c0d11,#13090c);color:#ffe8eb;border-color:#ff718025}
+.btn:hover{border-color:#ff586a55}.btn.primary,.tradebtn{background:linear-gradient(135deg,#a71930,#4c101c);border-color:#ff5b6d77;color:#fff}
+.btn:focus-visible,.tradebtn:focus-visible,.close:focus-visible,.field select:focus-visible,.field input:focus-visible{outline-color:#ff7785}
+.metric{border-color:#ff667319;background:linear-gradient(145deg,#1c0d11,#0b0709)}
+.metric:before{background:linear-gradient(180deg,#ff4658,transparent)}
+.metric:hover{border-color:#ff465855}
+.floor{border-color:#ff5a6c30;background:#080506}
+.floorhead{background:linear-gradient(90deg,#200b11,#0e080b)}
+.floor-dot{background:#ff5668;box-shadow:0 0 16px #ff5668}
+.floorgrid{background:radial-gradient(ellipse at 50% 0,#3a111d 0,#160a10 43%,#070506 83%)}
+.window{background:linear-gradient(180deg,#3a111b,#1c0a10 60%,transparent);border-bottom-color:#ff52641c}
+.city{opacity:.17;filter:blur(1px)}
+.ceiling{background:repeating-linear-gradient(90deg,transparent 0 70px,#ff4a5b26 71px 73px,transparent 74px 145px)}
+.agent{border-color:#ffb0b514;background:linear-gradient(160deg,#1b0d12,#090607 80%)}
+.agent:after{background:var(--accent);box-shadow:0 0 16px var(--accent)}
+.agent:hover{border-color:color-mix(in srgb,var(--accent) 55%,transparent);box-shadow:0 22px 50px #000b,0 0 28px color-mix(in srgb,var(--glow) 12%,transparent)}
+.avatar{background:linear-gradient(145deg,#321019,#12080b);border-color:var(--accent);box-shadow:0 0 22px var(--glow)}
+.screen{background:linear-gradient(180deg,#080506,#19090e);border-color:#ff7b8b16}
+.chart polyline{stroke:var(--accent)}
+.panel{border-color:#ff697a1c;background:linear-gradient(145deg,#1b0d12f2,#0a0608f7)}
+.event{border-color:#ff78820d;background:linear-gradient(90deg,#190a0f,#0a0608)}
+.event:hover{border-color:#ff526422}
+.edot{background:#80656a}.event[data-recorded="true"] .edot{background:#ff5a6b;box-shadow:0 0 10px #ff5a6b}
+.risk{background:linear-gradient(120deg,#1b0a0e,#100709);border-color:#ff536526;color:#ffc1c7}
+.field label{color:#b99da2}.field select,.field input{background:#0b0608;border-color:#ff65751c;color:#ffe9ec}
+.pos{border-bottom-color:#ff6a780e}.close{background:#310b13;border-color:#ff465833;color:#ffb0b9}
+#floorStatus{border-color:#ff465833;background:#230b11;color:#ff7785!important}
+.footerline{color:#8d6d73}
+@media(max-width:700px){.hero{background:linear-gradient(145deg,#210d12,#0b0709)}.agent{min-height:205px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
 </style></head>
 <body>
 <div class="app">
@@ -82,7 +127,7 @@ body:before{opacity:.13;background-size:36px 36px}
 </section>
 </main></div>
 <script>
-const agents=[{name:'Market Research',role:'GLOBAL MARKET INTELLIGENCE',initial:'M',accent:'#49ddff',glow:'#49ddff',task:'Scanning price action, trend structure and data quality.',status:'SCANNING'},{name:'Macro Analysis',role:'MACRO REGIME DESK',initial:'A',accent:'#9b7cff',glow:'#9b7cff',task:'Evaluating supplied macro context and regime assumptions.',status:'ANALYZING'},{name:'Strategy Lab',role:'STRATEGY & BACKTESTING',initial:'S',accent:'#ffc76b',glow:'#ffc76b',task:'Testing candidate signals against unseen historical data.',status:'TESTING'},{name:'Risk Critic',role:'RISK & VETO DESK',initial:'R',accent:'#ff6e88',glow:'#ff6e88',task:'Challenging exposure, drawdown and concentration risk.',status:'REVIEWING'},{name:'Portfolio Coordinator',role:'SHARED CAPITAL DESK',initial:'P',accent:'#52e6a4',glow:'#52e6a4',task:'Coordinating eligible paper allocations after review.',status:'COORDINATING'}];
+const agents=[{name:'Market Research',role:'GLOBAL MARKET INTELLIGENCE',initial:'M',accent:'#ff4658',glow:'#ff4658',task:'Scanning price action, trend structure and data quality.',status:'SCANNING'},{name:'Macro Analysis',role:'MACRO REGIME DESK',initial:'A',accent:'#ff7380',glow:'#ff7380',task:'Evaluating supplied macro context and regime assumptions.',status:'ANALYZING'},{name:'Strategy Lab',role:'STRATEGY & BACKTESTING',initial:'S',accent:'#ff9b73',glow:'#ff9b73',task:'Testing candidate signals against unseen historical data.',status:'TESTING'},{name:'Risk Critic',role:'RISK & VETO DESK',initial:'R',accent:'#ff3048',glow:'#ff3048',task:'Challenging exposure, drawdown and concentration risk.',status:'REVIEWING'},{name:'Portfolio Coordinator',role:'SHARED CAPITAL DESK',initial:'P',accent:'#c9233b',glow:'#c9233b',task:'Coordinating eligible paper allocations after review.',status:'COORDINATING'}];
 let state=null;const api=(p,o)=>fetch(p,o).then(async r=>{const j=await r.json();if(!r.ok)throw Error(j.error||'Request failed');return j});const money=x=>Number(x||0).toFixed(2);
 const svg=i=>{const s=['4,42 14,37 24,40 34,25 44,29 54,18 64,23 74,10 84,15 96,4','4,36 14,34 24,28 34,31 44,18 54,24 64,14 74,16 84,8 96,11','4,43 14,31 24,35 34,19 44,27 54,12 64,17 74,8 84,14 96,5','4,20 14,28 24,15 34,23 44,12 54,18 64,9 74,15 84,6 96,10','4,41 14,35 24,37 34,27 44,29 54,19 64,22 74,11 84,14 96,7'];return '<svg class="chart" viewBox="0 0 100 48" preserveAspectRatio="none"><polyline points="'+s[i]+'"/></svg>'};
 const escapeHtml=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

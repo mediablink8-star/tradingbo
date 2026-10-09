@@ -1,16 +1,16 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>
-*{box-sizing:border-box}body{margin:0;background:#080d16;color:#e8f3ff;font:14px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;letter-spacing:.01em}button,select{font:inherit}::selection{background:#35d6ff55}header{padding:17px 22px;background:linear-gradient(110deg,#0d1a2b,#10101c 72%);border-bottom:1px solid #4adfff25;display:flex;gap:15px;align-items:center;flex-wrap:wrap;position:relative;z-index:2}h1{font-size:19px;margin:0;letter-spacing:1.8px;font-weight:750}small,.muted{color:#a7a7b2}.badge{font-size:11px;letter-spacing:1px;color:#a7a7b2;border:1px solid #605f65;border-radius:20px;padding:5px 10px}select,button{font:inherit;background:#323137;color:#e2eefa;border:1px solid #5b5a60;border-radius:7px;padding:8px;cursor:pointer}button:focus-visible,select:focus-visible{outline:3px solid #ef777e}header .tools{margin-left:auto;display:flex;gap:8px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:16px;padding:16px}.world{background:#080e18;border:1px solid #49ddff35;border-radius:16px;overflow:hidden;position:relative;box-shadow:0 24px 70px #0008,0 0 30px #49ddff09}.world canvas{display:block;width:100%;height:auto;image-rendering:auto;cursor:pointer}.world footer{padding:11px 15px;color:#93abc6;background:linear-gradient(90deg,#0b1725,#12101d);border-top:1px solid #49ddff22;font-size:12px}.sidebar{background:linear-gradient(160deg,#101c2d,#090d17);border:1px solid #ffffff17;border-radius:16px;padding:17px;min-width:0;box-shadow:0 18px 55px #0005}h2{font-size:16px;margin:0 0 8px}p{line-height:1.5;overflow-wrap:anywhere}#detail{min-height:72px;color:#a7a7b2}.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}.stats span{padding:6px 9px;border-radius:7px;background:#142235;border:1px solid #49ddff19;font-size:11px;color:#b7cce3}.roster{display:flex;gap:7px;flex-wrap:wrap;padding:0 14px 14px}.roster button{font-size:12px;padding:8px 11px}.roster button[aria-pressed=true]{border-color:#ef777e;background:#424147}#notice{margin:0;padding:10px 20px;background:#242329;color:#d6a4ae;font-size:12px}#feed{padding-left:19px;color:#a7a7b2;font-size:12px;max-height:190px;overflow:auto}#feed li{padding-bottom:10px}#role-status{color:#ef777e}.tagline{padding:0 14px 12px;font-size:12px;color:#a7a7b2}@media(max-width:900px){.layout{grid-template-columns:1fr}.sidebar{min-height:180px}header .tools{margin-left:0}#detail{min-height:0}#feed{max-height:100px}}
-body{background:radial-gradient(ellipse at 50% -20%,#182a46 0,#090e19 48%,#05070d 100%)!important;color:#edf5ff}header{background:linear-gradient(115deg,rgba(13,25,43,.98),rgba(14,12,24,.97));border-bottom:1px solid #49ddff2a;box-shadow:0 10px 35px #0005}header h1{letter-spacing:1.7px;text-shadow:0 0 22px #49ddff20}.badge{color:#79e9ff;border-color:#49ddff44;background:#0a1c2a}.layout{gap:16px}.world{background:#080e18;border-color:#49ddff35;box-shadow:0 18px 60px #0008,0 0 32px #49ddff0a}.world footer{background:linear-gradient(90deg,#0b1725,#12101d);color:#8fa8c6;border-top:1px solid #49ddff22}.sidebar{background:linear-gradient(160deg,#101a2a,#0a0d17);border-color:#ffffff16;box-shadow:0 16px 45px #0005}#notice{background:linear-gradient(90deg,#102334,#161321);color:#a6c7dc;border-bottom:1px solid #49ddff1c}#feed{color:#a5b6cd}.roster button{background:#101c2c!important;border-color:#49ddff25!important}.roster button[aria-pressed=true]{background:linear-gradient(120deg,#124c64,#25213c)!important;border-color:#49ddff!important;box-shadow:0 0 22px #49ddff1c}button{background:linear-gradient(135deg,#11546d,#202344)!important;border-color:#49ddff55!important;color:#f1f8ff!important;transition:transform .18s ease,box-shadow .18s ease}button:hover{transform:translateY(-1px);box-shadow:0 5px 18px #49ddff1c}button:active{transform:translateY(0)}#pause{background:linear-gradient(135deg,#33233a,#1c2238)!important;border-color:#c39bff44!important}@media(max-width:760px){.layout{padding:10px}.sidebar{background:linear-gradient(160deg,#101a2a,#0a0d17)}}@media(prefers-reduced-motion:reduce){button{transition:none}} 
+*{box-sizing:border-box}body{margin:0;background:#080d16;color:#e8f3ff;font:14px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;letter-spacing:.01em}button,select{font:inherit}::selection{background:#ff465855}header{padding:17px 22px;background:linear-gradient(110deg,#0d1a2b,#10101c 72%);border-bottom:1px solid #ff526525;display:flex;gap:15px;align-items:center;flex-wrap:wrap;position:relative;z-index:2}h1{font-size:19px;margin:0;letter-spacing:1.8px;font-weight:750}small,.muted{color:#a7a7b2}.badge{font-size:11px;letter-spacing:1px;color:#a7a7b2;border:1px solid #605f65;border-radius:20px;padding:5px 10px}select,button{font:inherit;background:#323137;color:#e2eefa;border:1px solid #5b5a60;border-radius:7px;padding:8px;cursor:pointer}button:focus-visible,select:focus-visible{outline:3px solid #ef777e}header .tools{margin-left:auto;display:flex;gap:8px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:16px;padding:16px}.world{background:#080e18;border:1px solid #ff465835;border-radius:16px;overflow:hidden;position:relative;box-shadow:0 24px 70px #0008,0 0 30px #ff465809}.world canvas{display:block;width:100%;height:auto;image-rendering:auto;cursor:pointer}.world footer{padding:11px 15px;color:#d3a4aa;background:linear-gradient(90deg,#0b1725,#12101d);border-top:1px solid #ff465822;font-size:12px}.sidebar{background:linear-gradient(160deg,#101c2d,#090d17);border:1px solid #ffffff17;border-radius:16px;padding:17px;min-width:0;box-shadow:0 18px 55px #0005}h2{font-size:16px;margin:0 0 8px}p{line-height:1.5;overflow-wrap:anywhere}#detail{min-height:72px;color:#a7a7b2}.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}.stats span{padding:6px 9px;border-radius:7px;background:#142235;border:1px solid #ff465819;font-size:11px;color:#b7cce3}.roster{display:flex;gap:7px;flex-wrap:wrap;padding:0 14px 14px}.roster button{font-size:12px;padding:8px 11px}.roster button[aria-pressed=true]{border-color:#ef777e;background:#424147}#notice{margin:0;padding:10px 20px;background:#242329;color:#d6a4ae;font-size:12px}#feed{padding-left:19px;color:#a7a7b2;font-size:12px;max-height:190px;overflow:auto}#feed li{padding-bottom:10px}#role-status{color:#ef777e}.tagline{padding:0 14px 12px;font-size:12px;color:#a7a7b2}@media(max-width:900px){.layout{grid-template-columns:1fr}.sidebar{min-height:180px}header .tools{margin-left:0}#detail{min-height:0}#feed{max-height:100px}}
+body{background:radial-gradient(ellipse at 50% -20%,#182a46 0,#090e19 48%,#05070d 100%)!important;color:#edf5ff}header{background:linear-gradient(115deg,rgba(13,25,43,.98),rgba(14,12,24,.97));border-bottom:1px solid #ff46582a;box-shadow:0 10px 35px #0005}header h1{letter-spacing:1.7px;text-shadow:0 0 22px #ff465820}.badge{color:#ff8290;border-color:#ff465844;background:#0a1c2a}.layout{gap:16px}.world{background:#080e18;border-color:#ff465835;box-shadow:0 18px 60px #0008,0 0 32px #ff46580a}.world footer{background:linear-gradient(90deg,#0b1725,#12101d);color:#c999a0;border-top:1px solid #ff465822}.sidebar{background:linear-gradient(160deg,#101a2a,#0a0d17);border-color:#ffffff16;box-shadow:0 16px 45px #0005}#notice{background:linear-gradient(90deg,#102334,#161321);color:#ffc0c8;border-bottom:1px solid #ff46581c}#feed{color:#cba5aa}.roster button{background:#101c2c!important;border-color:#ff465825!important}.roster button[aria-pressed=true]{background:linear-gradient(120deg,#124c64,#25213c)!important;border-color:#ff4658!important;box-shadow:0 0 22px #ff46581c}button{background:linear-gradient(135deg,#11546d,#202344)!important;border-color:#ff465855!important;color:#f1f8ff!important;transition:transform .18s ease,box-shadow .18s ease}button:hover{transform:translateY(-1px);box-shadow:0 5px 18px #ff46581c}button:active{transform:translateY(0)}#pause{background:linear-gradient(135deg,#33233a,#1c2238)!important;border-color:#c39bff44!important}@media(max-width:760px){.layout{padding:10px}.sidebar{background:linear-gradient(160deg,#101a2a,#0a0d17)}}@media(prefers-reduced-motion:reduce){button{transition:none}} 
 /* Premium operations-console layer: stronger hierarchy and a more legible office floor. */
 body{background:radial-gradient(ellipse at 55% -15%,#1b3555 0,transparent 48%),#050811}
 header{padding:18px clamp(14px,2.4vw,30px);background:linear-gradient(110deg,#0b192bfa,#0b0d18fa);backdrop-filter:blur(18px)}
 header h1{font-size:clamp(16px,1.5vw,21px);letter-spacing:2px}
 header small{display:block;margin-top:4px;letter-spacing:.02em}
 header .tools{flex-wrap:wrap;justify-content:flex-end}
-.badge{background:#0c2130;border-color:#49ddff44;color:#7ee9ff}
+.badge{background:#0c2130;border-color:#ff465844;color:#ff8290}
 #notice{border-bottom:1px solid #ffffff12;letter-spacing:.01em}
 .layout{align-items:start;max-width:1800px;margin:0 auto;gap:18px;padding:clamp(10px,1.4vw,20px)}
-.world{border-radius:18px;box-shadow:0 24px 80px #0008,0 0 0 1px #49ddff08}
+.world{border-radius:18px;box-shadow:0 24px 80px #0008,0 0 0 1px #ff465808}
 .world canvas{width:100%;height:auto;aspect-ratio:960/620}
 .world footer{line-height:1.6}
 .sidebar{position:sticky;top:12px;border-radius:18px;box-shadow:0 20px 60px #0005}
@@ -25,6 +25,32 @@ header .tools{flex-wrap:wrap;justify-content:flex-end}
 @media(max-width:560px){header{align-items:flex-start}header .tools{width:100%;justify-content:flex-start}header .tools>*{max-width:100%}.layout{padding:9px;gap:10px}.world,.sidebar{border-radius:13px}.sidebar{padding:13px}.roster{padding:0 8px 10px}.stats{gap:6px}.stats span{font-size:10px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
 
+
+/* EMBER REDLINE — immersive office chrome */
+:root{color-scheme:dark}
+html,body{background:#070506!important;color:#fff0f2}
+body{background:radial-gradient(ellipse at 50% -20%,#3a101b 0,#12070b 48%,#050405 100%)!important}
+::selection{background:#ff465855}
+header{background:linear-gradient(110deg,#260b12,#10070a 72%)!important;border-bottom-color:#ff46583b!important;box-shadow:0 12px 38px #0009}
+header h1{text-shadow:0 0 24px #ff304822}
+.badge{background:#260b12!important;color:#ff8290!important;border-color:#ff465855!important}
+select,button{background:linear-gradient(135deg,#351018,#17090d)!important;color:#fff0f2!important;border-color:#ff526044!important}
+button:hover{box-shadow:0 5px 22px #ff23301c!important}
+button:focus-visible,select:focus-visible{outline-color:#ff7785!important}
+.layout{background:transparent}
+.world{background:#080506!important;border-color:#ff46584c!important;box-shadow:0 24px 75px #000b,0 0 34px #ff263c0a!important}
+.world footer{background:linear-gradient(90deg,#1c080e,#10070a)!important;color:#d3a4aa!important;border-top-color:#ff46582c!important}
+.sidebar{background:linear-gradient(160deg,#210b11,#0b0608)!important;border-color:#ff46582b!important}
+.stats span{background:#240c12!important;border-color:#ff46582b!important;color:#ffd9de!important}
+#notice{background:linear-gradient(90deg,#2a0c13,#16080c)!important;color:#ffbdc5!important;border-bottom-color:#ff46582b!important}
+#feed{color:#c5a2a7!important}
+.roster button{background:linear-gradient(135deg,#260b12,#13070a)!important;border-color:#ff46582e!important}
+.roster button[aria-pressed=true]{background:linear-gradient(120deg,#861629,#3c0d17)!important;border-color:#ff6576!important;box-shadow:0 0 22px #ff263c20!important}
+#role-status{color:#ff7380!important}
+#detail{color:#d4b1b6!important}
+@media(max-width:760px){.sidebar{background:linear-gradient(160deg,#210b11,#0b0608)!important}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+
 </style></head><body>
 <header><div><h1>AGENT COMPANY</h1><small>Your paper-trading team, on the office floor</small></div><span class="badge" id="mode-badge">LIVE OBSERVER</span><div class="tools"><button id="back-to-floor" onclick="location.href='index.html'">← Research floor</button><select id="source" aria-label="Activity source"><option value="live">Live paper team</option><option value="team">Experiment team</option><option value="demo">Office demo · no AI calls</option></select><button id="run-agent-cycle">Run agent cycle</button><button id="pause">Pause animation</button></div></header>
 <p id="notice" role="status">Waiting for a dashboard update. Idle characters do not mean an AI model is running.</p>
@@ -34,7 +60,7 @@ header .tools{flex-wrap:wrap;justify-content:flex-end}
 const $=id=>document.getElementById(id),canvas=$('office'),ctx=canvas.getContext('2d');
 const roles=['Market researcher','Macro analyst','Strategy analyst','Risk critic','Portfolio coordinator','Performance reviewer','CEO'];
 const short=['RESEARCH','MACRO DESK','STRATEGY','RISK DESK','COORDINATION','ACCOUNTING','CEO'];
-const colors=['#a7a7b2','#b39cfa','#f5bf73','#ff8795','#78e2b9','#a7a7b2','#ef7188'];
+const colors=['#ff4658','#ff7785','#ff9b73','#ff3048','#d72a43','#b51f35','#ff8290'];
 const desks=[{x:190,y:220},{x:480,y:220},{x:770,y:220},{x:190,y:430},{x:480,y:430},{x:770,y:430},{x:75,y:290}];
 let selected=0,mode='live',paused=matchMedia('(prefers-reduced-motion: reduce)').matches,live=null,team=null,lastSeen=0,visualTime=0,lastFrame=0,demoStep=-1;
 let staff=roles.map(()=>({status:'Waiting',summary:'No report received yet.',approve:[],concerns:[],at:0,activeUntil:0}));
@@ -105,21 +131,21 @@ function floorDesk(i,d,active){
   ctx.save();
   ctx.shadowColor=colors[i]+'22';ctx.shadowBlur=active?18:7;
   rounded(d.x-91,d.y-52,182,96,'#0006',12);
-  rounded(d.x-88,d.y-57,176,76,'#2b3341',9,'#ffffff12');
+  rounded(d.x-88,d.y-57,176,76,'#352029',9,'#ffffff12');
   ctx.shadowBlur=0;
-  rounded(d.x-82,d.y-51,164,65,'#172130',7,'#ffffff12');
+  rounded(d.x-82,d.y-51,164,65,'#1b0c11',7,'#ffffff12');
   for(const [n,dx] of [[0,-37],[1,28]]){
-    rounded(d.x+dx-24,d.y-45,49,34,'#070b12',4,'#647a92');
+    rounded(d.x+dx-24,d.y-45,49,34,'#070b12',4,'#8e4651');
     rounded(d.x+dx-21,d.y-42,43,27,active?'#142b3a':'#111c2b',3);
     for(let j=0;j<4;j++){const len=active?10+((Math.floor(visualTime*5)+j*13+i*7)%27):14+j*4;ctx.fillStyle=colors[i]+(j===0?'ee':'88');ctx.fillRect(d.x+dx-17,d.y-37+j*5,len,2)}
-    ctx.fillStyle='#7bdfff88';ctx.fillRect(d.x+dx-4,d.y-12,8,7);
+    ctx.fillStyle='#ff718088';ctx.fillRect(d.x+dx-4,d.y-12,8,7);
   }
-  rounded(d.x-29,d.y+4,58,7,'#111721',3);
+  rounded(d.x-29,d.y+4,58,7,'#15090d',3);
   for(let k=0;k<12;k++){ctx.fillStyle=k%4===0?'#8be4f4':'#526176';ctx.fillRect(d.x-24+k*4.1,d.y+6,2.5,2)}
   rounded(d.x+57,d.y-14,13,15,'#c7a48c',3);
-  rounded(d.x-70,d.y-17,12,20,'#0a111c',3,'#506276');
-  ctx.fillStyle='#46d5fa';ctx.fillRect(d.x-67,d.y-13,6,12);
-  rounded(d.x-20,d.y+39,40,22,'#334258',7);rounded(d.x-17,d.y+59,34,5,'#151b26',3);
+  rounded(d.x-70,d.y-17,12,20,'#0a111c',3,'#7c3a45');
+  ctx.fillStyle='#ff4658';ctx.fillRect(d.x-67,d.y-13,6,12);
+  rounded(d.x-20,d.y+39,40,22,'#39212a',7);rounded(d.x-17,d.y+59,34,5,'#151b26',3);
   floorText(short[i],d.x,d.y-70,colors[i],10,'center');
   rounded(d.x-4,d.y-64,8,3,active?colors[i]:'#47586d',2);
   if(i===selected){ctx.strokeStyle=colors[i]+'b0';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);ctx.strokeRect(d.x-95,d.y-62,190,108);ctx.setLineDash([])}
@@ -146,41 +172,41 @@ function avatar(i,x,y,walking,working){
 }
 function draw(){
   ctx.clearRect(0,0,960,620);
-  const bg=ctx.createLinearGradient(0,0,0,620);bg.addColorStop(0,'#18283b');bg.addColorStop(.45,'#101c2b');bg.addColorStop(1,'#0b111b');rect(0,0,960,620,bg);
+  const bg=ctx.createLinearGradient(0,0,0,620);bg.addColorStop(0,'#291017');bg.addColorStop(.45,'#1b0b10');bg.addColorStop(1,'#0b0608');rect(0,0,960,620,bg);
   // Perimeter glass, structural columns and a precise floor grid.
-  rounded(13,12,934,596,'#080d15',18,'#3c6078');
-  rounded(23,101,914,487,'#172331',12,'#ffffff10');
-  for(let y=107;y<580;y+=28)for(let x=28;x<933;x+=36){ctx.fillStyle=((Math.floor(x/36)+Math.floor(y/28))%2)?'#1a2836':'#192633';ctx.fillRect(x,y,35,27)}
+  rounded(13,12,934,596,'#080d15',18,'#71303d');
+  rounded(23,101,914,487,'#241016',12,'#ffffff10');
+  for(let y=107;y<580;y+=28)for(let x=28;x<933;x+=36){ctx.fillStyle=((Math.floor(x/36)+Math.floor(y/28))%2)?'#2a1218':'#241016';ctx.fillRect(x,y,35,27)}
   // Department zones: the floor now reads as an intentional workplace rather than scattered props.
-  rounded(32,111,282,456,'#172a38aa',12,'#47c9e922');
-  rounded(339,111,282,456,'#252137aa',12,'#b29aff22');
-  rounded(646,111,282,456,'#18312faa',12,'#72e2b422');
+  rounded(32,111,282,456,'#291017aa',12,'#ff465822');
+  rounded(339,111,282,456,'#281018aa',12,'#b29aff22');
+  rounded(646,111,282,456,'#271016aa',12,'#72e2b422');
   floorText('01  ·  RESEARCH & MARKET DATA',47,132,'#80dff2',10);
   floorText('02  ·  STRATEGY & RISK',354,132,'#c2a9ff',10);
   floorText('03  ·  PORTFOLIO & REVIEW',661,132,'#8ee8c6',10);
   // glass partitions and acoustic dividers
-  for(const x of [324,631]){ctx.fillStyle='#7ccfe011';ctx.fillRect(x,146,4,405);ctx.strokeStyle='#a0d9ef33';ctx.lineWidth=1;ctx.strokeRect(x-3,146,10,405)}
+  for(const x of [324,631]){ctx.fillStyle='#ff718011';ctx.fillRect(x,146,4,405);ctx.strokeStyle='#ff8b9833';ctx.lineWidth=1;ctx.strokeRect(x-3,146,10,405)}
   // Window wall / market ticker
-  rounded(30,20,900,73,'#0b1420',10,'#ffffff16');
-  for(let i=0;i<24;i++){const x=42+i*36,h=8+((i*17+Math.floor(visualTime*2))%28);ctx.fillStyle=i%4===0?'#48d6e777':'#7891bb55';ctx.fillRect(x,78-h,5,h)}
-  floorText('EMBER  /  TRADING OPERATIONS',49,47,'#d9e9f8',13);
-  floorText('MARKET INTELLIGENCE   ·   CONTROLLED PAPER ENVIRONMENT',49,68,'#7e9bb6',9);
+  rounded(30,20,900,73,'#10070a',10,'#ffffff16');
+  for(let i=0;i<24;i++){const x=42+i*36,h=8+((i*17+Math.floor(visualTime*2))%28);ctx.fillStyle=i%4===0?'#ff596a77':'#7891bb55';ctx.fillRect(x,78-h,5,h)}
+  floorText('EMBER  /  TRADING OPERATIONS',49,47,'#ffe2e6',13);
+  floorText('MARKET INTELLIGENCE   ·   CONTROLLED PAPER ENVIRONMENT',49,68,'#c38b93',9);
   capitalScreen();
   // A clearly marked central corridor connects every team zone.
   rounded(35,304,890,47,'#0b131d',8,'#ffffff0a');
-  ctx.strokeStyle='#3e9ebc55';ctx.lineWidth=1;ctx.setLineDash([8,8]);ctx.beginPath();ctx.moveTo(45,327);ctx.lineTo(915,327);ctx.stroke();ctx.setLineDash([]);
+  ctx.strokeStyle='#a51e3455';ctx.lineWidth=1;ctx.setLineDash([8,8]);ctx.beginPath();ctx.moveTo(45,327);ctx.lineTo(915,327);ctx.stroke();ctx.setLineDash([]);
   floorText('MAIN AISLE',48,319,'#597d96',8);
   // Meeting table, rolling chairs and a wall-mounted collaborative screen.
-  rounded(389,364,182,70,'#0b121c',12,'#ffffff12');
-  rounded(402,374,156,49,'#2a3847',10,'#627e94');
-  rounded(430,384,100,27,'#0c1b2b',5,'#50cce733');
+  rounded(389,364,182,70,'#10070a',12,'#ffffff12');
+  rounded(402,374,156,49,'#392029',10,'#91404c');
+  rounded(430,384,100,27,'#200b11',5,'#ff718033');
   for(let j=0;j<5;j++){ctx.fillStyle=['#49d7f2','#7bdcb7','#c4a4ff','#e6a8b4','#e8bd76'][j];ctx.fillRect(438+j*17,390,10,3);ctx.fillRect(438+j*17,397,7,2)}
-  floorText('COLLABORATION ROOM',480,457,'#92a7bf',9,'center');
-  for(const [x,y] of [[382,383],[578,383],[382,419],[578,419]]){rounded(x-8,y-8,16,17,'#435367',6,'#9bb3c222');ctx.fillStyle='#0b1420';ctx.beginPath();ctx.arc(x,y+9,5,0,Math.PI*2);ctx.fill()}
+  floorText('COLLABORATION ROOM',480,457,'#c79ba2',9,'center');
+  for(const [x,y] of [[382,383],[578,383],[382,419],[578,419]]){rounded(x-8,y-8,16,17,'#3a2029',6,'#9bb3c222');ctx.fillStyle='#10070a';ctx.beginPath();ctx.arc(x,y+9,5,0,Math.PI*2);ctx.fill()}
   // Shared amenities in a separate corner.
-  rounded(808,466,103,70,'#223140',9,'#ffffff14');rounded(821,477,34,37,'#0d1723',5,'#5e7a91');rounded(827,483,22,25,'#142c3a',3);ctx.fillStyle='#8ee5f1';ctx.fillRect(833,488,10,2);floorText('COFFEE / RESET',860,522,'#9ab1c5',8,'center');
+  rounded(808,466,103,70,'#2c171d',9,'#ffffff14');rounded(821,477,34,37,'#18090d',5,'#8b3b47');rounded(827,483,22,25,'#321019',3);ctx.fillStyle='#8ee5f1';ctx.fillRect(833,488,10,2);floorText('COFFEE / RESET',860,522,'#c89ba2',8,'center');
   // CEO pod is visually distinct and separated from execution desks.
-  rounded(38,154,110,112,'#29303f',11,'#b8667d55');rounded(46,164,94,47,'#101b2a',6);rounded(58,172,70,30,'#172e3b',4,'#5edaf155');floorText('CEO / SUPERVISION',93,230,'#f0a9bb',8,'center');rounded(67,238,52,21,'#414052',7);rounded(72,256,42,5,'#121824',3);
+  rounded(38,154,110,112,'#302029',11,'#b8667d55');rounded(46,164,94,47,'#210d12',6);rounded(58,172,70,30,'#172e3b',4,'#ff647555');floorText('CEO / SUPERVISION',93,230,'#f0a9bb',8,'center');rounded(67,238,52,21,'#332029',7);rounded(72,256,42,5,'#121824',3);
   // Plants, lights and structural detail.
   function plant(x,y){ctx.fillStyle='#0005';ctx.beginPath();ctx.ellipse(x+3,y+15,18,6,0,0,Math.PI*2);ctx.fill();rounded(x-11,y+1,22,18,'#81565a',5);for(let k=0;k<6;k++){ctx.save();ctx.translate(x,y);ctx.rotate(k*Math.PI/3);ctx.fillStyle=k%2?'#477f70':'#75b29a';ctx.beginPath();ctx.ellipse(0,-11,5,13,0,0,Math.PI*2);ctx.fill();ctx.restore()}}
   plant(177,176);plant(770,177);plant(176,523);plant(744,535);
@@ -196,7 +222,7 @@ function draw(){
   for(const {i,d,a,active,p} of poses){
     motions[i]=p;
     avatar(i,p.x,p.y,p.walking,p.activity==='working'||active&&!p.walking);
-    if(active){rounded(p.x+17,p.y-42,66,18,'#0a1c29',5,'#4adfff55');floorText(a.status==='working'?'FOCUS':'HANDOFF',p.x+50,p.y-30,'#9beeff',7,'center')}
+    if(active){rounded(p.x+17,p.y-42,66,18,'#0a1c29',5,'#ff526555');floorText(a.status==='working'?'FOCUS':'HANDOFF',p.x+50,p.y-30,'#9beeff',7,'center')}
     floorText(active?'ACTIVE REPORT':p.activity==='working'?'AT WORKSTATION':p.activity==='break'?'COFFEE BREAK':'MOVING BETWEEN ZONES',d.x,d.y+92,active?colors[i]:'#7e9ab3',8,'center');
   }
   // CEO has a dedicated walking loop on the aisle, with a subtle leadership label.
@@ -206,9 +232,9 @@ function draw(){
   rounded(cx+17,cy-42,74,19,'#321a29',5,'#e96d9055');floorText('OVERSIGHT',cx+54,cy-29,'#f6a6ba',7,'center');
   // Handoff packets travel from one desk to the next when a report is actually observed.
   packets=packets.filter(p=>visualTime-p.born<3);
-  for(const p of packets){const t=Math.min(1,(visualTime-p.born)/3),a=desks[p.from],b=desks[p.to],x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t-42*Math.sin(t*Math.PI);ctx.save();ctx.shadowColor='#6ce5ff';ctx.shadowBlur=13;rounded(x-7,y-5,14,10,'#83edff',3);ctx.shadowBlur=0;ctx.strokeStyle='#184a5c';ctx.strokeRect(x-3,y-2,6,4);ctx.restore()}
+  for(const p of packets){const t=Math.min(1,(visualTime-p.born)/3),a=desks[p.from],b=desks[p.to],x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t-42*Math.sin(t*Math.PI);ctx.save();ctx.shadowColor='#ff5a6b';ctx.shadowBlur=13;rounded(x-7,y-5,14,10,'#ff7180',3);ctx.shadowBlur=0;ctx.strokeStyle='#184a5c';ctx.strokeRect(x-3,y-2,6,4);ctx.restore()}
   rounded(170,578,620,22,'#09131e',7,'#ffffff12');
-  floorText(mode==='demo'?'DEMO COLLABORATION  ·  NO AI CALLS':mode==='live'?'LIVE PAPER OFFICE  ·  VISUAL ROUTINES ARE SIMULATED':'EXPERIMENT TEAM  ·  SYNTHETIC MARKET DATA',480,592,'#91b4ce',9,'center');
+  floorText(mode==='demo'?'DEMO COLLABORATION  ·  NO AI CALLS':mode==='live'?'LIVE PAPER OFFICE  ·  VISUAL ROUTINES ARE SIMULATED':'EXPERIMENT TEAM  ·  SYNTHETIC MARKET DATA',480,592,'#d6a0a7',9,'center');
 }
 function frame(now){const delta=lastFrame?Math.min(.1,(now-lastFrame)/1000):0;lastFrame=now;if(!paused&&!document.hidden){visualTime+=delta;if(mode==='demo'){const step=Math.floor(visualTime/3);if(step!==demoStep){demoStep=step;const i=step%7;for(const a of staff)a.status='Waiting';apply([{agent:roles[i],status:'Demo handoff',summary:demoReports[i],concerns:[],approve:[],timestamp:Date.now()/1000}],false);staff[i].activeUntil=visualTime+12;selected=i;renderDetails()}}}if(mode==='live'&&lastSeen&&Date.now()-lastSeen>20000){supervise();}if(mode==='live'&&lastSeen&&Date.now()-lastSeen>20000)$('notice').textContent='Dashboard updates are stale. Displaying last received state; this is not current AI activity.';draw();requestAnimationFrame(frame)}
 async function pollStandaloneOffice(){if(window.parent!==window)return;try{let response=await fetch('/api/live',{cache:'no-store'});if(response.ok){live=await response.json();const cr=await fetch('/api/company',{cache:'no-store'});if(cr.ok){const c=await cr.json();organization={name:c.config?.name||'Trading company',open_tasks:(c.tasks||[]).filter(t=>t.status!=='done').length,budget:c.budget||{remaining:0}}}}else{const fx=await fetch('/api/forex',{cache:'no-store'});if(!fx.ok)throw Error('Forex paper API is unavailable.');const data=await fx.json(),agentResponse=await fetch('/api/forex/agents',{cache:'no-store'});if(!agentResponse.ok)throw Error('Forex agent observer API is unavailable.');const agents=await agentResponse.json(),account=agents.account||data.account||{},pairs=data.market?.pairs||{};live={config:{provider:'forex-paper'},worker_running:Boolean(agents.auto_run_enabled),strategy:{equity:Number(account.equity||0),pnl:Number(account.daily_pnl??account.realized_pnl??0),halted:Boolean(account.daily_halted)},events:agents.events||[],valid_price_snapshots:Object.values(pairs).filter(q=>q&&Number.isFinite(q.price)&&q.price>0).length,eligible_count:(agents.samples||[]).filter(s=>s.observations>=3).length,calls_today:0,last_tick:Number(data.timestamp||agents.last_cycle||0),readiness:{blockers:agents.events?.length?[]:['No agent cycle has been recorded yet. Press Run agent cycle to start the pipeline.']}};organization=null;$('office-status').textContent='Forex paper-agent runtime · '+(account.positions||[]).length+' open positions · equity '+Number(account.equity||0).toFixed(2)+' · '+live.valid_price_snapshots+' returned price rows · '+(agents.auto_run_enabled?'automatic paper cycles enabled':'manual cycles · automatic mode off');if(data.error)$('notice').textContent='Forex observer warning: '+data.error}lastSeen=Date.now();refreshSource(!seen.size);supervise();if(live.config?.provider==='forex-paper'){$('mode-badge').textContent='FOREX PAPER · '+(live.worker_running?'AUTO-RUN':'MANUAL CYCLES');$('notice').textContent=live.worker_running?'Recorded forex paper-agent reports. Automatic cycles are enabled; broker execution remains disabled.':'Forex agent runtime connected. Press Run agent cycle to create recorded work; moving characters alone are not agent activity.'}renderDetails()}catch(e){$('mode-badge').textContent='OFFICE DISCONNECTED';$('notice').textContent=e.message;$('office-status').textContent='No live dashboard connection · visual activity is not evidence of agent work.'}}
