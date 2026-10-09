@@ -19,10 +19,17 @@ class ForexPaperBroker:
         if day!=today:
             db.execute("UPDATE fx_account SET realized_pnl=0,day=? WHERE id=1",(today,));pnl=0.0
         return float(cash),float(pnl),today
+    def _base_to_usd(self,pair,price):
+        base,quote=pair.upper().split("/",1)
+        if quote=="USD": return float(price)
+        if base=="USD": return 1.0
+        raise ValueError(f"No built-in USD conversion for {pair}")
     def _quote_to_usd(self,pair,price):
         base,quote=pair.upper().split("/",1)
         if quote=="USD": return 1.0
-        if base=="USD": return 1.0/price
+        if base=="USD":
+            if price<=0: raise ValueError("Invalid FX conversion price.")
+            return 1.0/price
         raise ValueError(f"No built-in USD conversion for {pair}")
     def snapshot(self,prices):
         db=self._db()
@@ -36,9 +43,15 @@ class ForexPaperBroker:
             return {"cash":cash,"realized_pnl":pnl,"equity":equity,"positions":positions,"exposure":sum(float(p["notional"]) for p in positions)}
         finally:db.close()
     def open(self,pair,price,notional,side):
-        if side not in ("buy","sell") or not isinstance(pair,str) or "/" not in pair:raise ValueError("Invalid FX order.")
+        if side not in ("buy","sell") or not isinstance(pair,str):raise ValueError("Invalid FX order.")
+        pair=pair.strip().upper()
+        parts=pair.split("/")
+        if len(parts)!=2 or any(len(currency)!=3 for currency in parts) or parts[0]==parts[1]:
+            raise ValueError("Invalid FX pair.")
         price=float(price);notional=float(notional)
         if not math.isfinite(price) or price<=0:raise ValueError("Invalid FX price.")
+        # Validate conversion support before touching account state.
+        base_to_usd=self._base_to_usd(pair,price)
         db=self._db()
         try:
             with db:
@@ -46,7 +59,7 @@ class ForexPaperBroker:
                 rows=db.execute("SELECT * FROM fx_positions").fetchall();exposure=sum(float(r[6]) for r in rows)
                 if db.execute("SELECT 1 FROM fx_positions WHERE pair=?",(pair,)).fetchone():raise ValueError("An FX position already exists for this pair.")
                 self.risk.validate_daily_loss(pnl);self.risk.validate_entry(cash,exposure,rows,notional)
-                iid=uuid.uuid4().hex;units=notional/price
+                iid=uuid.uuid4().hex;units=notional/base_to_usd
                 db.execute("INSERT INTO fx_positions VALUES(?,?,?,?,?,?,?)",(iid,pair,side,units,price,time.time(),notional))
                 return {"id":iid,"pair":pair,"side":side,"units":units,"entry_price":price,"notional":notional}
         finally:db.close()
