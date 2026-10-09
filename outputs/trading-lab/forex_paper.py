@@ -66,6 +66,18 @@ class ForexPaperBroker:
                     quote = (prices or {}).get(open_pair)
                     if not isinstance(quote, dict):
                         raise ValueError(f"Missing current price for open FX position {open_pair}.")
+                    observed = quote.get("observed")
+                    if not isinstance(observed, (int, float)) or not math.isfinite(float(observed)):
+                        raise ValueError(f"Missing quote timestamp for open FX position {open_pair}.")
+                    age = time.time() - float(observed)
+                    if age < -30.0 or age > 300.0:
+                        raise ValueError(f"Stale quote for open FX position {open_pair}.")
+                    try:
+                        provider_day = time.strftime("%Y-%m-%d", time.gmtime(float(observed)))
+                    except (OverflowError, OSError, ValueError):
+                        raise ValueError(f"Invalid quote timestamp for open FX position {open_pair}.")
+                    if str(quote.get("provider_date", ""))[:10] != self._today() or provider_day != self._today():
+                        raise ValueError(f"Quote is not dated today for open FX position {open_pair}.")
                     mark = quote.get("bid" if open_side == "buy" else "ask")
                     if not isinstance(mark, (int, float)) or not math.isfinite(float(mark)) or mark <= 0:
                         raise ValueError(f"Invalid executable price for open FX position {open_pair}.")
