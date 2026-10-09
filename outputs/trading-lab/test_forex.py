@@ -17,8 +17,8 @@ class ForexTests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as d:
    b=ForexPaperBroker(os.path.join(d,"fx.sqlite"))
    long=b.open("EUR/USD",1.10,500,"buy")
-   short=b.open("GBP/USD",1.30,500,"sell")
-   marks={"EUR/USD":{"bid":1.09,"ask":1.0902},"GBP/USD":{"bid":1.3098,"ask":1.31}}
+   marks={"EUR/USD":{"bid":1.09,"ask":1.0902,"observed":time.time(),"provider_date":time.strftime("%Y-%m-%d",time.gmtime())},"GBP/USD":{"bid":1.3098,"ask":1.31}}
+   short=b.open("GBP/USD",1.30,500,"sell",prices=marks)
    snap=b.snapshot(marks)
    pnl={p["id"]:p["unrealized_pnl"] for p in snap["positions"]}
    self.assertAlmostEqual(pnl[long["id"]],long["units"]*(1.09-1.10),places=6)
