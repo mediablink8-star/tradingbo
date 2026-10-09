@@ -66,3 +66,10 @@ input,select,textarea{background-color:#0b0608;color:#fff0f2;border-color:#ff465
 hr{border-color:#ff46581e}
 [hidden]{display:none!important}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+
+/* Final interaction guardrails: controls wrap cleanly instead of colliding. */
+button,.button,.btn{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.quick-actions,.chart-controls{display:flex;flex-wrap:wrap;gap:7px}
+.quick-actions button,.chart-controls button{margin:0}
+.product-header,.overview-heading{flex-wrap:wrap;gap:12px}
+@media(max-width:700px){.product-header{align-items:flex-start;flex-direction:column}.quick-actions button{flex:1 1 140px}}
