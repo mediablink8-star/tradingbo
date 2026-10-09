@@ -1,16 +1,16 @@
 """Ember Forex Trading Lab HTTP application."""
-import argparse,json,os,mimetypes,urllib.parse
+import argparse,json,os,mimetypes,urllib.parse,threading,time
 from http.server import ThreadingHTTPServer,BaseHTTPRequestHandler
 from pathlib import Path
-from forex_lab import ForexLab
+from forex_lab import ForexLab\nfrom forex_agents import ForexAgentRuntime
 ROOT=Path(__file__).resolve().parent
-LAB=ForexLab(ROOT/"lab.sqlite")
+LAB=ForexLab(ROOT/"lab.sqlite")\nAGENTS=ForexAgentRuntime(ROOT/"lab.sqlite",LAB,auto_run=os.environ.get("EMBER_FOREX_AUTORUN","").strip()=="1")
 class Handler(BaseHTTPRequestHandler):
     def send_json(self,data,status=200):
         raw=json.dumps(data,allow_nan=False).encode();self.send_response(status);self.send_header("Content-Type","application/json");self.send_header("Cache-Control","no-store");self.end_headers();self.wfile.write(raw)
     def do_GET(self):
         path=urllib.parse.urlsplit(self.path).path
-        if path=="/api/forex":self.send_json(LAB.tick());return
+        if path=="/api/forex":self.send_json(LAB.tick());return\n        if path=="/api/forex/agents":\n            state=AGENTS.status();state["account"]=LAB.status().get("account",{});state["runtime_available"]=True\n            self.send_json(state);return
         # Serve dashboard files safely, including the immersive office.
         try:
             relative=urllib.parse.unquote(path).lstrip("/") or "index.html"
@@ -26,7 +26,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(200);self.send_header("Content-Type",mime);self.send_header("Cache-Control","no-store");self.end_headers()
         self.wfile.write(target.read_bytes())
     def do_POST(self):
-        if self.path not in ("/api/forex/open","/api/forex/close"):self.send_json({"error":"not found"},404);return
+        if self.path not in ("/api/forex/open","/api/forex/close","/api/forex/agents/run"):self.send_json({"error":"not found"},404);return
         if self.headers.get("Content-Type")!="application/json":self.send_json({"error":"JSON required"},400);return
         try:
             n=int(self.headers.get("Content-Length","0"))
