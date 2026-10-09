@@ -37,6 +37,20 @@ class ForexTests(unittest.TestCase):
    with self.assertRaisesRegex(ValueError,"Daily FX loss limit reached"):
     b.open("GBP/USD",1.30,500,"buy",prices=marks)
    self.assertEqual(len(b.snapshot({"EUR/USD":{"price":1.08}})["positions"]),1)
+ def test_daily_loss_halt_is_latched_until_next_utc_day(self):
+  # Regression specification: a breached daily loss limit must remain latched
+  # even if marked PnL later recovers, rather than permitting a new entry.
+  with tempfile.TemporaryDirectory() as d:
+   risk=FXRisk(RiskConfig(max_daily_loss=5,stop_loss_pct=0.5))
+   b=ForexPaperBroker(os.path.join(d,"fx.sqlite"),risk)
+   b.open("EUR/USD",1.10,500,"buy")
+   today=time.strftime("%Y-%m-%d",time.gmtime())
+   losing={"EUR/USD":{"bid":1.08,"ask":1.0801,"observed":time.time(),"provider_date":today}}
+   with self.assertRaisesRegex(ValueError,"Daily FX loss limit reached"):
+    b.open("GBP/USD",1.30,500,"buy",prices=losing)
+   recovered={"EUR/USD":{"bid":1.10,"ask":1.1001,"observed":time.time(),"provider_date":today}}
+   with self.assertRaisesRegex(ValueError,"remains halted"):
+    b.open("GBP/USD",1.30,500,"buy",prices=recovered)
  def test_stale_mark_fails_closed_for_new_entry(self):
   with tempfile.TemporaryDirectory() as d:
    risk=FXRisk(RiskConfig(max_daily_loss=50))
