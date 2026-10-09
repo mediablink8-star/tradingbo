@@ -42,7 +42,7 @@ class ForexPaperBroker:
                 positions.append({"id":iid,"pair":pair,"side":side,"units":units,"entry_price":entry,"opened":opened,"notional":notional,"unrealized_pnl":u})
             return {"cash":cash,"realized_pnl":pnl,"equity":equity,"positions":positions,"exposure":sum(float(p["notional"]) for p in positions)}
         finally:db.close()
-    def open(self,pair,price,notional,side):
+    def open(self,pair,price,notional,side,prices=None):
         if side not in ("buy","sell") or not isinstance(pair,str):raise ValueError("Invalid FX order.")
         pair=pair.strip().upper()
         parts=pair.split("/")
