@@ -13,6 +13,16 @@ class ForexTests(unittest.TestCase):
    self.assertAlmostEqual(s["equity"],10000+(500/1.10)*(1.12-1.10)/1.0,places=6)
    c=b.close(p["id"],1.12);self.assertGreater(c["pnl"],0)
    p=b.open("GBP/USD",1.30,500,"sell");c=b.close(p["id"],1.28);self.assertGreater(c["pnl"],0)
+ def test_snapshot_marks_positions_at_executable_exit_side(self):
+  with tempfile.TemporaryDirectory() as d:
+   b=ForexPaperBroker(os.path.join(d,"fx.sqlite"))
+   long=b.open("EUR/USD",1.10,500,"buy")
+   short=b.open("GBP/USD",1.30,500,"sell")
+   marks={"EUR/USD":{"bid":1.09,"ask":1.0902},"GBP/USD":{"bid":1.3098,"ask":1.31}}
+   snap=b.snapshot(marks)
+   pnl={p["id"]:p["unrealized_pnl"] for p in snap["positions"]}
+   self.assertAlmostEqual(pnl[long["id"]],long["units"]*(1.09-1.10),places=6)
+   self.assertAlmostEqual(pnl[short["id"]],short["units"]*(1.30-1.31),places=6)
  def test_short_unrealized_pnl(self):
   with tempfile.TemporaryDirectory() as d:
    b=ForexPaperBroker(os.path.join(d,"fx.sqlite"));b.open("USD/JPY",150,500,"sell")
