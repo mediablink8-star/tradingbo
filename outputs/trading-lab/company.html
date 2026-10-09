@@ -166,26 +166,40 @@ function avatar(i,x,y,walking,working){
   ctx.restore();
 }
 function position(i,active){
-  const d=desks[i],home={x:d.x,y:d.y+46};
-  // Every employee has a repeatable personal routine: desk -> shared aisle -> collaboration / coffee -> desk.
-  // The routine is presentation only and never invokes the trading backend.
-  const cycle=(visualTime+i*5.7)%38;
-  const route=[home,{x:home.x,y:i<3?300:505},{x:470,y:i<3?300:505},{x:470,y:335},{x:610,y:335},{x:610,y:390},{x:810,y:390},{x:810,y:505},{x:home.x,y:505},home];
-  let progress=0,walking=false;
+  const d=desks[i],home={x:d.x,y:d.y+105};
+  // Each role has its own walkable bay. Movement is deliberately confined to clear lanes,
+  // never across desk surfaces, the meeting table, the coffee corner, or another role's bay.
+  const lane=i<3?330:550;
+  const zone=[{min:160,max:278},{min:405,max:555},{min:690,max:785}][i%3];
+  const lerp=(a,b,t)=>({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t});
+  const homeLane={x:home.x,y:lane};
   if(active){
     const elapsed=Math.max(0,12-(staff[i].activeUntil-visualTime));
-    progress=elapsed<2?elapsed/2:elapsed<8?1:Math.max(0,1-(elapsed-8)/4);
-    const target={x:480+(i%3-1)*46,y:326+(i%2)*24};
-    const path=[home,{x:home.x,y:i<3?300:505},{x:480,y:i<3?300:505},target];
-    const scaled=progress*3,k=Math.min(2,Math.floor(scaled)),t=Math.min(1,scaled-k),a=path[k],b=path[k+1];
-    return {x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,walking:progress>0&&progress<1,activity:'handoff'};
+    const progress=Math.max(0,Math.min(1,elapsed/12))*3;
+    const center={x:(zone.min+zone.max)/2,y:lane};
+    const path=[home,homeLane,center,homeLane];
+    const k=Math.min(2,Math.floor(progress)),t=Math.min(1,progress-k);
+    return {...lerp(path[k],path[k+1],t),walking:progress>0&&progress<3,activity:'handoff'};
   }
-  if(cycle<16)return {x:home.x+Math.sin(visualTime*1.2+i)*1.8,y:home.y+Math.sin(visualTime*3+i)*.8,walking:false,activity:'working'};
-  const trip=(cycle-16)/22;
-  const routeIndex=Math.min(route.length-2,Math.floor(trip*(route.length-1))),t=(trip*(route.length-1))-routeIndex;
-  const a=route[routeIndex],b=route[routeIndex+1];
-  walking=routeIndex%2===0||routeIndex>4;
-  return {x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,walking,activity:cycle>27&&cycle<31?'break':'walking'};
+  const cycle=(visualTime+i*5.7)%30;
+  const targetA={x:zone.min+27,y:lane},targetB={x:zone.max-25,y:lane};
+  if(cycle<5)return {x:home.x+Math.sin(visualTime*1.2+i)*1.1,y:home.y+Math.sin(visualTime*3+i)*.45,walking:false,activity:'working'};
+  if(cycle<7)return {...lerp(home,homeLane,(cycle-5)/2),walking:true,activity:'walking'};
+  if(cycle<12)return {...lerp(homeLane,targetA,(cycle-7)/5),walking:true,activity:'walking'};
+  if(cycle<16)return {...targetA,walking:false,activity:'collaborating'};
+  if(cycle<21)return {...lerp(targetA,targetB,(cycle-16)/5),walking:true,activity:'walking'};
+  if(cycle<26)return {...lerp(targetB,homeLane,(cycle-21)/5),walking:true,activity:'walking'};
+  if(cycle<28)return {...lerp(homeLane,home,(cycle-26)/2),walking:true,activity:'walking'};
+  return {...home,walking:false,activity:'working'};
+}
+function resolvePose(i,p,placed){
+  // A final spacing guard prevents sprite overlap even if a future route is edited.
+  const clear=(q)=>placed.every(other=>Math.hypot(q.x-other.p.x,q.y-other.p.y)>=43);
+  if(clear(p))return p;
+  const old=motions[i];
+  if(old&&old.x>0&&old.y>0&&clear(old))return {...old,walking:false,activity:'waiting'};
+  const d=desks[i],fallback={x:d.x,y:i<3?330:550,walking:false,activity:'waiting'};
+  return clear(fallback)?fallback:{...p,walking:false,activity:'waiting'};
 }
 function floorText(value,x,y,color='#8fa5be',size=10,align='left'){ctx.fillStyle=color;ctx.font='700 '+size+'px system-ui';ctx.textAlign=align;ctx.fillText(value,x,y)}
 function rounded(x,y,w,h,fill,r=8,stroke){ctx.fillStyle=fill;ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke()}}
@@ -216,22 +230,55 @@ function floorDesk(i,d,active){
   ctx.restore();
 }
 function avatar(i,x,y,walking,working){
-  const phase=visualTime*10+i*2.8,step=walking?Math.sin(phase)*5:0,bob=walking?Math.abs(Math.sin(phase))*2.3:working?Math.sin(visualTime*5+i)*.7:0;
-  ctx.save();ctx.translate(x,y-bob);ctx.scale(1.12,1.12);
-  ctx.fillStyle='#0006';ctx.beginPath();ctx.ellipse(0,28,16,5,0,0,Math.PI*2);ctx.fill();
-  // Legs animate independently, with shoes and a readable silhouette.
-  line(-5,10,-6+step,24,'#202936',6);line(5,10,6-step,24,'#202936',6);
-  line(-6+step,24,-10+step,25,'#b6c7d9',3);line(6-step,24,10-step,25,'#b6c7d9',3);
-  rounded(-12,-12,24,25,colors[i],7);
-  ctx.fillStyle='#ffffff28';ctx.fillRect(-8,-8,3,15);
-  const arm=working?Math.sin(phase)*3:step*.7;
-  line(-11,-5,-17,5+arm,'#d9ad91',4);line(11,-5,17,5-arm,'#d9ad91',4);
-  ctx.fillStyle='#dfb394';ctx.beginPath();ctx.arc(0,-22,11.5,0,Math.PI*2);ctx.fill();
-  rounded(-12,-34,24,12,['#49313b','#805244','#343847','#62394c','#504036','#72788a','#34212b'][i],7);
-  ctx.fillStyle='#252430';ctx.fillRect(-6,-23,2,3);ctx.fillRect(4,-23,2,3);
-  line(-2,-16,2,-16,'#ac7968',1);
-  rounded(-4,-10,8,7,'#e8edf4',2);ctx.fillStyle='#b73d58';ctx.fillRect(-2,-8,4,2);
-  if(i===selected){ctx.strokeStyle=colors[i];ctx.lineWidth=1.6;ctx.beginPath();ctx.ellipse(0,28,22,7,0,0,Math.PI*2);ctx.stroke()}
+  const phase=visualTime*9+i*1.63,step=walking?Math.sin(phase)*5.5:0,bob=walking?Math.abs(Math.sin(phase))*2.4:working?Math.sin(visualTime*4+i)*.9:Math.sin(visualTime*1.7+i)*.3;
+  const skins=['#f1c39f','#e8b78e','#ffd45c','#8bd88b','#d99b78','#c4a6e8','#f0c5a5'];
+  const hair=['#40e3cf','#67402e','#f5a72e','#263b35','#8f3248','#3b3150','#251a25'];
+  const coats=['#f2f1e8','#f4f0e8','#4a9b55','#9b6de0','#d94b56','#3d4658','#a82f45'];
+  const skin=skins[i],hairColor=hair[i],coat=coats[i];
+  ctx.save();ctx.translate(x,y-bob);ctx.scale(.82,.82);
+  ctx.fillStyle='#0009';ctx.beginPath();ctx.ellipse(0,31,18,5.5,0,0,Math.PI*2);ctx.fill();
+  // Big-head original cartoon cast: every role has a distinct silhouette and outfit.
+  line(-5,10,-7+step,25,'#24202a',6);line(5,10,7-step,25,'#24202a',6);
+  line(-7+step,25,-11+step,26,'#e6c3a5',3.5);line(7-step,25,11-step,26,'#e6c3a5',3.5);
+  const jacket=ctx.createLinearGradient(-15,-8,14,18);jacket.addColorStop(0,coat);jacket.addColorStop(1,i===0?'#a9c9d1':'#35111d');
+  rounded(-14,-13,28,27,jacket,8,'#ffffff55');
+  if(i===0){ // eccentric sci-fi researcher: lab coat, teal hair and orange shirt
+    rounded(-5,-8,10,18,'#f5f1e6',2);ctx.fillStyle='#f2a14b';ctx.beginPath();ctx.moveTo(-4,-8);ctx.lineTo(0,1);ctx.lineTo(4,-8);ctx.closePath();ctx.fill();
+  }else if(i===1){ // friendly sitcom dad: white shirt and green tie
+    ctx.fillStyle='#f4f1e8';ctx.beginPath();ctx.moveTo(-6,-10);ctx.lineTo(0,-2);ctx.lineTo(6,-10);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#4aa66b';ctx.beginPath();ctx.moveTo(-2,-5);ctx.lineTo(2,-5);ctx.lineTo(3,6);ctx.lineTo(0,9);ctx.lineTo(-3,6);ctx.closePath();ctx.fill();
+  }else if(i===2){ // bright yellow, spiky-haired cartoon analyst
+    ctx.fillStyle='#f4d75e';ctx.fillRect(-5,-9,10,15);ctx.fillStyle='#e7edf7';ctx.beginPath();ctx.moveTo(-5,-9);ctx.lineTo(0,-2);ctx.lineTo(5,-9);ctx.closePath();ctx.fill();
+  }else if(i===3){ // green alien strategist
+    ctx.fillStyle='#d8f7b2';ctx.fillRect(-4,-9,8,16);line(0,-13,0,-21,'#8bd88b',2);ctx.fillStyle='#ff6477';ctx.beginPath();ctx.arc(0,-22,3,0,Math.PI*2);ctx.fill();
+  }else if(i===4){ // energetic red-jacketed coordinator
+    ctx.fillStyle='#f8d8a2';ctx.beginPath();ctx.moveTo(-5,-9);ctx.lineTo(0,-2);ctx.lineTo(5,-9);ctx.closePath();ctx.fill();
+  }else if(i===5){ // compact robot-like auditor
+    rounded(-10,-10,20,18,'#65758c',5,'#aab9d0');rounded(-6,-5,12,6,'#101d30',2,'#ff4658');ctx.fillStyle='#ff687b';ctx.fillRect(-3,-3,2,2);ctx.fillRect(2,-3,2,2);
+  }else{ctx.fillStyle='#f4e5e7';ctx.beginPath();ctx.moveTo(-6,-10);ctx.lineTo(0,-2);ctx.lineTo(6,-10);ctx.closePath();ctx.fill()}
+  // Neck and expressive oversized face.
+  rounded(-4,-20,8,10,skin,3);
+  ctx.fillStyle=skin;ctx.beginPath();ctx.ellipse(0,-29,13,15,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=hairColor;
+  if(i===0){ctx.beginPath();ctx.moveTo(-13,-29);ctx.lineTo(-17,-42);ctx.lineTo(-8,-38);ctx.lineTo(-4,-48);ctx.lineTo(2,-39);ctx.lineTo(10,-46);ctx.lineTo(10,-37);ctx.lineTo(14,-40);ctx.lineTo(12,-25);ctx.closePath();ctx.fill()}
+  else if(i===1){ctx.beginPath();ctx.moveTo(-13,-30);ctx.quadraticCurveTo(-16,-43,-3,-43);ctx.quadraticCurveTo(9,-45,13,-33);ctx.lineTo(10,-27);ctx.lineTo(-10,-27);ctx.closePath();ctx.fill()}
+  else if(i===2){for(let k=0;k<7;k++){const xx=-12+k*4;ctx.beginPath();ctx.moveTo(xx,-35);ctx.lineTo(xx+2,-44-(k%2)*3);ctx.lineTo(xx+5,-35);ctx.closePath();ctx.fill()}ctx.fillRect(-12,-35,24,7)}
+  else if(i===3){ctx.beginPath();ctx.ellipse(0,-34,14,8,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#8bd88b';ctx.beginPath();ctx.arc(-8,-40,4,0,Math.PI*2);ctx.arc(8,-40,4,0,Math.PI*2);ctx.fill()}
+  else if(i===4){ctx.beginPath();ctx.moveTo(-13,-29);ctx.quadraticCurveTo(-16,-43,-3,-44);ctx.quadraticCurveTo(12,-44,13,-28);ctx.lineTo(8,-32);ctx.lineTo(-8,-31);ctx.closePath();ctx.fill()}
+  else if(i===5){rounded(-14,-41,28,22,'#59677d',8,'#aab9d0')}
+  else{ctx.beginPath();ctx.moveTo(-13,-29);ctx.quadraticCurveTo(-15,-45,0,-44);ctx.quadraticCurveTo(15,-43,13,-27);ctx.lineTo(7,-33);ctx.lineTo(-7,-32);ctx.closePath();ctx.fill()}
+  if(i!==5){
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(-4,-29,4.1,5,0,0,Math.PI*2);ctx.ellipse(4,-29,4.1,5,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#26212a';ctx.beginPath();ctx.arc(-3,-28,1.8,0,Math.PI*2);ctx.arc(5,-28,1.8,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle=hairColor;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-9,-35);ctx.lineTo(-2,-36);ctx.moveTo(2,-36);ctx.lineTo(9,-34);ctx.stroke();
+    ctx.strokeStyle='#8f4d51';ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(0,-23,4,.15,Math.PI-.15);ctx.stroke();
+    if(i===1||i===5){ctx.strokeStyle=i===1?'#6d5c55':'#aab9d0';ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(-10,-32,8,7,2);ctx.roundRect(2,-32,8,7,2);ctx.moveTo(-2,-29);ctx.lineTo(2,-29);ctx.stroke()}
+  }
+  // Distinct cheek dots, ID pins and headset details make the cast feel handcrafted.
+  if(i===0){ctx.fillStyle='#f08a76';ctx.beginPath();ctx.arc(-8,-24,1.7,0,Math.PI*2);ctx.arc(8,-24,1.7,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#ffbd5b';ctx.lineWidth=2;ctx.beginPath();ctx.arc(-13,-28,4,Math.PI*1.5,Math.PI*.5);ctx.stroke()}
+  if(i===2){ctx.fillStyle='#e59e36';ctx.beginPath();ctx.arc(-8,-22,2,0,Math.PI*2);ctx.arc(8,-22,2,0,Math.PI*2);ctx.fill()}
+  if(i!==5){line(0,-11,1,3,'#ffd8de',1.4);rounded(-3,1,7,8,'#f4e6e8',2,'#ffffff66');rect(-1,3,3,2,colors[i])}
+  if(i===selected){ctx.strokeStyle=colors[i];ctx.lineWidth=2.2;ctx.shadowColor=colors[i];ctx.shadowBlur=12;ctx.beginPath();ctx.ellipse(0,31,24,8,0,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0}
   ctx.restore();
 }
 function capitalDisplay(){
@@ -294,27 +341,30 @@ function draw(){
   rounded(38,154,110,112,'#302029',11,'#b8667d55');rounded(46,164,94,47,'#210d12',6);rounded(58,172,70,30,'#172e3b',4,'#ff647555');floorText('CEO / SUPERVISION',93,230,'#f0a9bb',8,'center');rounded(67,238,52,21,'#332029',7);rounded(72,256,42,5,'#121824',3);
   // Plants, lights and structural detail.
   function plant(x,y){ctx.fillStyle='#0005';ctx.beginPath();ctx.ellipse(x+3,y+15,18,6,0,0,Math.PI*2);ctx.fill();rounded(x-11,y+1,22,18,'#81565a',5);for(let k=0;k<6;k++){ctx.save();ctx.translate(x,y);ctx.rotate(k*Math.PI/3);ctx.fillStyle=k%2?'#477f70':'#75b29a';ctx.beginPath();ctx.ellipse(0,-11,5,13,0,0,Math.PI*2);ctx.fill();ctx.restore()}}
-  plant(177,176);plant(770,177);plant(176,523);plant(744,535);
+  plant(177,176);plant(770,177);
   // Desks, people and visible work state.
   const poses=[];
   // Draw all furniture first and every person in a second pass. This prevents later desks
   // from painting over workers walking through the shared aisles.
+  const placed=[];
   for(let i=0;i<6;i++){
     const d=desks[i],a=staff[i],active=a.activeUntil>visualTime||a.status==='working'&&mode==='team'&&team?.status==='running';
     floorDesk(i,d,active);
-    poses.push({i,d,a,active,p:position(i,active)});
+    const p=resolvePose(i,position(i,active),placed);
+    motions[i]=p;placed.push({i,p});
+    poses.push({i,d,a,active,p});
   }
   for(const {i,d,a,active,p} of poses){
-    motions[i]=p;
     avatar(i,p.x,p.y,p.walking,p.activity==='working'||active&&!p.walking);
-    if(active){rounded(p.x+17,p.y-42,66,18,'#0a1c29',5,'#ff526555');floorText(a.status==='working'?'FOCUS':'HANDOFF',p.x+50,p.y-30,'#9beeff',7,'center')}
-    floorText(active?'ACTIVE REPORT':p.activity==='working'?'AT WORKSTATION':p.activity==='break'?'COFFEE BREAK':'MOVING BETWEEN ZONES',d.x,d.y+92,active?colors[i]:'#7e9ab3',8,'center');
+    if(active){rounded(p.x+15,p.y-50,66,17,'#0a1c29',5,'#ff526555');floorText(a.status==='working'?'FOCUS':'HANDOFF',p.x+48,p.y-38,'#9beeff',7,'center')}
+    floorText(active?'ACTIVE REPORT':p.activity==='working'?'AT WORKSTATION':p.activity==='collaborating'?'TEAM HUDDLE':'SAFE WALKWAY',d.x,d.y+92,active?colors[i]:'#7e9ab3',8,'center');
   }
-  // CEO has a dedicated walking loop on the aisle, with a subtle leadership label.
-  const tour=(visualTime%36)/36;let cx=94,cy=290;
-  if(tour>.08&&tour<.88){const t=(tour-.08)/.8;cx=94+750*(t<.5?t*2:(1-t)*2);cy=290}
-  motions[6]={x:cx,y:cy};avatar(6,cx,cy,tour>.08&&tour<.88,false);
-  rounded(cx+17,cy-42,74,19,'#321a29',5,'#e96d9055');floorText('OVERSIGHT',cx+54,cy-29,'#f6a6ba',7,'center');
+  // The supervisor has a private side aisle and never cuts through the team or their desks.
+  const tour=(visualTime%18)/18,ceoX=82+Math.sin(tour*Math.PI*2)*24,ceoY=330;
+  let ceo={x:ceoX,y:ceoY,walking:Math.abs(Math.cos(tour*Math.PI*2))>.2,activity:'oversight'};
+  ceo=resolvePose(6,ceo,placed);motions[6]=ceo;
+  avatar(6,ceo.x,ceo.y,ceo.walking,false);
+  rounded(ceo.x+14,ceo.y-49,70,17,'#321a29',5,'#e96d9055');floorText('OVERSIGHT',ceo.x+49,ceo.y-37,'#f6a6ba',7,'center');
   // Handoff packets travel from one desk to the next when a report is actually observed.
   packets=packets.filter(p=>visualTime-p.born<3);
   for(const p of packets){const t=Math.min(1,(visualTime-p.born)/3),a=desks[p.from],b=desks[p.to],x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t-42*Math.sin(t*Math.PI);ctx.save();ctx.globalAlpha=Math.sin(Math.PI*t);ctx.strokeStyle='#ff6477aa';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x-19,y);ctx.lineTo(x-7,y);ctx.moveTo(x+7,y);ctx.lineTo(x+19,y);ctx.stroke();ctx.shadowColor='#ff5a6b';ctx.shadowBlur=17;rounded(x-8,y-6,16,12,'#ff7180',4,'#ffd8de');ctx.shadowBlur=0;ctx.strokeStyle='#671628';ctx.strokeRect(x-3,y-2,6,4);ctx.restore()}
