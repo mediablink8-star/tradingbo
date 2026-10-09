@@ -26,6 +26,20 @@ class ForexTests(unittest.TestCase):
    with self.assertRaisesRegex(ValueError,"Daily FX loss limit reached"):
     b.open("GBP/USD",1.30,500,"buy",prices=marks)
    self.assertEqual(len(b.snapshot({"EUR/USD":{"price":1.08}})["positions"]),1)
+ def test_stale_mark_fails_closed_for_new_entry(self):
+  with tempfile.TemporaryDirectory() as d:
+   risk=FXRisk(RiskConfig(max_daily_loss=50))
+   b=ForexPaperBroker(os.path.join(d,"fx.sqlite"),risk)
+   b.open("EUR/USD",1.10,500,"buy")
+   stale={"EUR/USD":{"bid":1.08,"ask":1.0801,"observed":time.time()-301,"provider_date":time.strftime("%Y-%m-%d",time.gmtime())}}
+   with self.assertRaisesRegex(ValueError,"Stale quote"):
+    b.open("GBP/USD",1.30,500,"buy",prices=stale)
+ def test_missing_mark_fails_closed_for_new_entry(self):
+  with tempfile.TemporaryDirectory() as d:
+   b=ForexPaperBroker(os.path.join(d,"fx.sqlite"))
+   b.open("EUR/USD",1.10,500,"buy")
+   with self.assertRaisesRegex(ValueError,"Missing current price"):
+    b.open("GBP/USD",1.30,500,"buy",prices={})
  def test_daily_loss_and_exit_logic(self):
   r=FXRisk(RiskConfig(max_daily_loss=50));
   with self.assertRaises(ValueError):r.validate_daily_loss(-50)
