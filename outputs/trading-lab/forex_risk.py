@@ -20,6 +20,21 @@ class RiskConfig:
     # that a live statistical correlation matrix has been calculated.
     max_currency_exposure: float = 2000.0
 
+    def __post_init__(self):
+        positive = (
+            "max_trade_notional", "max_exposure", "max_daily_loss",
+            "stop_loss_pct", "take_profit_pct", "max_position_age",
+            "max_leverage", "max_currency_exposure",
+        )
+        for name in positive:
+            value = getattr(self, name)
+            if not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
+                raise ValueError(f"Risk configuration {name} must be finite and positive.")
+        if not isinstance(self.starting_cash, (int, float)) or not math.isfinite(self.starting_cash) or self.starting_cash <= 0:
+            raise ValueError("Risk configuration starting_cash must be finite and positive.")
+        if not isinstance(self.max_positions, int) or isinstance(self.max_positions, bool) or self.max_positions < 1:
+            raise ValueError("Risk configuration max_positions must be a positive integer.")
+
 
 class FXRisk:
     def __init__(self, config=None):
