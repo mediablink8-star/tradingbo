@@ -54,6 +54,17 @@ class ForexLabTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "stale or not dated today"):
                     lab.open("EUR/USD", "buy", 500)
 
+
+    def test_future_dated_quote_is_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            lab = ForexLab(os.path.join(folder, "test.sqlite"))
+            with patch(
+                "forex_lab.snapshot",
+                return_value=self._market(1.10, observed=time.time() + 120),
+            ):
+                with self.assertRaisesRegex(ValueError, "stale or not dated today"):
+                    lab.open("EUR/USD", "buy", 500)
+
     def test_current_quote_triggers_automatic_stop_loss(self):
         with tempfile.TemporaryDirectory() as folder:
             lab = ForexLab(os.path.join(folder, "test.sqlite"))
