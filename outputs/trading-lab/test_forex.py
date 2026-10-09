@@ -16,7 +16,7 @@ class ForexTests(unittest.TestCase):
  def test_short_unrealized_pnl(self):
   with tempfile.TemporaryDirectory() as d:
    b=ForexPaperBroker(os.path.join(d,"fx.sqlite"));b.open("USD/JPY",150,500,"sell")
-   s=b.snapshot({"USD/JPY":{"price":149}});self.assertGreater(s["positions"][0]["unrealized_pnl"],0);self.assertAlmostEqual(s["positions"][0]["unrealized_pnl"],(500/150)*(150-149)/149,places=6)
+   s=b.snapshot({"USD/JPY":{"price":149}});self.assertGreater(s["positions"][0]["unrealized_pnl"],0);self.assertAlmostEqual(s["positions"][0]["unrealized_pnl"],500*(150-149)/149,places=6)
  def test_daily_loss_and_exit_logic(self):
   r=FXRisk(RiskConfig(max_daily_loss=50));
   with self.assertRaises(ValueError):r.validate_daily_loss(-50)
