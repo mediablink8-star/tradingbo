@@ -94,8 +94,10 @@ class MultiPairPortfolioBacktester:
             exposure[quote] = exposure.get(quote, 0.0) + quote_usd
         return exposure
 
-    def _close(self, position, candle, cash, trades, timestamp, reason):
-        exit_price = self._exec(candle.close, position.side, False)
+    def _close(self, position, candle, cash, trades, timestamp, reason, price=None):
+        # Signal exits fill at the next bar's open; risk/final exits default to close.
+        reference_price = candle.close if price is None else price
+        exit_price = self._exec(reference_price, position.side, False)
         pnl = self._pnl(position, exit_price)
         cash += pnl
         trades.append({
@@ -158,7 +160,9 @@ class MultiPairPortfolioBacktester:
 
             for pair in sorted(current):
                 candle = current[pair]
-                signal = signals_by_pair[pair](candles_by_pair[pair][:indexes[pair]])
+                # The current candle is excluded: its close is not known at its open.
+                completed = candles_by_pair[pair][: indexes[pair] - 1]
+                signal = signals_by_pair[pair](completed) if completed else None
                 position = positions.get(pair)
                 closed = False
 
@@ -177,7 +181,10 @@ class MultiPairPortfolioBacktester:
                     elif signal in ("flat", "buy", "sell") and signal != position.side:
                         reason = "signal"
                     if reason:
-                        cash, pnl = self._close(position, candle, cash, trades, timestamp, reason)
+                        cash, pnl = self._close(
+                            position, candle, cash, trades, timestamp, reason,
+                            price=candle.open if reason == "signal" else None,
+                        )
                         daily_realized += pnl
                         del positions[pair]
                         position = None
@@ -190,17 +197,21 @@ class MultiPairPortfolioBacktester:
                         continue
                     if len(positions) * self.per_position_notional + self.per_position_notional > self.max_exposure:
                         continue
-                    entry_price = self._exec(candle.close, signal, True)
+                    entry_price = self._exec(candle.open, signal, True)
                     candidate = PortfolioPosition(
                         pair=pair,
                         side=signal,
                         entry_time=timestamp,
                         entry_price=entry_price,
-                        base_units=self._base_units(pair, candle.close),
+                        base_units=self._base_units(pair, candle.open),
                     )
                     if self.max_currency_exposure is not None:
-                        marks = {p: latest[p].close for p in latest}
-                        marks[pair] = candle.close
+                        # Current bars are executable at open; do not use their future closes.
+                        marks = {
+                            p: (current[p].open if p in current else latest[p].close)
+                            for p in latest
+                        }
+                        marks[pair] = candle.open
                         proposed = dict(positions)
                         proposed[pair] = candidate
                         currency = self._currency_exposure(proposed, marks)
