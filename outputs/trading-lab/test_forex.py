@@ -75,4 +75,18 @@ class ForexTests(unittest.TestCase):
   r=FXRisk(RiskConfig(max_daily_loss=50));
   with self.assertRaises(ValueError):r.validate_daily_loss(-50)
   p={"side":"sell","entry_price":100,"opened":0};self.assertTrue(r.exits(p,102,1))
+ def test_currency_concentration_blocks_shared_currency_overload(self):
+  with tempfile.TemporaryDirectory() as d:
+   risk=FXRisk(RiskConfig(max_currency_exposure=750,max_trade_notional=1000))
+   b=ForexPaperBroker(os.path.join(d,"fx.sqlite"),risk)
+   b.open("EUR/USD",1.10,500,"buy")
+   marks={"EUR/USD":{"bid":1.0999,"ask":1.1001,"observed":time.time(),"provider_date":time.strftime("%Y-%m-%d",time.gmtime())}}
+   with self.assertRaisesRegex(ValueError,"currency concentration.*USD"):
+    b.open("GBP/USD",1.30,300,"buy",prices=marks)
+   self.assertEqual(len(b.snapshot({})["positions"]),1)
+ def test_currency_exposure_counts_opposing_positions_gross(self):
+  r=FXRisk(RiskConfig(max_currency_exposure=750))
+  positions=[("id","EUR/USD","buy",0,1.1,0,500)]
+  with self.assertRaisesRegex(ValueError,"currency concentration.*EUR"):
+   r.validate_entry(10000,500,positions,300,pair="EUR/USD",side="sell")
 if __name__=="__main__":unittest.main()
