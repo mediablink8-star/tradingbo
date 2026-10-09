@@ -165,12 +165,15 @@ class MultiPairPortfolioBacktester:
         trades = []
         history = []
         daily_realized = 0.0
+        daily_start_equity = self.starting_cash
         current_day = None
         halted_day = False
 
         for timestamp in timeline:
             day = math.floor(timestamp / 86400)
             if day != current_day:
+                if history:
+                    daily_start_equity = history[-1]["equity"]
                 current_day = day
                 daily_realized = 0.0
                 halted_day = False
@@ -184,6 +187,12 @@ class MultiPairPortfolioBacktester:
                 indexes[pair] = i
                 if pair in latest and latest[pair].timestamp == timestamp:
                     current[pair] = latest[pair]
+
+            open_marks = {p: (current[p].open if p in current else latest[p].close) for p in positions if p in current or p in latest}
+            if self.max_daily_loss is not None and positions:
+                open_equity = cash + sum(self._pnl(pos, open_marks[p]) for p, pos in positions.items() if p in open_marks)
+                if open_equity - daily_start_equity <= -self.max_daily_loss:
+                    halted_day = True
 
             for pair in sorted(current):
                 candle = current[pair]
@@ -273,6 +282,9 @@ class MultiPairPortfolioBacktester:
             equity = cash
             for pair, position in positions.items():
                 equity += self._pnl(position, latest[pair].close)
+            daily_equity_pnl = equity - daily_start_equity
+            if self.max_daily_loss is not None and daily_equity_pnl <= -self.max_daily_loss:
+                halted_day = True
             history.append({
                 "timestamp": timestamp,
                 "equity": equity,
@@ -283,6 +295,7 @@ class MultiPairPortfolioBacktester:
                     positions, {p: latest[p].close for p in positions}
                 ) if positions else {},
                 "daily_realized_pnl": daily_realized,
+                "daily_equity_pnl": daily_equity_pnl,
                 "daily_loss_halted": halted_day,
             })
 
