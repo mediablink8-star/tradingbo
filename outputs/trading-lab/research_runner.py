@@ -156,9 +156,12 @@ def run_dataset(
         portfolio_backtester_factory=_portfolio_factory,
         max_iterations=2,
     )
+    # The final holdout is a fresh, isolated evaluation. Never seed it with
+    # the walk-forward ending balance: that couples evaluation periods and
+    # makes reported returns depend on the preceding run's P&L.
     portfolio_holdout = run_shared_holdout_portfolio(
         datasets, holdout_size=holdout_size,
-        starting_cash=portfolio_wf["ending_cash"],
+        starting_cash=10000.0,
     )
     return {
         "pairs": reports,

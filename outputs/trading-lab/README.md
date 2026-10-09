@@ -15,6 +15,10 @@ python app.py
 
 Open the local dashboard at `http://127.0.0.1:8765`.
 
+The immersive office is available at `http://127.0.0.1:8765/company.html` and has a return link to the Research Floor. It now connects to a real, recorded, deterministic paper-agent pipeline through `/api/forex/agents` and `/api/forex/agents/run`. Press **Run agent cycle** to execute research, strategy, independent risk review, paper-only coordination, and performance/audit recording. Reports are persisted in SQLite and are distinct from the office animations. The baseline strategy uses short observed-price momentum; it is an engineering baseline, not a validated profitable strategy.
+
+Automatic paper cycles are **off by default**. To opt in, set `EMBER_FOREX_AUTORUN=1` before starting `python app.py`; the server then attempts a cycle every 60 seconds. A cycle may abstain if quotes are stale, there are too few distinct observations, a risk limit is reached, or the broker rejects the paper order. ECB reference rates are not executable prices. No live broker execution is enabled.
+
 Market data defaults to ECB reference rates through Frankfurter. Frankfurter
 supports provider pinning, so the historical pipeline can use the ECB source
 rather than a blended feed. See https://frankfurter.dev/providers/ecb/.
@@ -44,9 +48,12 @@ deterministic risk controls.
 ## Research methodology
 
 The research layer uses chronological walk-forward evaluation rather than
-randomized cross-validation. This matters for time series because future
-observations must not leak into training; a gap can also be inserted between
-train and test windows.
+randomized cross-validation. Signals are formed from completed candles and
+filled at the next candle's open in the single-pair and portfolio engines,
+avoiding same-close signal look-ahead. Portfolio stop/target checks use candle
+highs and lows, assume the stop is hit first if both levels are crossed, and
+model gaps through a stop at the worse opening price. A gap can also be
+inserted between train and test windows.
 
 The joint portfolio evaluator:
 
@@ -129,7 +136,7 @@ strategy selection, and performance on the untouched final holdout.
 
 ```
 cd outputs/trading-lab
-python -m unittest -v test_forex.py test_backtest.py test_strategies.py test_robustness.py test_historical.py test_dataset.py test_intraday.py test_intraday_dataset.py test_true_walkforward.py test_research_selection.py test_research_report.py test_research_runner.py test_portfolio_report.py test_portfolio_backtest.py test_portfolio_selection.py test_portfolio_walkforward.py
+python -m unittest -v test_forex.py test_forex_lab.py test_forex_agents.py test_backtest.py test_strategies.py test_robustness.py test_historical.py test_dataset.py test_intraday.py test_intraday_dataset.py test_true_walkforward.py test_research_selection.py test_research_report.py test_research_runner.py test_portfolio_report.py test_portfolio_backtest.py test_portfolio_selection.py test_portfolio_walkforward.py
 ```
 
 Live broker execution remains intentionally out of scope.

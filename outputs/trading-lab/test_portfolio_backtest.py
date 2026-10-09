@@ -35,6 +35,57 @@ class PortfolioBacktestTests(unittest.TestCase):
         self.assertEqual(len(result["trades"]), 1)
         self.assertGreater(result["trades"][0]["pnl"], 0)
 
+
+    def test_intrabar_stop_precedes_target_when_both_are_touched(self):
+        candles = {
+            "EUR/USD": [
+                Candle(0, 1.0, 1.0, 1.0, 1.0),
+                Candle(1, 1.0, 1.0, 1.0, 1.0),
+                Candle(2, 1.004, 1.03, .985, 1.01),
+            ]
+        }
+        result = MultiPairPortfolioBacktester(
+            per_position_notional=1000, max_exposure=1000,
+            stop_loss_pct=.01, take_profit_pct=.02,
+            spread_bps=0, slippage_bps=0,
+        ).run(candles, {"EUR/USD": lambda history: "buy"})
+        trade = result["trades"][0]
+        self.assertEqual(trade["reason"], "stop_loss")
+        self.assertAlmostEqual(trade["exit_price"], .99)
+        self.assertLess(trade["pnl"], 0)
+
+    def test_gap_through_stop_fills_at_worse_open(self):
+        candles = {
+            "EUR/USD": [
+                Candle(0, 1.0, 1.0, 1.0, 1.0),
+                Candle(1, 1.0, 1.0, 1.0, 1.0),
+                Candle(2, .97, .98, .96, .975),
+            ]
+        }
+        result = MultiPairPortfolioBacktester(
+            per_position_notional=1000, max_exposure=1000,
+            stop_loss_pct=.01, spread_bps=0, slippage_bps=0,
+        ).run(candles, {"EUR/USD": lambda history: "buy"})
+        trade = result["trades"][0]
+        self.assertEqual(trade["reason"], "stop_loss")
+        self.assertAlmostEqual(trade["exit_price"], .97)
+
+
+    def test_rejects_non_monotonic_candles(self):
+        candles = {
+            "EUR/USD": [
+                Candle(1, 1.0, 1.0, 1.0, 1.0),
+                Candle(1, 1.1, 1.1, 1.1, 1.1),
+            ]
+        }
+        with self.assertRaisesRegex(ValueError, "strictly increasing"):
+            MultiPairPortfolioBacktester().run(candles, {"EUR/USD": lambda h: "buy"})
+
+    def test_rejects_impossible_ohlc(self):
+        candles = {"EUR/USD": [Candle(1, 1.0, .9, .95, 1.0)]}
+        with self.assertRaisesRegex(ValueError, "invalid candle high"):
+            MultiPairPortfolioBacktester().run(candles, {"EUR/USD": lambda h: "buy"})
+
     def test_currency_concentration_limit_blocks_new_position(self):
         candles = {
             "EUR/USD": [Candle(i, 1 + i * .01, 1 + i * .01, 1 + i * .01, 1 + i * .01) for i in range(4)],
@@ -46,6 +97,27 @@ class PortfolioBacktestTests(unittest.TestCase):
             max_currency_exposure=1200, spread_bps=0, slippage_bps=0,
         ).run(candles, signals)
         self.assertLessEqual(max(row["open_positions"] for row in result["history"]), 1)
+
+    def test_unrealized_loss_triggers_daily_halt_before_new_entry(self):
+        candles = {
+            "EUR/USD": [
+                Candle(0, 1.0, 1.0, 1.0, 1.0),
+                Candle(1, .98, .98, .98, .98),
+                Candle(2, .97, .97, .97, .97),
+            ],
+            "GBP/USD": [
+                Candle(0, 1.2, 1.2, 1.2, 1.2),
+                Candle(1, 1.19, 1.19, 1.19, 1.19),
+                Candle(2, 1.18, 1.18, 1.18, 1.18),
+            ],
+        }
+        signals = {pair: (lambda h: "buy") for pair in candles}
+        result = MultiPairPortfolioBacktester(
+            per_position_notional=1000, max_exposure=2000, max_positions=2,
+            max_daily_loss=5, spread_bps=0, slippage_bps=0,
+        ).run(candles, signals)
+        self.assertTrue(any(row["daily_loss_halted"] for row in result["history"]))
+        self.assertTrue(any(row["daily_equity_pnl"] <= -5 for row in result["history"]))
 
     def test_stop_loss_and_daily_loss_halt_are_recorded(self):
         candles = {

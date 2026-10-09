@@ -103,8 +103,9 @@ class FXBacktester:
         return max(1.0, 31536000.0 / statistics.median(gaps))
 
     def _position(self, side, candle):
-        entry_price = self._exec(candle.close, side, True)
-        base_to_usd, _ = self._conversion_rates(candle.timestamp, candle.close)
+        # A signal formed from completed candles can only fill at the next bar's open.
+        entry_price = self._exec(candle.open, side, True)
+        base_to_usd, _ = self._conversion_rates(candle.timestamp, candle.open)
         if base_to_usd <= 0 or entry_price <= 0:
             raise ValueError("invalid conversion or entry price")
         # Notional is expressed in account USD. Convert that USD amount to
@@ -138,15 +139,18 @@ class FXBacktester:
         trades = []
         history = []
 
+        pending_action = None
         for i, candle in enumerate(candles):
-            action = signal(candles[: i + 1])
+            # Execute only a signal computed after the previous candle closed.
+            # Using this candle's close to both form and fill a signal leaks future data.
+            action = pending_action
             if position is None and action in ("buy", "sell"):
                 position = self._position(action, candle)
             elif position is not None and (
                 action == ("sell" if position["side"] == "buy" else "buy")
                 or action == "flat"
             ):
-                exit_price = self._exec(candle.close, position["side"], False)
+                exit_price = self._exec(candle.open, position["side"], False)
                 pnl = self._pnl(position, exit_price, candle.timestamp)
                 cash += pnl
                 trades.append(
@@ -168,6 +172,7 @@ class FXBacktester:
                     "position": position["side"] if position else None,
                 }
             )
+            pending_action = signal(candles[: i + 1])
 
         if position is not None:
             candle = candles[-1]

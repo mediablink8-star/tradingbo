@@ -94,8 +94,10 @@ class MultiPairPortfolioBacktester:
             exposure[quote] = exposure.get(quote, 0.0) + quote_usd
         return exposure
 
-    def _close(self, position, candle, cash, trades, timestamp, reason):
-        exit_price = self._exec(candle.close, position.side, False)
+    def _close(self, position, candle, cash, trades, timestamp, reason, price=None):
+        # Signal exits fill at the next bar's open; risk/final exits default to close.
+        reference_price = candle.close if price is None else price
+        exit_price = self._exec(reference_price, position.side, False)
         pnl = self._pnl(position, exit_price)
         cash += pnl
         trades.append({
@@ -123,6 +125,33 @@ class MultiPairPortfolioBacktester:
             }
         if set(candles_by_pair) != set(signals_by_pair):
             raise ValueError("candles_by_pair and signals_by_pair must contain the same pairs")
+        if not math.isfinite(self.starting_cash) or self.starting_cash <= 0:
+            raise ValueError("starting_cash must be finite and positive")
+        if not math.isfinite(self.max_exposure) or self.max_exposure < 0:
+            raise ValueError("max_exposure must be finite and non-negative")
+        if not math.isfinite(self.per_position_notional) or self.per_position_notional <= 0:
+            raise ValueError("per_position_notional must be finite and positive")
+        if self.spread_bps < 0 or self.slippage_bps < 0:
+            raise ValueError("spread and slippage must be non-negative")
+        for pair, candles in candles_by_pair.items():
+            if not isinstance(pair, str) or pair.count("/") != 1:
+                raise ValueError(f"invalid FX pair: {pair!r}")
+            if not candles:
+                continue
+            previous_timestamp = float("-inf")
+            for candle in candles:
+                values = (candle.timestamp, candle.open, candle.high, candle.low, candle.close)
+                if any(not math.isfinite(float(value)) for value in values):
+                    raise ValueError(f"non-finite candle value for {pair}")
+                if candle.timestamp <= previous_timestamp:
+                    raise ValueError(f"candles for {pair} must have strictly increasing timestamps")
+                if candle.low <= 0 or candle.open <= 0 or candle.high <= 0 or candle.close <= 0:
+                    raise ValueError(f"candle prices for {pair} must be positive")
+                if candle.high < max(candle.open, candle.close, candle.low):
+                    raise ValueError(f"invalid candle high for {pair}")
+                if candle.low > min(candle.open, candle.close, candle.high):
+                    raise ValueError(f"invalid candle low for {pair}")
+                previous_timestamp = candle.timestamp
 
         timeline = sorted({
             candle.timestamp
@@ -136,12 +165,15 @@ class MultiPairPortfolioBacktester:
         trades = []
         history = []
         daily_realized = 0.0
+        daily_start_equity = self.starting_cash
         current_day = None
         halted_day = False
 
         for timestamp in timeline:
             day = math.floor(timestamp / 86400)
             if day != current_day:
+                if history:
+                    daily_start_equity = history[-1]["equity"]
                 current_day = day
                 daily_realized = 0.0
                 halted_day = False
@@ -156,33 +188,68 @@ class MultiPairPortfolioBacktester:
                 if pair in latest and latest[pair].timestamp == timestamp:
                     current[pair] = latest[pair]
 
+            open_marks = {p: (current[p].open if p in current else latest[p].close) for p in positions if p in current or p in latest}
+            if self.max_daily_loss is not None and positions:
+                open_equity = cash + sum(self._pnl(pos, open_marks[p]) for p, pos in positions.items() if p in open_marks)
+                if open_equity - daily_start_equity <= -self.max_daily_loss:
+                    halted_day = True
+
             for pair in sorted(current):
                 candle = current[pair]
-                signal = signals_by_pair[pair](candles_by_pair[pair][:indexes[pair]])
+                # The current candle is excluded: its close is not known at its open.
+                completed = candles_by_pair[pair][: indexes[pair] - 1]
+                signal = signals_by_pair[pair](completed) if completed else None
                 position = positions.get(pair)
                 closed = False
 
                 if position is not None:
                     age = timestamp - position.entry_time
-                    move = (candle.close / position.entry_price - 1.0) * (
-                        1 if position.side == "buy" else -1
-                    )
                     reason = None
-                    if self.stop_loss_pct is not None and move <= -self.stop_loss_pct:
-                        reason = "stop_loss"
-                    elif self.take_profit_pct is not None and move >= self.take_profit_pct:
-                        reason = "take_profit"
-                    elif self.max_position_age is not None and age >= self.max_position_age:
+                    exit_reference = None
+
+                    # Use OHLC extremes for intrabar risk checks. If a candle
+                    # touches both stop and target, conservatively assume stop first.
+                    if self.stop_loss_pct is not None:
+                        if position.side == "buy":
+                            stop_price = position.entry_price * (1 - self.stop_loss_pct)
+                            if candle.low <= stop_price:
+                                reason = "stop_loss"
+                                exit_reference = min(candle.open, stop_price)
+                        else:
+                            stop_price = position.entry_price * (1 + self.stop_loss_pct)
+                            if candle.high >= stop_price:
+                                reason = "stop_loss"
+                                exit_reference = max(candle.open, stop_price)
+
+                    if reason is None and self.take_profit_pct is not None:
+                        if position.side == "buy":
+                            target_price = position.entry_price * (1 + self.take_profit_pct)
+                            if candle.high >= target_price:
+                                reason = "take_profit"
+                                exit_reference = max(candle.open, target_price)
+                        else:
+                            target_price = position.entry_price * (1 - self.take_profit_pct)
+                            if candle.low <= target_price:
+                                reason = "take_profit"
+                                exit_reference = min(candle.open, target_price)
+
+                    if reason is None and self.max_position_age is not None and age >= self.max_position_age:
                         reason = "max_position_age"
-                    elif signal in ("flat", "buy", "sell") and signal != position.side:
+                        exit_reference = candle.open
+                    elif reason is None and signal in ("flat", "buy", "sell") and signal != position.side:
                         reason = "signal"
+                        exit_reference = candle.open
+
                     if reason:
-                        cash, pnl = self._close(position, candle, cash, trades, timestamp, reason)
+                        cash, pnl = self._close(
+                            position, candle, cash, trades, timestamp, reason,
+                            price=exit_reference,
+                        )
                         daily_realized += pnl
                         del positions[pair]
                         position = None
                         closed = True
-                        if daily_realized <= -(self.max_daily_loss or float("inf")):
+                        if self.max_daily_loss is not None and daily_realized <= -self.max_daily_loss:
                             halted_day = True
 
                 if position is None and not closed and not halted_day and signal in ("buy", "sell"):
@@ -190,17 +257,21 @@ class MultiPairPortfolioBacktester:
                         continue
                     if len(positions) * self.per_position_notional + self.per_position_notional > self.max_exposure:
                         continue
-                    entry_price = self._exec(candle.close, signal, True)
+                    entry_price = self._exec(candle.open, signal, True)
                     candidate = PortfolioPosition(
                         pair=pair,
                         side=signal,
                         entry_time=timestamp,
                         entry_price=entry_price,
-                        base_units=self._base_units(pair, candle.close),
+                        base_units=self._base_units(pair, candle.open),
                     )
                     if self.max_currency_exposure is not None:
-                        marks = {p: latest[p].close for p in latest}
-                        marks[pair] = candle.close
+                        # Current bars are executable at open; do not use their future closes.
+                        marks = {
+                            p: (current[p].open if p in current else latest[p].close)
+                            for p in latest
+                        }
+                        marks[pair] = candle.open
                         proposed = dict(positions)
                         proposed[pair] = candidate
                         currency = self._currency_exposure(proposed, marks)
@@ -211,6 +282,9 @@ class MultiPairPortfolioBacktester:
             equity = cash
             for pair, position in positions.items():
                 equity += self._pnl(position, latest[pair].close)
+            daily_equity_pnl = equity - daily_start_equity
+            if self.max_daily_loss is not None and daily_equity_pnl <= -self.max_daily_loss:
+                halted_day = True
             history.append({
                 "timestamp": timestamp,
                 "equity": equity,
@@ -221,6 +295,7 @@ class MultiPairPortfolioBacktester:
                     positions, {p: latest[p].close for p in positions}
                 ) if positions else {},
                 "daily_realized_pnl": daily_realized,
+                "daily_equity_pnl": daily_equity_pnl,
                 "daily_loss_halted": halted_day,
             })
 

@@ -1,0 +1,34 @@
+name: Forex research tests
+
+on:
+  push:
+    paths:
+      - "outputs/trading-lab/**"
+      - ".github/workflows/forex-tests.yml"
+  pull_request:
+    paths:
+      - "outputs/trading-lab/**"
+      - ".github/workflows/forex-tests.yml"
+  workflow_dispatch:
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run forex unit and research tests
+        working-directory: outputs/trading-lab
+        run: |
+          python -m unittest -v \
+            test_forex.py test_forex_lab.py test_backtest.py \
+            test_strategies.py test_robustness.py test_historical.py \
+            test_dataset.py test_intraday.py test_intraday_dataset.py \
+            test_true_walkforward.py test_research_selection.py \
+            test_research_report.py test_research_runner.py \
+            test_portfolio_report.py test_portfolio_backtest.py \
+            test_portfolio_selection.py test_portfolio_walkforward.py
