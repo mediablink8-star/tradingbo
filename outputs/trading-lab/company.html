@@ -148,9 +148,16 @@ function avatar(i,x,y,walking,working){
   ctx.fillStyle='#fff0f2';ctx.beginPath();ctx.moveTo(-5,-10);ctx.lineTo(0,1);ctx.lineTo(5,-10);ctx.closePath();ctx.fill();
   ctx.fillStyle=i===3?'#ffc1ca':'#25101a';ctx.beginPath();ctx.moveTo(-2,-7);ctx.lineTo(2,-7);ctx.lineTo(1,4);ctx.lineTo(-1,4);ctx.closePath();ctx.fill();
   // Shoulder seams and a moving arm pose make idle vs desk work readable.
-  const arm=working?Math.sin(phase)*4:walking?step*.65:Math.sin(phase*.4)*1.2;
-  line(-12,-7,-18,4+arm,skin,5);line(12,-7,18,4-arm,skin,5);
-  ctx.fillStyle=skin;ctx.beginPath();ctx.arc(-18,5+arm,3,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(18,5-arm,3,0,Math.PI*2);ctx.fill();
+  const arm=walking?step*.72:Math.sin(phase*.4)*1.2;
+  if(working){
+    // Seated typing pose: hands stay on the keyboard instead of swinging like a walker.
+    const typing=Math.sin(visualTime*10+i*2)*1.3;
+    line(-12,-7,-15,-21+typing,skin,4.5);line(12,-7,15,-21-typing,skin,4.5);
+    ctx.fillStyle=skin;ctx.beginPath();ctx.arc(-15,-22+typing,2.8,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(15,-22-typing,2.8,0,Math.PI*2);ctx.fill();
+  }else{
+    line(-12,-7,-18,4+arm,skin,5);line(12,-7,18,4-arm,skin,5);
+    ctx.fillStyle=skin;ctx.beginPath();ctx.arc(-18,5+arm,3,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(18,5-arm,3,0,Math.PI*2);ctx.fill();
+  }
   // Neck, face, hairline, eyebrows and facial features.
   rounded(-4,-19,8,9,skin,3);
   ctx.fillStyle=skin;ctx.beginPath();ctx.ellipse(0,-27,12,14,0,0,Math.PI*2);ctx.fill();
@@ -166,31 +173,22 @@ function avatar(i,x,y,walking,working){
   ctx.restore();
 }
 function position(i,active){
-  const d=desks[i],home={x:d.x,y:d.y+105};
-  // Each role has its own walkable bay. Movement is deliberately confined to clear lanes,
-  // never across desk surfaces, the meeting table, the coffee corner, or another role's bay.
+  const d=desks[i],home={x:d.x,y:d.y+30};
+  // The desk is the default state. Agents leave only into their own clear aisle,
+  // then stroll inside a small lane assigned to their workstation column.
   const lane=i<3?330:550;
   const zone=[{min:160,max:278},{min:405,max:555},{min:690,max:785}][i%3];
-  const lerp=(a,b,t)=>({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t});
+  const target={x:i%3===0?zone.max-24:zone.min+24,y:lane};
   const homeLane={x:home.x,y:lane};
-  if(active){
-    const elapsed=Math.max(0,12-(staff[i].activeUntil-visualTime));
-    const progress=Math.max(0,Math.min(1,elapsed/12))*3;
-    const center={x:(zone.min+zone.max)/2,y:lane};
-    const path=[home,homeLane,center,homeLane];
-    const k=Math.min(2,Math.floor(progress)),t=Math.min(1,progress-k);
-    return {...lerp(path[k],path[k+1],t),walking:progress>0&&progress<3,activity:'handoff'};
-  }
-  const cycle=(visualTime+i*5.7)%30;
-  const targetA={x:zone.min+27,y:lane},targetB={x:zone.max-25,y:lane};
-  if(cycle<5)return {x:home.x+Math.sin(visualTime*1.2+i)*1.1,y:home.y+Math.sin(visualTime*3+i)*.45,walking:false,activity:'working'};
-  if(cycle<7)return {...lerp(home,homeLane,(cycle-5)/2),walking:true,activity:'walking'};
-  if(cycle<12)return {...lerp(homeLane,targetA,(cycle-7)/5),walking:true,activity:'walking'};
-  if(cycle<16)return {...targetA,walking:false,activity:'collaborating'};
-  if(cycle<21)return {...lerp(targetA,targetB,(cycle-16)/5),walking:true,activity:'walking'};
-  if(cycle<26)return {...lerp(targetB,homeLane,(cycle-21)/5),walking:true,activity:'walking'};
-  if(cycle<28)return {...lerp(homeLane,home,(cycle-26)/2),walking:true,activity:'walking'};
-  return {...home,walking:false,activity:'working'};
+  const smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t)};
+  const lerp=(a,b,t)=>({x:a.x+(b.x-a.x)*smooth(t),y:a.y+(b.y-a.y)*smooth(t)});
+  const cycle=(visualTime+i*6.3)%42;
+  if(cycle<27)return {...home,walking:false,activity:'working'};
+  if(cycle<30)return {...lerp(home,homeLane,(cycle-27)/3),walking:true,activity:'walking'};
+  if(cycle<35)return {...lerp(homeLane,target,(cycle-30)/5),walking:true,activity:'walking'};
+  if(cycle<38)return {...target,walking:false,activity:'collaborating'};
+  if(cycle<41)return {...lerp(target,homeLane,(cycle-38)/3),walking:true,activity:'walking'};
+  return {...lerp(homeLane,home,(cycle-41)/1),walking:true,activity:'walking'};
 }
 function resolvePose(i,p,placed){
   // A final spacing guard prevents sprite overlap even if a future route is edited.
@@ -230,12 +228,12 @@ function floorDesk(i,d,active){
   ctx.restore();
 }
 function avatar(i,x,y,walking,working){
-  const phase=visualTime*9+i*1.63,step=walking?Math.sin(phase)*5.5:0,bob=walking?Math.abs(Math.sin(phase))*2.4:working?Math.sin(visualTime*4+i)*.9:Math.sin(visualTime*1.7+i)*.3;
+  const phase=visualTime*9+i*1.63,step=walking?Math.sin(phase)*6.2:0,bob=walking?Math.abs(Math.sin(phase))*3.2:working?Math.sin(visualTime*4+i)*.65:Math.sin(visualTime*1.7+i)*.25;
   const skins=['#f1c39f','#e8b78e','#ffd45c','#8bd88b','#d99b78','#c4a6e8','#f0c5a5'];
   const hair=['#40e3cf','#67402e','#f5a72e','#263b35','#8f3248','#3b3150','#251a25'];
   const coats=['#f2f1e8','#f4f0e8','#4a9b55','#9b6de0','#d94b56','#3d4658','#a82f45'];
   const skin=skins[i],hairColor=hair[i],coat=coats[i];
-  ctx.save();ctx.translate(x,y-bob);ctx.scale(.82,.82);
+  ctx.save();ctx.translate(x,y-bob);ctx.rotate(walking?Math.sin(phase)*.075:working?Math.sin(phase*.45)*.012:0);ctx.scale(.82,.82);
   ctx.fillStyle='#0009';ctx.beginPath();ctx.ellipse(0,31,18,5.5,0,0,Math.PI*2);ctx.fill();
   // Big-head original cartoon cast: every role has a distinct silhouette and outfit.
   line(-5,10,-7+step,25,'#24202a',6);line(5,10,7-step,25,'#24202a',6);
@@ -355,16 +353,21 @@ function draw(){
     poses.push({i,d,a,active,p});
   }
   for(const {i,d,a,active,p} of poses){
-    avatar(i,p.x,p.y,p.walking,p.activity==='working'||active&&!p.walking);
+    avatar(i,p.x,p.y,p.walking,p.activity==='working');
     if(active){rounded(p.x+15,p.y-50,66,17,'#0a1c29',5,'#ff526555');floorText(a.status==='working'?'FOCUS':'HANDOFF',p.x+48,p.y-38,'#9beeff',7,'center')}
-    floorText(active?'ACTIVE REPORT':p.activity==='working'?'AT WORKSTATION':p.activity==='collaborating'?'TEAM HUDDLE':'SAFE WALKWAY',d.x,d.y+92,active?colors[i]:'#7e9ab3',8,'center');
+    // Foreground desk fascia naturally occludes the seated torso and hides the
+    // character until they step clear of the desk, rather than appearing to walk through it.
+    rounded(d.x-88,d.y+19,176,46,'#352029',7,'#ffffff10');
+    line(d.x-82,d.y+20,d.x+82,d.y+20,'#6e3b46',1);
+    floorText(active?'ACTIVE REPORT':p.activity==='working'?'WORKING AT DESK':p.activity==='collaborating'?'TEAM HUDDLE':p.activity==='walking'?'DEDICATED WALK LANE':'AT WORKSTATION',d.x,d.y+92,active?colors[i]:'#7e9ab3',8,'center');
   }
   // The supervisor has a private side aisle and never cuts through the team or their desks.
-  const tour=(visualTime%18)/18,ceoX=82+Math.sin(tour*Math.PI*2)*24,ceoY=330;
-  let ceo={x:ceoX,y:ceoY,walking:Math.abs(Math.cos(tour*Math.PI*2))>.2,activity:'oversight'};
+  const ceoHome={x:93,y:278},ceoLane={x:93,y:330},ceoTarget={x:116,y:330};
+  const ceoCycle=(visualTime+7)%42,smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t)},mix=(a,b,t)=>({x:a.x+(b.x-a.x)*smooth(t),y:a.y+(b.y-a.y)*smooth(t)});
+  let ceo=ceoCycle<29?{...ceoHome,walking:false,activity:'working'}:ceoCycle<32?{...mix(ceoHome,ceoLane,(ceoCycle-29)/3),walking:true,activity:'walking'}:ceoCycle<36?{...mix(ceoLane,ceoTarget,(ceoCycle-32)/4),walking:true,activity:'walking'}:ceoCycle<39?{...ceoTarget,walking:false,activity:'collaborating'}:ceoCycle<41?{...mix(ceoTarget,ceoLane,(ceoCycle-39)/2),walking:true,activity:'walking'}:{...mix(ceoLane,ceoHome,(ceoCycle-41)),walking:true,activity:'walking'};
   ceo=resolvePose(6,ceo,placed);motions[6]=ceo;
-  avatar(6,ceo.x,ceo.y,ceo.walking,false);
-  rounded(ceo.x+14,ceo.y-49,70,17,'#321a29',5,'#e96d9055');floorText('OVERSIGHT',ceo.x+49,ceo.y-37,'#f6a6ba',7,'center');
+  avatar(6,ceo.x,ceo.y,ceo.walking,ceo.activity==='working');
+  rounded(ceo.x+14,ceo.y-49,70,17,'#321a29',5,'#e96d9055');floorText(ceo.activity==='working'?'DESK FOCUS':'OVERSIGHT',ceo.x+49,ceo.y-37,'#f6a6ba',7,'center');
   // Handoff packets travel from one desk to the next when a report is actually observed.
   packets=packets.filter(p=>visualTime-p.born<3);
   for(const p of packets){const t=Math.min(1,(visualTime-p.born)/3),a=desks[p.from],b=desks[p.to],x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t-42*Math.sin(t*Math.PI);ctx.save();ctx.globalAlpha=Math.sin(Math.PI*t);ctx.strokeStyle='#ff6477aa';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x-19,y);ctx.lineTo(x-7,y);ctx.moveTo(x+7,y);ctx.lineTo(x+19,y);ctx.stroke();ctx.shadowColor='#ff5a6b';ctx.shadowBlur=17;rounded(x-8,y-6,16,12,'#ff7180',4,'#ffd8de');ctx.shadowBlur=0;ctx.strokeStyle='#671628';ctx.strokeRect(x-3,y-2,6,4);ctx.restore()}
