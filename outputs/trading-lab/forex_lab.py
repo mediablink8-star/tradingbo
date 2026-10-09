@@ -95,8 +95,8 @@ class ForexLab:
             "error": self.error,
         }
 
-    def _fresh_quote(self, pair):
-        data = self.tick()
+    def _fresh_quote(self, pair, data=None):
+        data = self.tick() if data is None else data
         row = data["market"]["pairs"].get(pair.upper())
         if not row:
             raise ValueError("No current price for that FX pair.")
