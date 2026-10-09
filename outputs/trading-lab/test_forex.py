@@ -23,6 +23,7 @@ class ForexTests(unittest.TestCase):
    pnl={p["id"]:p["unrealized_pnl"] for p in snap["positions"]}
    self.assertAlmostEqual(pnl[long["id"]],long["units"]*(1.09-1.10),places=6)
    self.assertAlmostEqual(pnl[short["id"]],short["units"]*(1.30-1.31),places=6)
+   self.assertAlmostEqual(snap["daily_pnl"],snap["realized_pnl"]+snap["unrealized_pnl"],places=6)
  def test_short_unrealized_pnl(self):
   with tempfile.TemporaryDirectory() as d:
    b=ForexPaperBroker(os.path.join(d,"fx.sqlite"));b.open("USD/JPY",150,500,"sell")
