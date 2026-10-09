@@ -1,5 +1,5 @@
 """Ember Forex Trading Lab HTTP application."""
-import argparse,json,os
+import argparse,json,os,mimetypes,urllib.parse
 from http.server import ThreadingHTTPServer,BaseHTTPRequestHandler
 from pathlib import Path
 from forex_lab import ForexLab
@@ -9,9 +9,22 @@ class Handler(BaseHTTPRequestHandler):
     def send_json(self,data,status=200):
         raw=json.dumps(data,allow_nan=False).encode();self.send_response(status);self.send_header("Content-Type","application/json");self.send_header("Cache-Control","no-store");self.end_headers();self.wfile.write(raw)
     def do_GET(self):
-        if self.path=="/api/forex":self.send_json(LAB.tick());return
-        if self.path=="/":self.send_response(200);self.send_header("Content-Type","text/html; charset=utf-8");self.end_headers();self.wfile.write((ROOT/"index.html").read_bytes());return
-        self.send_json({"error":"not found"},404)
+        path=urllib.parse.urlsplit(self.path).path
+        if path=="/api/forex":self.send_json(LAB.tick());return
+        # Serve dashboard files safely, including the immersive office.
+        try:
+            relative=urllib.parse.unquote(path).lstrip("/") or "index.html"
+            target=(ROOT/relative).resolve()
+            target.relative_to(ROOT.resolve())
+        except (ValueError,OSError):
+            self.send_json({"error":"not found"},404);return
+        if not target.is_file() or target.suffix.lower() not in {".html",".css",".js",".svg",".png",".jpg",".webp",".ico"}:
+            self.send_json({"error":"not found"},404);return
+        mime=mimetypes.guess_type(str(target))[0] or "application/octet-stream"
+        if mime.startswith("text/") or mime in ("application/javascript","image/svg+xml"):
+            mime += "; charset=utf-8"
+        self.send_response(200);self.send_header("Content-Type",mime);self.send_header("Cache-Control","no-store");self.end_headers()
+        self.wfile.write(target.read_bytes())
     def do_POST(self):
         if self.path not in ("/api/forex/open","/api/forex/close"):self.send_json({"error":"not found"},404);return
         if self.headers.get("Content-Type")!="application/json":self.send_json({"error":"JSON required"},400);return
