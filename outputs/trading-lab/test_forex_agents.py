@@ -66,7 +66,7 @@ class ForexAgentRuntimeTests(unittest.TestCase):
         self.assertEqual(len(self.lab.orders), 1)
         self.assertEqual(self.lab.orders[0][0:2], ("EUR/USD", "buy"))
         self.assertEqual(self.lab.orders[0][2], 250.0)
-        self.assertTrue(all(e["kind"] == "live_agent_report" for e in result["events"]))
+        self.assertTrue(all(e["kind"] == "live_agent_report" for cycle in results for e in cycle["events"]))
 
     def test_daily_halt_prevents_paper_order(self):
         for price in (1.1000, 1.1000, 1.1000):
