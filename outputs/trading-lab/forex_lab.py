@@ -112,7 +112,8 @@ class ForexLab:
             raise ValueError("Invalid FX pair.")
         if side not in ("buy", "sell"):
             raise ValueError("Invalid FX side.")
-        row = self._fresh_quote(pair)
+        data = self.tick()
+        row = self._fresh_quote(pair, data)
         execution_price = float(row["ask"] if side == "buy" else row["bid"])
         return {
             "ok": True,
