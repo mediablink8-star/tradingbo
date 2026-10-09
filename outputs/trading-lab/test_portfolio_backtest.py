@@ -70,6 +70,22 @@ class PortfolioBacktestTests(unittest.TestCase):
         self.assertEqual(trade["reason"], "stop_loss")
         self.assertAlmostEqual(trade["exit_price"], .97)
 
+
+    def test_rejects_non_monotonic_candles(self):
+        candles = {
+            "EUR/USD": [
+                Candle(1, 1.0, 1.0, 1.0, 1.0),
+                Candle(1, 1.1, 1.1, 1.1, 1.1),
+            ]
+        }
+        with self.assertRaisesRegex(ValueError, "strictly increasing"):
+            MultiPairPortfolioBacktester().run(candles, {"EUR/USD": lambda h: "buy"})
+
+    def test_rejects_impossible_ohlc(self):
+        candles = {"EUR/USD": [Candle(1, 1.0, .9, .95, 1.0)]}
+        with self.assertRaisesRegex(ValueError, "invalid candle high"):
+            MultiPairPortfolioBacktester().run(candles, {"EUR/USD": lambda h: "buy"})
+
     def test_currency_concentration_limit_blocks_new_position(self):
         candles = {
             "EUR/USD": [Candle(i, 1 + i * .01, 1 + i * .01, 1 + i * .01, 1 + i * .01) for i in range(4)],
