@@ -120,6 +120,34 @@ body:before{opacity:.12;background-image:linear-gradient(#ff4a5b08 1px,transpare
 @keyframes screenSweep{from{transform:translateY(0)}to{transform:translateY(64px)}}
 @media(max-width:700px){.hero-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:16px}.hero-actions .btn{width:100%;flex:initial;padding:10px 9px}.hero-actions .btn:last-child{grid-column:1/-1}}
 @media(prefers-reduced-motion:reduce){.screen:after{animation:none!important;display:none}}
+
+/* EMBER MOTION SYSTEM — premium desk cards, subtle motion, no fake live status. */
+.agent-row{perspective:1000px}
+.agent{isolation:isolate;min-height:238px;padding:16px;background:linear-gradient(145deg,#1b0a10ed,#090608f5);border-color:#ff465829;box-shadow:0 18px 42px #0009, inset 0 1px #ffffff08;transition:transform .24s cubic-bezier(.2,.8,.2,1),border-color .24s,box-shadow .24s}
+.agent:before{opacity:.17;background:radial-gradient(circle at 0 0,var(--glow),transparent 58%);transition:opacity .25s}
+.agent:after{height:2px;background:linear-gradient(90deg,transparent,var(--accent),#ffc2c9,var(--accent),transparent);background-size:200% 100%;animation:agentRail 5s linear infinite}
+.agent:hover{transform:translateY(-5px) rotateX(1deg);border-color:color-mix(in srgb,var(--accent) 55%,transparent);box-shadow:0 26px 52px #000b,0 0 26px color-mix(in srgb,var(--glow) 12%,transparent)}
+.agent:hover:before{opacity:.27}
+.avatar{position:relative;flex:0 0 42px;width:42px;height:42px;border-radius:13px;background:linear-gradient(145deg,#3b111a,#12070b);border-color:color-mix(in srgb,var(--accent) 65%,#ffffff15);box-shadow:inset 0 1px #ffffff12,0 0 22px color-mix(in srgb,var(--glow) 18%,transparent)}
+.agentname{font-size:13px;letter-spacing:-.02em}
+.role{color:#ba9099;line-height:1.4}
+.agenttask{min-height:56px;font-size:12px;color:#e2cbd0}
+.screen{position:relative;height:70px;background:linear-gradient(180deg,#16080d,#070507);border-color:#ff46581d;box-shadow:inset 0 0 22px #ff263c08}
+.screen:before{content:"ROLE VISUAL · NOT LIVE MARKET DATA";position:absolute;left:8px;top:4px;z-index:1;font-size:7px;letter-spacing:.07em;color:#98727a}
+.screen:after{content:"";position:absolute;top:0;left:0;right:0;height:1px;background:#ff7b8877;box-shadow:0 0 12px #ff465833;animation:deskScan 3.4s linear infinite;pointer-events:none}
+.chart{height:48px;margin-top:7px;filter:drop-shadow(0 0 4px color-mix(in srgb,var(--accent) 35%,transparent))}
+.agent[data-observed="false"] .status{background:#77717a;box-shadow:none;animation:none}
+.agent[data-observed="true"] .status{background:#ff6a7b;box-shadow:0 0 12px #ff4658;animation:pulse 1.8s infinite}
+.agentmeta{gap:8px;align-items:flex-start;color:#a9858e;line-height:1.4}
+.agentmeta b{color:#ffe0e5}
+.event{border:1px solid #ff46581b;background:linear-gradient(100deg,#1e0b11,#0d0709);border-radius:9px;padding:11px 12px;transition:border-color .18s,transform .18s}
+.event:hover{border-color:#ff46584a;transform:translateX(2px)}
+.event time{color:#f39aa5;letter-spacing:.06em}
+.edot{box-shadow:0 0 10px #ff4658}
+@keyframes deskScan{0%{transform:translateY(0);opacity:0}15%{opacity:1}100%{transform:translateY(66px);opacity:0}}
+@keyframes agentRail{0%{background-position:100% 0}100%{background-position:-100% 0}}
+@media(max-width:1100px){.agent-row{grid-template-columns:repeat(auto-fit,minmax(205px,1fr));padding-top:145px}}
+@media(prefers-reduced-motion:reduce){.agent,.event{transition:none!important}.agent:after,.screen:after{animation:none!important}.agent:hover,.event:hover{transform:none!important}}
 </style></head>
 <body>
 <div class="app">

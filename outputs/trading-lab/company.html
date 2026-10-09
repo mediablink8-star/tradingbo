@@ -60,6 +60,30 @@ header .tools button,header .tools select{min-height:40px;max-width:100%;white-s
 #office{background:#10070a}
 #office-status{overflow-wrap:anywhere}
 @media(max-width:560px){.world canvas{min-height:340px}header .tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}header .tools>*{min-width:0;width:100%}#source{grid-column:1/-1}}
+
+/* Cinematic floor polish: atmosphere, readable status, and restrained motion. */
+.world{isolation:isolate;background:linear-gradient(145deg,#16070b,#080506)!important;border-color:#ff52605c!important;box-shadow:0 28px 90px #000b,0 0 42px #ff263c13!important}
+.world:before{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;border-radius:inherit;background:linear-gradient(115deg,#ff465808,transparent 35%,transparent 70%,#ff465806);mix-blend-mode:screen}
+.world canvas{position:relative;z-index:0;filter:contrast(1.035) saturate(1.12)}
+.world footer{position:relative;z-index:2;background:linear-gradient(90deg,#260b12,#11070a)!important;color:#f2b4bd!important;letter-spacing:.02em}
+.sidebar{border-color:#ff46583b!important;background:radial-gradient(ellipse at 100% 0,#3b101b55,transparent 48%),linear-gradient(160deg,#210b11,#0b0608)!important}
+.sidebar h2{display:flex;align-items:center;gap:8px}
+#role-status{display:inline-flex;align-items:center;gap:7px;border:1px solid #ff465830;background:#ff46580c;border-radius:999px;padding:5px 9px;font-size:11px;letter-spacing:.04em}
+#role-status:before{content:"";width:6px;height:6px;border-radius:50%;background:#ff6575;box-shadow:0 0 10px #ff4658}
+#detail{font-size:13px;color:#f0cbd0!important}
+.stats span{transition:transform .18s,border-color .18s,background .18s}
+.stats span:hover{transform:translateY(-2px);border-color:#ff647755;background:#3a101a!important}
+#feed li{border-left:1px solid #ff465833;padding-left:12px;margin-left:2px;position:relative}
+#feed li:before{content:"";position:absolute;left:-4px;top:5px;width:6px;height:6px;border-radius:50%;background:#ff6575;box-shadow:0 0 10px #ff465855}
+.roster button{position:relative;overflow:hidden;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease!important}
+.roster button:hover{transform:translateY(-2px)!important;box-shadow:0 8px 24px #ff263c1c!important}
+.roster button[aria-pressed=true]:after{content:"SELECTED";display:block;margin-top:4px;font-size:8px;letter-spacing:.12em;color:#ffd8de}
+#pause{border-color:#a96c7b66!important}
+#run-agent-cycle:not(:disabled){box-shadow:0 0 0 1px #ff46581a,0 0 22px #ff465812}
+#run-agent-cycle:disabled{opacity:.7;cursor:progress}
+@keyframes emberPulse{0%,100%{box-shadow:0 0 0 0 #ff465800}50%{box-shadow:0 0 0 5px #ff46580c}}
+#mode-badge{animation:emberPulse 3.2s ease-in-out infinite}
+@media(prefers-reduced-motion:reduce){#mode-badge{animation:none!important}.roster button:hover{transform:none!important}}
 </style></head><body>
 <header><div><h1>AGENT COMPANY</h1><small>Your paper-trading team, on the office floor</small></div><span class="badge" id="mode-badge">LIVE OBSERVER</span><div class="tools"><button id="back-to-floor" onclick="location.href='index.html'">← Research floor</button><select id="source" aria-label="Activity source"><option value="live">Live paper team</option><option value="team" disabled>Experiment team · unavailable in forex build</option><option value="demo">Office demo · no AI calls</option></select><button id="run-agent-cycle">Run agent cycle</button><button id="pause">Pause animation</button></div></header>
 <p id="notice" role="status">Waiting for a dashboard update. Idle characters do not mean an AI model is running.</p>
@@ -110,7 +134,37 @@ function box(x,y,w,h,color,r=8){ctx.fillStyle=color;ctx.beginPath();ctx.roundRec
 function text(value,x,y,color='#a9a6b4',size=12,align='center'){ctx.fillStyle=color;ctx.font='600 '+size+'px system-ui';ctx.textAlign=align;ctx.fillText(value,x,y)}
 function line(x,y,x2,y2,c,w=1){ctx.strokeStyle=c;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x2,y2);ctx.stroke()}
 function plant(x,y){ctx.fillStyle='#0005';ctx.beginPath();ctx.ellipse(x+3,y+15,23,8,0,0,Math.PI*2);ctx.fill();box(x-13,y,26,24,'#8b5556',5);for(let i=0;i<6;i++){ctx.save();ctx.translate(x,y-6);ctx.rotate(i*Math.PI/3);ctx.fillStyle=i%2?'#537e70':'#73a58a';ctx.beginPath();ctx.ellipse(0,-15,7,20,0,0,Math.PI*2);ctx.fill();ctx.restore()}}
-function avatar(i,x,y,walking,working){const phase=visualTime*10+i,step=walking?Math.sin(phase)*6:0,bob=walking?Math.abs(Math.sin(phase))*2:working?Math.sin(visualTime*5)*.7:0;ctx.fillStyle='#0006';ctx.beginPath();ctx.ellipse(x,y+28,19,7,0,0,Math.PI*2);ctx.fill();y-=bob;line(x-6,y+10,x-7+step,y+25,'#202029',7);line(x+6,y+10,x+7-step,y+25,'#202029',7);box(x-13,y-13,26,30,colors[i],8);const arm=working?Math.sin(phase)*3:step;line(x-13,y-7,x-18,y+6+arm,'#d2a584',5);line(x+13,y-7,x+18,y+6-arm,'#d2a584',5);ctx.fillStyle='#e5b999';ctx.beginPath();ctx.arc(x,y-23,13,0,Math.PI*2);ctx.fill();box(x-13,y-36,26,12,['#3f2937','#6f463e','#34313b','#5e3a4a','#44332e','#676472','#33232b'][i],7);rect(x-7,y-24,2.5,3,'#30242c');rect(x+5,y-24,2.5,3,'#30242c');line(x-3,y-17,x+3,y-17,'#ac7a66');box(x-4,y-10,8,8,'#f1f0f2',2);rect(x-2,y-9,4,3,'#ae394a');if(i===selected){ctx.strokeStyle=colors[i];ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y+29,24,9,0,0,Math.PI*2);ctx.stroke()}}
+function avatar(i,x,y,walking,working){
+  const phase=visualTime*9+i*1.7,step=walking?Math.sin(phase)*6:0,bob=walking?Math.abs(Math.sin(phase))*2.6:working?Math.sin(visualTime*4+i)*1.2:Math.sin(visualTime*1.7+i)*.35;
+  const skin=['#e5b99a','#c58f70','#f0c5a4','#d4a083','#e8b89a','#b98569','#e8c2a4'][i],hair=['#34232b','#56352e','#24252d','#5a303c','#33251f','#57515d','#2b1a23'][i];
+  ctx.save();ctx.translate(x,y-bob);
+  ctx.fillStyle='#0008';ctx.beginPath();ctx.ellipse(0,29,walking?18+Math.abs(step)*.35:17,6,0,0,Math.PI*2);ctx.fill();
+  // Animated legs, polished shoes and a small walking stride.
+  line(-5,11,-7+step,25,'#201a22',7);line(5,11,7-step,25,'#201a22',7);
+  line(-7+step,25,-10+step,26,'#b3a0a5',4);line(7-step,25,10-step,26,'#b3a0a5',4);
+  // Tailored jacket with a shaded silhouette and lapels.
+  const coat=ctx.createLinearGradient(-14,-9,14,18);coat.addColorStop(0,colors[i]);coat.addColorStop(1,'#47111d');
+  rounded(-14,-14,28,30,coat,8,'#ffffff25');
+  ctx.fillStyle='#fff0f2';ctx.beginPath();ctx.moveTo(-5,-10);ctx.lineTo(0,1);ctx.lineTo(5,-10);ctx.closePath();ctx.fill();
+  ctx.fillStyle=i===3?'#ffc1ca':'#25101a';ctx.beginPath();ctx.moveTo(-2,-7);ctx.lineTo(2,-7);ctx.lineTo(1,4);ctx.lineTo(-1,4);ctx.closePath();ctx.fill();
+  // Shoulder seams and a moving arm pose make idle vs desk work readable.
+  const arm=working?Math.sin(phase)*4:walking?step*.65:Math.sin(phase*.4)*1.2;
+  line(-12,-7,-18,4+arm,skin,5);line(12,-7,18,4-arm,skin,5);
+  ctx.fillStyle=skin;ctx.beginPath();ctx.arc(-18,5+arm,3,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(18,5-arm,3,0,Math.PI*2);ctx.fill();
+  // Neck, face, hairline, eyebrows and facial features.
+  rounded(-4,-19,8,9,skin,3);
+  ctx.fillStyle=skin;ctx.beginPath();ctx.ellipse(0,-27,12,14,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=hair;ctx.beginPath();ctx.moveTo(-12,-27);ctx.quadraticCurveTo(-15,-43,0,-42);ctx.quadraticCurveTo(15,-42,12,-26);ctx.lineTo(8,-32);ctx.quadraticCurveTo(0,-36,-8,-31);ctx.closePath();ctx.fill();
+  // Distinct headset for the research desk; subtle glasses for the macro analyst.
+  if(i===0||i===1){ctx.strokeStyle=i===0?'#ffb8c1':'#d4e6f2';ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(0,-28,13,Math.PI*1.02,Math.PI*1.98);ctx.stroke();if(i===0){rounded(-13,-29,4,10,'#ff6c7c',2);line(-12,-20,-9,-15,'#ff6c7c',1.5)}else{ctx.strokeRect(-9,-29,7,5);ctx.strokeRect(2,-29,7,5);line(-2,-27,2,-27,'#d4e6f2',1)}}
+  ctx.fillStyle='#35232b';ctx.beginPath();ctx.ellipse(-4,-27,1.4,1.8,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(4,-27,1.4,1.8,0,0,Math.PI*2);ctx.fill();
+  line(-3,-20,3,-20,'#9d5c54',1.2);
+  // Lanyard and ID badge give each employee a finished, readable silhouette.
+  line(0,-10,1,4,'#ffd8de',1.3);rounded(-3,1,7,9,'#f4e6e8',2,'#ffffff66');rect(-1,3,3,2,colors[i]);
+  if(i===4){ctx.fillStyle='#ffdf8a';ctx.beginPath();ctx.arc(9,-8,2,0,Math.PI*2);ctx.fill()}
+  if(i===selected){ctx.strokeStyle=colors[i];ctx.lineWidth=2;ctx.shadowColor=colors[i];ctx.shadowBlur=12;ctx.beginPath();ctx.ellipse(0,29,24,9,0,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0}
+  ctx.restore();
+}
 function position(i,active){
   const d=desks[i],home={x:d.x,y:d.y+46};
   // Every employee has a repeatable personal routine: desk -> shared aisle -> collaboration / coffee -> desk.
@@ -147,6 +201,7 @@ function floorDesk(i,d,active){
     rounded(d.x+dx-24,d.y-45,49,34,'#070b12',4,'#8e4651');
     rounded(d.x+dx-21,d.y-42,43,27,active?'#142b3a':'#111c2b',3);
     for(let j=0;j<4;j++){const len=active?10+((Math.floor(visualTime*5)+j*13+i*7)%27):14+j*4;ctx.fillStyle=colors[i]+(j===0?'ee':'88');ctx.fillRect(d.x+dx-17,d.y-37+j*5,len,2)}
+    if(active){ctx.save();ctx.globalAlpha=.18+.14*Math.sin(visualTime*5+i);const glow=ctx.createRadialGradient(d.x+dx,d.y-30,1,d.x+dx,d.y-30,45);glow.addColorStop(0,colors[i]);glow.addColorStop(1,'#ff465800');ctx.fillStyle=glow;ctx.fillRect(d.x+dx-45,d.y-50,90,50);ctx.restore()}
     ctx.fillStyle='#ff718088';ctx.fillRect(d.x+dx-4,d.y-12,8,7);
   }
   rounded(d.x-29,d.y+4,58,7,'#15090d',3);
@@ -203,6 +258,10 @@ function draw(){
   rounded(13,12,934,596,'#080d15',18,'#71303d');
   rounded(23,101,914,487,'#241016',12,'#ffffff10');
   for(let y=107;y<580;y+=28)for(let x=28;x<933;x+=36){ctx.fillStyle=((Math.floor(x/36)+Math.floor(y/28))%2)?'#2a1218':'#241016';ctx.fillRect(x,y,35,27)}
+  // Cinematic ambient light: slow-moving red light pools and tiny dust motes, purely decorative.
+  for(let n=0;n<3;n++){const gx=165+n*315+Math.sin(visualTime*.42+n*2)*72,gy=220+Math.cos(visualTime*.35+n)*85,g=ctx.createRadialGradient(gx,gy,2,gx,gy,190);g.addColorStop(0,['#ff465817','#ff8b5810','#d52c4b12'][n]);g.addColorStop(1,'#ff465800');ctx.fillStyle=g;ctx.fillRect(gx-190,gy-190,380,380)}
+  for(let n=0;n<34;n++){const px=34+((n*83+visualTime*(5+n%4))%890),py=116+((n*47+Math.sin(visualTime*.7+n)*13)%445);ctx.fillStyle=n%5===0?'#ff9ba677':'#ffc6d01e';ctx.fillRect(px,py,n%5===0?2:1,n%5===0?2:1)}
+  const sweepY=112+((visualTime*19)%450);ctx.fillStyle='#ff647509';ctx.fillRect(31,sweepY,896,2);
   // Department zones: the floor now reads as an intentional workplace rather than scattered props.
   rounded(32,111,282,456,'#291017aa',12,'#ff465822');
   rounded(339,111,282,456,'#281018aa',12,'#b29aff22');
@@ -258,7 +317,7 @@ function draw(){
   rounded(cx+17,cy-42,74,19,'#321a29',5,'#e96d9055');floorText('OVERSIGHT',cx+54,cy-29,'#f6a6ba',7,'center');
   // Handoff packets travel from one desk to the next when a report is actually observed.
   packets=packets.filter(p=>visualTime-p.born<3);
-  for(const p of packets){const t=Math.min(1,(visualTime-p.born)/3),a=desks[p.from],b=desks[p.to],x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t-42*Math.sin(t*Math.PI);ctx.save();ctx.shadowColor='#ff5a6b';ctx.shadowBlur=13;rounded(x-7,y-5,14,10,'#ff7180',3);ctx.shadowBlur=0;ctx.strokeStyle='#184a5c';ctx.strokeRect(x-3,y-2,6,4);ctx.restore()}
+  for(const p of packets){const t=Math.min(1,(visualTime-p.born)/3),a=desks[p.from],b=desks[p.to],x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t-42*Math.sin(t*Math.PI);ctx.save();ctx.globalAlpha=Math.sin(Math.PI*t);ctx.strokeStyle='#ff6477aa';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x-19,y);ctx.lineTo(x-7,y);ctx.moveTo(x+7,y);ctx.lineTo(x+19,y);ctx.stroke();ctx.shadowColor='#ff5a6b';ctx.shadowBlur=17;rounded(x-8,y-6,16,12,'#ff7180',4,'#ffd8de');ctx.shadowBlur=0;ctx.strokeStyle='#671628';ctx.strokeRect(x-3,y-2,6,4);ctx.restore()}
   rounded(170,578,620,22,'#09131e',7,'#ffffff12');
   floorText(mode==='demo'?'DEMO COLLABORATION  ·  NO AI CALLS':mode==='live'?'LIVE PAPER OFFICE  ·  VISUAL ROUTINES ARE SIMULATED':'EXPERIMENT TEAM  ·  SYNTHETIC MARKET DATA',480,592,'#d6a0a7',9,'center');
 }
