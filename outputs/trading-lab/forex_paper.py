@@ -37,8 +37,15 @@ class ForexPaperBroker:
             cash,pnl,day=self._account(db);db.commit()
             rows=db.execute("SELECT id,pair,side,units,entry_price,opened,notional FROM fx_positions").fetchall();positions=[];equity=cash
             for iid,pair,side,units,entry,opened,notional in rows:
-                price=(prices.get(pair) or {}).get("price");u=0.0
-                if isinstance(price,(int,float)) and price>0:u=float(units)*(float(price)-float(entry))*(1 if side=="buy" else -1)*self._quote_to_usd(pair,float(price));equity+=u
+                quote = prices.get(pair) or {}
+                # Mark to the executable close side so unrealized PnL includes
+                # spread: longs exit at bid, shorts exit at ask.
+                price = quote.get("bid" if side == "buy" else "ask")
+                if price is None:
+                    price = quote.get("price")  # compatibility for simple test marks
+                u=0.0
+                if isinstance(price,(int,float)) and math.isfinite(float(price)) and price>0:
+                    u=float(units)*(float(price)-float(entry))*(1 if side=="buy" else -1)*self._quote_to_usd(pair,float(price));equity+=u
                 positions.append({"id":iid,"pair":pair,"side":side,"units":units,"entry_price":entry,"opened":opened,"notional":notional,"unrealized_pnl":u})
             return {"cash":cash,"realized_pnl":pnl,"equity":equity,"positions":positions,"exposure":sum(float(p["notional"]) for p in positions)}
         finally:db.close()
