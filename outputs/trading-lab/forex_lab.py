@@ -52,10 +52,10 @@ class ForexLab:
                 row = market["pairs"].get(position["pair"])
                 if not self._quote_is_current(row):
                     continue
-                if self.broker.risk.exits(position, row["price"], time.time()):
-                    exit_price = float(
-                        row["bid"] if position["side"] == "buy" else row["ask"]
-                    )
+                exit_price = float(
+                    row["bid"] if position["side"] == "buy" else row["ask"]
+                )
+                if self.broker.risk.exits(position, exit_price, time.time()):
                     result = self.broker.close(position["id"], exit_price)
                     exit_events.append({
                         "position_id": position["id"],
