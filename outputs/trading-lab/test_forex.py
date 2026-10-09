@@ -32,6 +32,25 @@ class ForexTests(unittest.TestCase):
    self.assertAlmostEqual(pnl[long["id"]],long["units"]*(1.09-1.10),places=6)
    self.assertAlmostEqual(pnl[short["id"]],short["units"]*(1.30-1.31),places=6)
    self.assertAlmostEqual(snap["daily_pnl"],snap["realized_pnl"]+snap["unrealized_pnl"],places=6)
+ def test_snapshot_flags_missing_marks_instead_of_implying_complete_equity(self):
+  with tempfile.TemporaryDirectory() as d:
+   b=ForexPaperBroker(os.path.join(d,"fx.sqlite"))
+   opened=b.open("EUR/USD",1.10,500,"buy")
+   snap=b.snapshot({})
+   self.assertFalse(snap["mark_data_complete"])
+   self.assertFalse(snap["mark_data_fresh"])
+   self.assertEqual(snap["unmarked_positions"],[opened["id"]])
+   self.assertFalse(snap["positions"][0]["mark_valid"])
+ def test_snapshot_flags_stale_marks_as_not_fresh(self):
+  with tempfile.TemporaryDirectory() as d:
+   b=ForexPaperBroker(os.path.join(d,"fx.sqlite"))
+   opened=b.open("EUR/USD",1.10,500,"buy")
+   stale={"EUR/USD":{"bid":1.09,"ask":1.0902,"observed":time.time()-301,"provider_date":time.strftime("%Y-%m-%d",time.gmtime())}}
+   snap=b.snapshot(stale)
+   self.assertTrue(snap["mark_data_complete"])
+   self.assertFalse(snap["mark_data_fresh"])
+   self.assertTrue(snap["positions"][0]["mark_valid"])
+   self.assertFalse(snap["positions"][0]["mark_fresh"])
  def test_short_unrealized_pnl(self):
   with tempfile.TemporaryDirectory() as d:
    b=ForexPaperBroker(os.path.join(d,"fx.sqlite"));b.open("USD/JPY",150,500,"sell")
