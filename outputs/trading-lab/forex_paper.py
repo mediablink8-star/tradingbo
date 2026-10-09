@@ -9,7 +9,7 @@ class ForexPaperBroker:
         if "daily_halted" not in columns: db.execute("ALTER TABLE fx_account ADD COLUMN daily_halted INTEGER NOT NULL DEFAULT 0")
         db.execute("CREATE TABLE IF NOT EXISTS fx_positions(id TEXT PRIMARY KEY,pair TEXT NOT NULL,side TEXT NOT NULL,units REAL NOT NULL,entry_price REAL NOT NULL,opened REAL NOT NULL,notional REAL NOT NULL)")
         if not db.execute("SELECT 1 FROM fx_account WHERE id=1").fetchone():
-            db.execute("INSERT INTO fx_account VALUES(1,?,?,?)",(self.risk.config.starting_cash,0.0,self._today()))
+            db.execute("INSERT INTO fx_account(id,cash,realized_pnl,day,daily_halted) VALUES(1,?,?,?,0)",(self.risk.config.starting_cash,0.0,self._today()))
         db.commit();db.close()
     def _db(self):return sqlite3.connect(self.path,timeout=15)
     def _today(self):return time.strftime("%Y-%m-%d",time.gmtime())
