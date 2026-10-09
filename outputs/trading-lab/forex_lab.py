@@ -132,7 +132,7 @@ class ForexLab:
         )
         if not position:
             raise ValueError("Unknown FX position; it may already have been closed.")
-        row = self._fresh_quote(position["pair"])
+        row = self._fresh_quote(position["pair"], data)
         execution_price = float(
             row["bid"] if position["side"] == "buy" else row["ask"]
         )
