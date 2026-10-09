@@ -101,7 +101,7 @@ class ForexPaperBroker:
                     db.execute("UPDATE fx_account SET daily_halted=1 WHERE id=1")
                     db.commit()
                     raise
-                self.risk.validate_entry(cash,exposure,rows,notional)
+                self.risk.validate_entry(cash,exposure,rows,notional,pair=pair,side=side)
                 iid=uuid.uuid4().hex;units=notional/base_to_usd
                 db.execute("INSERT INTO fx_positions VALUES(?,?,?,?,?,?,?)",(iid,pair,side,units,price,time.time(),notional))
                 return {"id":iid,"pair":pair,"side":side,"units":units,"entry_price":price,"notional":notional}
