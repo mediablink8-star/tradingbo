@@ -51,6 +51,12 @@ class ForexTests(unittest.TestCase):
    recovered={"EUR/USD":{"bid":1.10,"ask":1.1001,"observed":time.time(),"provider_date":today}}
    with self.assertRaisesRegex(ValueError,"remains halted"):
     b.open("GBP/USD",1.30,500,"buy",prices=recovered)
+   import sqlite3,datetime
+   db=sqlite3.connect(os.path.join(d,"fx.sqlite"))
+   yesterday=(datetime.datetime.now(datetime.timezone.utc)-datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+   db.execute("UPDATE fx_account SET day=? WHERE id=1",(yesterday,));db.commit();db.close()
+   self.assertFalse(b.snapshot(recovered)["daily_halted"])
+   b.open("GBP/USD",1.30,500,"buy",prices=recovered)
  def test_stale_mark_fails_closed_for_new_entry(self):
   with tempfile.TemporaryDirectory() as d:
    risk=FXRisk(RiskConfig(max_daily_loss=50))
