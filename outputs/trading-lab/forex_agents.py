@@ -125,10 +125,18 @@ class ForexAgentRuntime:
             positions = account.get("positions", []) if isinstance(account, dict) else []
             held = {p.get("pair") for p in positions if isinstance(p, dict)}
             halted = bool(account.get("daily_halted")) if isinstance(account, dict) else True
+            daily_pnl = account.get("daily_pnl", 0.0) if isinstance(account, dict) else 0.0
+            try:
+                daily_pnl = float(daily_pnl)
+            except (TypeError, ValueError):
+                daily_pnl = float("-inf")
+            loss_limit = self.lab.broker.risk.config.max_daily_loss
+            if not math.isfinite(daily_pnl) or daily_pnl <= -loss_limit:
+                halted = True
             risk_approved = []
             concerns = []
             if halted:
-                concerns.append("Daily-loss circuit breaker is active.")
+                concerns.append("Daily-loss circuit breaker is active or the daily PnL mark is invalid.")
             for proposal in proposals:
                 pair = proposal["pair"]
                 if pair in held:
