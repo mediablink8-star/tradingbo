@@ -66,6 +66,30 @@ class ForexLabTests(unittest.TestCase):
             )
             self.assertEqual(result["account"]["positions"], [])
 
+
+    def test_usd_jpy_position_units_use_usd_base_conversion(self):
+        with tempfile.TemporaryDirectory() as folder:
+            lab = ForexLab(os.path.join(folder, "test.sqlite"))
+            opened = lab.broker.open("USD/JPY", 150.0, 500, "buy")
+            self.assertAlmostEqual(opened["units"], 500.0)
+
+    def test_unsupported_cross_pair_is_rejected_before_open(self):
+        with tempfile.TemporaryDirectory() as folder:
+            lab = ForexLab(os.path.join(folder, "test.sqlite"))
+            with self.assertRaisesRegex(ValueError, "No built-in USD conversion"):
+                lab.broker.open("EUR/GBP", 0.86, 500, "buy")
+            self.assertEqual(lab.broker.snapshot({})["positions"], [])
+
+    def test_buy_stop_uses_executable_bid_not_midpoint(self):
+        with tempfile.TemporaryDirectory() as folder:
+            lab = ForexLab(os.path.join(folder, "test.sqlite"))
+            opened = lab.broker.open("EUR/USD", 1.10, 500, "buy")
+            # Mid is still just above the 1% stop; the executable bid is below it.
+            with patch("forex_lab.snapshot", return_value=self._market(1.08903)):
+                result = lab.tick()
+            self.assertEqual(len(result["exit_events"]), 1)
+            self.assertEqual(result["exit_events"][0]["position_id"], opened["id"])
+
     def test_stale_quote_does_not_fabricate_risk_exit_fill(self):
         with tempfile.TemporaryDirectory() as folder:
             lab = ForexLab(os.path.join(folder, "test.sqlite"))
