@@ -98,6 +98,27 @@ class PortfolioBacktestTests(unittest.TestCase):
         ).run(candles, signals)
         self.assertLessEqual(max(row["open_positions"] for row in result["history"]), 1)
 
+    def test_unrealized_loss_triggers_daily_halt_before_new_entry(self):
+        candles = {
+            "EUR/USD": [
+                Candle(0, 1.0, 1.0, 1.0, 1.0),
+                Candle(1, .98, .98, .98, .98),
+                Candle(2, .97, .97, .97, .97),
+            ],
+            "GBP/USD": [
+                Candle(0, 1.2, 1.2, 1.2, 1.2),
+                Candle(1, 1.19, 1.19, 1.19, 1.19),
+                Candle(2, 1.18, 1.18, 1.18, 1.18),
+            ],
+        }
+        signals = {pair: (lambda h: "buy") for pair in candles}
+        result = MultiPairPortfolioBacktester(
+            per_position_notional=1000, max_exposure=2000, max_positions=2,
+            max_daily_loss=5, spread_bps=0, slippage_bps=0,
+        ).run(candles, signals)
+        self.assertTrue(any(row["daily_loss_halted"] for row in result["history"]))
+        self.assertTrue(any(row["daily_equity_pnl"] <= -5 for row in result["history"]))
+
     def test_stop_loss_and_daily_loss_halt_are_recorded(self):
         candles = {
             "EUR/USD": [
