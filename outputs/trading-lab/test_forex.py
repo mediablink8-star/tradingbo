@@ -1,4 +1,4 @@
-import os,tempfile,unittest
+import os,tempfile,unittest,time
 from forex_risk import FXRisk,RiskConfig
 from forex_paper import ForexPaperBroker
 class ForexTests(unittest.TestCase):
@@ -22,7 +22,7 @@ class ForexTests(unittest.TestCase):
    risk=FXRisk(RiskConfig(max_daily_loss=5,stop_loss_pct=0.5))
    b=ForexPaperBroker(os.path.join(d,"fx.sqlite"),risk)
    b.open("EUR/USD",1.10,500,"buy")
-   marks={"EUR/USD":{"bid":1.08,"ask":1.0801}}
+   marks={"EUR/USD":{"bid":1.08,"ask":1.0801,"observed":time.time(),"provider_date":time.strftime("%Y-%m-%d",time.gmtime())}}
    with self.assertRaisesRegex(ValueError,"Daily FX loss limit reached"):
     b.open("GBP/USD",1.30,500,"buy",prices=marks)
    self.assertEqual(len(b.snapshot({"EUR/USD":{"price":1.08}})["positions"]),1)
