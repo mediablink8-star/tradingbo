@@ -58,7 +58,21 @@ class ForexPaperBroker:
                 cash,pnl,_=self._account(db)
                 rows=db.execute("SELECT * FROM fx_positions").fetchall();exposure=sum(float(r[6]) for r in rows)
                 if db.execute("SELECT 1 FROM fx_positions WHERE pair=?",(pair,)).fetchone():raise ValueError("An FX position already exists for this pair.")
-                self.risk.validate_daily_loss(pnl);self.risk.validate_entry(cash,exposure,rows,notional)
+                unrealized = 0.0
+                if rows and prices is None:
+                    raise ValueError("Current prices for all open FX positions are required to check the daily loss limit.")
+                for row in rows:
+                    _, open_pair, open_side, units, entry, _, _ = row
+                    quote = (prices or {}).get(open_pair)
+                    if not isinstance(quote, dict):
+                        raise ValueError(f"Missing current price for open FX position {open_pair}.")
+                    mark = quote.get("bid" if open_side == "buy" else "ask")
+                    if not isinstance(mark, (int, float)) or not math.isfinite(float(mark)) or mark <= 0:
+                        raise ValueError(f"Invalid executable price for open FX position {open_pair}.")
+                    direction = 1 if open_side == "buy" else -1
+                    unrealized += float(units) * (float(mark) - float(entry)) * direction * self._quote_to_usd(open_pair, float(mark))
+                self.risk.validate_daily_loss(pnl + unrealized)
+                self.risk.validate_entry(cash,exposure,rows,notional)
                 iid=uuid.uuid4().hex;units=notional/base_to_usd
                 db.execute("INSERT INTO fx_positions VALUES(?,?,?,?,?,?,?)",(iid,pair,side,units,price,time.time(),notional))
                 return {"id":iid,"pair":pair,"side":side,"units":units,"entry_price":price,"notional":notional}
