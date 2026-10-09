@@ -2,6 +2,14 @@ import os,tempfile,unittest,time
 from forex_risk import FXRisk,RiskConfig
 from forex_paper import ForexPaperBroker
 class ForexTests(unittest.TestCase):
+ def test_risk_config_rejects_non_finite_limits(self):
+  with self.assertRaisesRegex(ValueError,"max_exposure"):
+   RiskConfig(max_exposure=float("nan"))
+  with self.assertRaisesRegex(ValueError,"max_leverage"):
+   RiskConfig(max_leverage=float("inf"))
+ def test_risk_config_rejects_invalid_position_count(self):
+  with self.assertRaisesRegex(ValueError,"max_positions"):
+   RiskConfig(max_positions=0)
  def test_limits(self):
   r=FXRisk(RiskConfig(max_trade_notional=100,max_exposure=200,max_positions=2))
   r.validate_entry(1000,0,[],100)
