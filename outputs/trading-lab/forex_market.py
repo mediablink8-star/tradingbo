@@ -77,6 +77,7 @@ def _alpha_vantage(pairs):
         if not math.isfinite(mid) or mid <= 0:
             raise ValueError("Alpha Vantage returned an invalid rate for " + pair)
         stamp = row.get("6. Last Refreshed")
+        fetched_at = time.time()
         observed = _provider_timestamp(stamp)
         if not observed:
             raise ValueError("Alpha Vantage returned no valid quote timestamp for " + pair)
@@ -86,7 +87,7 @@ def _alpha_vantage(pairs):
             "pair": pair, "price": mid,
             "bid": mid * (1 - half), "ask": mid * (1 + half),
             "spread_bps": spread_bps, "observed": observed,
-            "fetched_at": observed, "provider_date": stamp,
+            "fetched_at": fetched_at, "provider_date": stamp,
             "source": "Alpha Vantage exchange-rate endpoint",
         }
     return {
