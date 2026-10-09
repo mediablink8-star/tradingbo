@@ -17,6 +17,15 @@ class ForexTests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as d:
    b=ForexPaperBroker(os.path.join(d,"fx.sqlite"));b.open("USD/JPY",150,500,"sell")
    s=b.snapshot({"USD/JPY":{"price":149}});self.assertGreater(s["positions"][0]["unrealized_pnl"],0);self.assertAlmostEqual(s["positions"][0]["unrealized_pnl"],500*(150-149)/149,places=6)
+ def test_unrealized_loss_blocks_new_paper_position(self):
+  with tempfile.TemporaryDirectory() as d:
+   risk=FXRisk(RiskConfig(max_daily_loss=5,stop_loss_pct=0.5))
+   b=ForexPaperBroker(os.path.join(d,"fx.sqlite"),risk)
+   b.open("EUR/USD",1.10,500,"buy")
+   marks={"EUR/USD":{"bid":1.08,"ask":1.0801}}
+   with self.assertRaisesRegex(ValueError,"Daily FX loss limit reached"):
+    b.open("GBP/USD",1.30,500,"buy",prices=marks)
+   self.assertEqual(len(b.snapshot({"EUR/USD":{"price":1.08}})["positions"]),1)
  def test_daily_loss_and_exit_logic(self):
   r=FXRisk(RiskConfig(max_daily_loss=50));
   with self.assertRaises(ValueError):r.validate_daily_loss(-50)
