@@ -37,7 +37,10 @@ class ForexLab:
             observed = float(row.get("observed", 0))
         except (TypeError, ValueError):
             return False
-        if not observed or time.time() - observed > MAX_QUOTE_AGE:
+        age = time.time() - observed
+        # Allow small clock skew, but never accept a quote timestamp materially
+        # in the future or one older than the executable-quote freshness window.
+        if not observed or age < -30.0 or age > MAX_QUOTE_AGE:
             return False
         return self._provider_date_is_today(row.get("provider_date"))
 
