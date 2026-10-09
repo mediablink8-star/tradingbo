@@ -46,8 +46,10 @@ deterministic risk controls.
 The research layer uses chronological walk-forward evaluation rather than
 randomized cross-validation. Signals are formed from completed candles and
 filled at the next candle's open in the single-pair and portfolio engines,
-avoiding same-close signal look-ahead. A gap can also be inserted between
-train and test windows.
+avoiding same-close signal look-ahead. Portfolio stop/target checks use candle
+highs and lows, assume the stop is hit first if both levels are crossed, and
+model gaps through a stop at the worse opening price. A gap can also be
+inserted between train and test windows.
 
 The joint portfolio evaluator:
 
