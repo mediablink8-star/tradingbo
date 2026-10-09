@@ -125,6 +125,33 @@ class MultiPairPortfolioBacktester:
             }
         if set(candles_by_pair) != set(signals_by_pair):
             raise ValueError("candles_by_pair and signals_by_pair must contain the same pairs")
+        if not math.isfinite(self.starting_cash) or self.starting_cash <= 0:
+            raise ValueError("starting_cash must be finite and positive")
+        if not math.isfinite(self.max_exposure) or self.max_exposure < 0:
+            raise ValueError("max_exposure must be finite and non-negative")
+        if not math.isfinite(self.per_position_notional) or self.per_position_notional <= 0:
+            raise ValueError("per_position_notional must be finite and positive")
+        if self.spread_bps < 0 or self.slippage_bps < 0:
+            raise ValueError("spread and slippage must be non-negative")
+        for pair, candles in candles_by_pair.items():
+            if not isinstance(pair, str) or pair.count("/") != 1:
+                raise ValueError(f"invalid FX pair: {pair!r}")
+            if not candles:
+                continue
+            previous_timestamp = float("-inf")
+            for candle in candles:
+                values = (candle.timestamp, candle.open, candle.high, candle.low, candle.close)
+                if any(not math.isfinite(float(value)) for value in values):
+                    raise ValueError(f"non-finite candle value for {pair}")
+                if candle.timestamp <= previous_timestamp:
+                    raise ValueError(f"candles for {pair} must have strictly increasing timestamps")
+                if candle.low <= 0 or candle.open <= 0 or candle.high <= 0 or candle.close <= 0:
+                    raise ValueError(f"candle prices for {pair} must be positive")
+                if candle.high < max(candle.open, candle.close, candle.low):
+                    raise ValueError(f"invalid candle high for {pair}")
+                if candle.low > min(candle.open, candle.close, candle.high):
+                    raise ValueError(f"invalid candle low for {pair}")
+                previous_timestamp = candle.timestamp
 
         timeline = sorted({
             candle.timestamp
