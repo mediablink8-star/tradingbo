@@ -35,7 +35,7 @@ class ForexPaperBroker:
         db=self._db()
         try:
             cash,pnl,day=self._account(db);db.commit()
-            rows=db.execute("SELECT id,pair,side,units,entry_price,opened,notional FROM fx_positions").fetchall();positions=[];equity=cash
+            rows=db.execute("SELECT id,pair,side,units,entry_price,opened,notional FROM fx_positions").fetchall();positions=[];equity=cash;unrealized_total=0.0
             for iid,pair,side,units,entry,opened,notional in rows:
                 quote = prices.get(pair) or {}
                 # Mark to the executable close side so unrealized PnL includes
@@ -45,9 +45,9 @@ class ForexPaperBroker:
                     price = quote.get("price")  # compatibility for simple test marks
                 u=0.0
                 if isinstance(price,(int,float)) and math.isfinite(float(price)) and price>0:
-                    u=float(units)*(float(price)-float(entry))*(1 if side=="buy" else -1)*self._quote_to_usd(pair,float(price));equity+=u
+                    u=float(units)*(float(price)-float(entry))*(1 if side=="buy" else -1)*self._quote_to_usd(pair,float(price));equity+=u;unrealized_total+=u
                 positions.append({"id":iid,"pair":pair,"side":side,"units":units,"entry_price":entry,"opened":opened,"notional":notional,"unrealized_pnl":u})
-            return {"cash":cash,"realized_pnl":pnl,"equity":equity,"positions":positions,"exposure":sum(float(p["notional"]) for p in positions)}
+            return {"cash":cash,"realized_pnl":pnl,"unrealized_pnl":unrealized_total,"daily_pnl":pnl+unrealized_total,"equity":equity,"positions":positions,"exposure":sum(float(p["notional"]) for p in positions)}
         finally:db.close()
     def open(self,pair,price,notional,side,prices=None):
         if side not in ("buy","sell") or not isinstance(pair,str):raise ValueError("Invalid FX order.")
