@@ -44,8 +44,9 @@ deterministic risk controls.
 ## Research methodology
 
 The research layer uses chronological walk-forward evaluation rather than
-randomized cross-validation. This matters for time series because future
-observations must not leak into training; a gap can also be inserted between
+randomized cross-validation. Signals are formed from completed candles and
+filled at the next candle's open in the single-pair and portfolio engines,
+avoiding same-close signal look-ahead. A gap can also be inserted between
 train and test windows.
 
 The joint portfolio evaluator:
