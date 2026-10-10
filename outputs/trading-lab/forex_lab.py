@@ -2,7 +2,7 @@
 import datetime
 import time
 
-from forex_market import DEFAULT_PAIRS, snapshot
+from forex_market import ALL_PAIRS, snapshot
 from forex_paper import ForexPaperBroker
 from forex_risk import FXRisk, RiskConfig
 
@@ -12,7 +12,7 @@ MAX_QUOTE_AGE = 300.0
 class ForexLab:
     def __init__(self, path):
         self.broker = ForexPaperBroker(path, FXRisk(RiskConfig()))
-        self.pairs = list(DEFAULT_PAIRS)
+        self.pairs = list(ALL_PAIRS)
         self.last = None
         self.error = None
         self.last_exit_events = []

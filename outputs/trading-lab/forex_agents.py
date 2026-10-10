@@ -182,8 +182,60 @@ class ForexAgentRuntime:
             ))
             self.last_cycle = now
         return {"ok": True, "cycle_id": cycle_id, "timestamp": now,
-                "events": events, "executed": executed, "account": self.lab.status().get("account", {}),
-                "auto_run_enabled": self.auto_run}
+                "events": events, "executed": executed,
+                "account": self.lab.status().get("account", {}),
+                "auto_run_enabled": self.auto_run,
+                "ai_research": getattr(self, "research", None)}
+
+    def attach_research(self, layer):
+        """Attach the advisory AI research layer.
+
+        The layer can only add recorded commentary. It cannot add proposals,
+        approve an entry, resize one, or touch a risk limit; those decisions
+        stay with the deterministic stages above.
+        """
+        self.research = layer
+
+    def run_research(self):
+        """Run advisory AI research for the current observed state."""
+        layer = getattr(self, "research", None)
+        if layer is None:
+            return None
+        data = self.lab.tick()
+        result = layer.run(
+            data.get("market", {}), data.get("account", {}),
+            data.get("risk", {}), self.histories(),
+            data.get("account", {}).get("positions", []),
+        )
+        cycle_id = uuid.uuid4().hex[:12]
+        now = time.time()
+        with self._db() as db:
+            for stage in result.get("stages", []):
+                status = "AI report" if stage.get("ok") else "AI unavailable"
+                summary = (stage.get("text") or
+                           "; ".join(stage.get("concerns") or []) or "No output.")[:2000]
+                db.execute(
+                    "INSERT OR REPLACE INTO fx_agent_events"
+                    "(id,cycle_id,timestamp,agent,status,summary,approve_json,"
+                    "concerns_json,kind) VALUES(?,?,?,?,?,?,?,?,?)",
+                    (uuid.uuid4().hex, cycle_id, now,
+                     stage["agent"] + " (AI)", status, summary, "[]",
+                     json.dumps(stage.get("concerns") or [])[:4000],
+                     "ai_research_report"),
+                )
+        return result
+
+    def histories(self):
+        """Recent observed closes per pair, for AI context."""
+        out = {}
+        with self._db() as db:
+            rows = db.execute(
+                "SELECT pair,observed,price FROM fx_agent_samples"
+                " ORDER BY observed ASC"
+            ).fetchall()
+        for pair, observed, price in rows:
+            out.setdefault(pair, []).append((observed, price))
+        return {p: v[-MAX_HISTORY:] for p, v in out.items()}
 
     def status(self):
         with self._db() as db:

@@ -1,382 +1,465 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>
-*{box-sizing:border-box}body{margin:0;background:#080d16;color:#e8f3ff;font:14px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;letter-spacing:.01em}button,select{font:inherit}::selection{background:#ff465855}header{padding:17px 22px;background:linear-gradient(110deg,#0d1a2b,#10101c 72%);border-bottom:1px solid #ff526525;display:flex;gap:15px;align-items:center;flex-wrap:wrap;position:relative;z-index:2}h1{font-size:19px;margin:0;letter-spacing:1.8px;font-weight:750}small,.muted{color:#a7a7b2}.badge{font-size:11px;letter-spacing:1px;color:#a7a7b2;border:1px solid #605f65;border-radius:20px;padding:5px 10px}select,button{font:inherit;background:#323137;color:#e2eefa;border:1px solid #5b5a60;border-radius:7px;padding:8px;cursor:pointer}button:focus-visible,select:focus-visible{outline:3px solid #ef777e}header .tools{margin-left:auto;display:flex;gap:8px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:16px;padding:16px}.world{background:#080e18;border:1px solid #ff465835;border-radius:16px;overflow:hidden;position:relative;box-shadow:0 24px 70px #0008,0 0 30px #ff465809}.world canvas{display:block;width:100%;height:auto;image-rendering:auto;cursor:pointer}.world footer{padding:11px 15px;color:#d3a4aa;background:linear-gradient(90deg,#0b1725,#12101d);border-top:1px solid #ff465822;font-size:12px}.sidebar{background:linear-gradient(160deg,#101c2d,#090d17);border:1px solid #ffffff17;border-radius:16px;padding:17px;min-width:0;box-shadow:0 18px 55px #0005}h2{font-size:16px;margin:0 0 8px}p{line-height:1.5;overflow-wrap:anywhere}#detail{min-height:72px;color:#a7a7b2}.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}.stats span{padding:6px 9px;border-radius:7px;background:#142235;border:1px solid #ff465819;font-size:11px;color:#b7cce3}.roster{display:flex;gap:7px;flex-wrap:wrap;padding:0 14px 14px}.roster button{font-size:12px;padding:8px 11px}.roster button[aria-pressed=true]{border-color:#ef777e;background:#424147}#notice{margin:0;padding:10px 20px;background:#242329;color:#d6a4ae;font-size:12px}#feed{padding-left:19px;color:#a7a7b2;font-size:12px;max-height:190px;overflow:auto}#feed li{padding-bottom:10px}#role-status{color:#ef777e}.tagline{padding:0 14px 12px;font-size:12px;color:#a7a7b2}@media(max-width:900px){.layout{grid-template-columns:1fr}.sidebar{min-height:180px}header .tools{margin-left:0}#detail{min-height:0}#feed{max-height:100px}}
-body{background:radial-gradient(ellipse at 50% -20%,#182a46 0,#090e19 48%,#05070d 100%)!important;color:#edf5ff}header{background:linear-gradient(115deg,rgba(13,25,43,.98),rgba(14,12,24,.97));border-bottom:1px solid #ff46582a;box-shadow:0 10px 35px #0005}header h1{letter-spacing:1.7px;text-shadow:0 0 22px #ff465820}.badge{color:#ff8290;border-color:#ff465844;background:#0a1c2a}.layout{gap:16px}.world{background:#080e18;border-color:#ff465835;box-shadow:0 18px 60px #0008,0 0 32px #ff46580a}.world footer{background:linear-gradient(90deg,#0b1725,#12101d);color:#c999a0;border-top:1px solid #ff465822}.sidebar{background:linear-gradient(160deg,#101a2a,#0a0d17);border-color:#ffffff16;box-shadow:0 16px 45px #0005}#notice{background:linear-gradient(90deg,#102334,#161321);color:#ffc0c8;border-bottom:1px solid #ff46581c}#feed{color:#cba5aa}.roster button{background:#101c2c!important;border-color:#ff465825!important}.roster button[aria-pressed=true]{background:linear-gradient(120deg,#124c64,#25213c)!important;border-color:#ff4658!important;box-shadow:0 0 22px #ff46581c}button{background:linear-gradient(135deg,#11546d,#202344)!important;border-color:#ff465855!important;color:#f1f8ff!important;transition:transform .18s ease,box-shadow .18s ease}button:hover{transform:translateY(-1px);box-shadow:0 5px 18px #ff46581c}button:active{transform:translateY(0)}#pause{background:linear-gradient(135deg,#33233a,#1c2238)!important;border-color:#c39bff44!important}@media(max-width:760px){.layout{padding:10px}.sidebar{background:linear-gradient(160deg,#101a2a,#0a0d17)}}@media(prefers-reduced-motion:reduce){button{transition:none}} 
-/* Premium operations-console layer: stronger hierarchy and a more legible office floor. */
-body{background:radial-gradient(ellipse at 55% -15%,#1b3555 0,transparent 48%),#050811}
-header{padding:18px clamp(14px,2.4vw,30px);background:linear-gradient(110deg,#0b192bfa,#0b0d18fa);backdrop-filter:blur(18px)}
-header h1{font-size:clamp(16px,1.5vw,21px);letter-spacing:2px}
-header small{display:block;margin-top:4px;letter-spacing:.02em}
-header .tools{flex-wrap:wrap;justify-content:flex-end}
-.badge{background:#0c2130;border-color:#ff465844;color:#ff8290}
-#notice{border-bottom:1px solid #ffffff12;letter-spacing:.01em}
-.layout{align-items:start;max-width:1800px;margin:0 auto;gap:18px;padding:clamp(10px,1.4vw,20px)}
-.world{border-radius:18px;box-shadow:0 24px 80px #0008,0 0 0 1px #ff465808}
-.world canvas{width:100%;height:auto;aspect-ratio:960/620}
-.world footer{line-height:1.6}
-.sidebar{position:sticky;top:12px;border-radius:18px;box-shadow:0 20px 60px #0005}
-.sidebar h2{letter-spacing:-.025em}
-.stats span{border-color:#ffffff12}
-.roster{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:8px}
-.roster button{border-radius:9px}
-#detail{line-height:1.65}
-#feed li{line-height:1.55}
-#office-status{line-height:1.6}
-@media(max-width:900px){.layout{grid-template-columns:minmax(0,1fr)}.sidebar{position:relative;top:auto}.world canvas{max-height:none}}
-@media(max-width:560px){.world canvas{min-height:340px;object-fit:fill}header{align-items:flex-start}header .tools{width:100%;justify-content:flex-start}header .tools>*{max-width:100%}.layout{padding:9px;gap:10px}.world,.sidebar{border-radius:13px}.sidebar{padding:13px}.roster{padding:0 8px 10px}.stats{gap:6px}.stats span{font-size:10px}}
-@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TradingLab · Floor Plan</title>
+<style>
+/* Console shell — deliberately identical to index.html so the two views read
+   as one product. Only the floor canvas differs. */
+:root{
+  --bg:#080a0d; --surface:#0e1218; --surface-2:#12171f; --surface-3:#171d26;
+  --line:#1d242e; --line-2:#2a323e;
+  --ink:#e4ebf2; --ink-2:#aeb9c6; --dim:#78838f; --faint:#4d565f;
+  --up:#2fbf87; --down:#e2555f; --warn:#d9a441; --accent:#4c8dff;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --r:6px; --r-lg:10px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:13px/1.45 var(--sans);
+  -webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+::selection{background:#4c8dff44}
+button,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 
+.bar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  padding:11px 18px;border-bottom:1px solid var(--line);background:var(--surface);
+  position:sticky;top:0;z-index:20}
+.bar .path{font:500 12px/1 var(--mono);color:var(--dim)}
+.bar .path b{color:var(--ink);font-weight:600}
+.bar .bt{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.tag{font:600 9.5px/1 var(--mono);letter-spacing:.13em;padding:5px 8px;border-radius:4px;
+  border:1px solid var(--line-2);color:var(--ink-2);background:var(--surface-2);white-space:nowrap}
+.tag.ok{border-color:#2fbf8755;color:#7fd8b4;background:#12301f}
+.tag.warn{border-color:#d9a44155;color:#e8c583;background:#2e2413}
+.tag.bad{border-color:#e2555f55;color:#f0939a;background:#31161a}
+.btn{border:1px solid var(--line-2);background:var(--surface-3);border-radius:var(--r);
+  padding:8px 13px;font-size:12px;font-weight:600;cursor:pointer;
+  transition:background .12s,border-color .12s}
+.btn:hover{background:#1d242e;border-color:#3a4453}
+.btn.go{background:var(--accent);border-color:var(--accent);color:#04101f;font-weight:700}
+.btn.go:hover{background:#6ba1ff}
+.btn:disabled{opacity:.55;cursor:not-allowed}
 
-/* EMBER REDLINE — immersive office chrome */
-:root{color-scheme:dark}
-html,body{background:#070506!important;color:#fff0f2}
-body{background:radial-gradient(ellipse at 50% -20%,#3a101b 0,#12070b 48%,#050405 100%)!important}
-::selection{background:#ff465855}
-header{background:linear-gradient(110deg,#260b12,#10070a 72%)!important;border-bottom-color:#ff46583b!important;box-shadow:0 12px 38px #0009}
-header h1{text-shadow:0 0 24px #ff304822}
-.badge{background:#260b12!important;color:#ff8290!important;border-color:#ff465855!important}
-select,button{background:linear-gradient(135deg,#351018,#17090d)!important;color:#fff0f2!important;border-color:#ff526044!important}
-button:hover{box-shadow:0 5px 22px #ff23301c!important}
-button:focus-visible,select:focus-visible{outline-color:#ff7785!important}
-.layout{background:transparent}
-.world{background:#080506!important;border-color:#ff46584c!important;box-shadow:0 24px 75px #000b,0 0 34px #ff263c0a!important}
-.world footer{background:linear-gradient(90deg,#1c080e,#10070a)!important;color:#d3a4aa!important;border-top-color:#ff46582c!important}
-.sidebar{background:linear-gradient(160deg,#210b11,#0b0608)!important;border-color:#ff46582b!important}
-.stats span{background:#240c12!important;border-color:#ff46582b!important;color:#ffd9de!important}
-#notice{background:linear-gradient(90deg,#2a0c13,#16080c)!important;color:#ffbdc5!important;border-bottom-color:#ff46582b!important}
-#feed{color:#c5a2a7!important}
-.roster button{background:linear-gradient(135deg,#260b12,#13070a)!important;border-color:#ff46582e!important}
-.roster button[aria-pressed=true]{background:linear-gradient(120deg,#861629,#3c0d17)!important;border-color:#ff6576!important;box-shadow:0 0 22px #ff263c20!important}
-#role-status{color:#ff7380!important}
-#detail{color:#d4b1b6!important}
-@media(max-width:760px){.sidebar{background:linear-gradient(160deg,#210b11,#0b0608)!important}}
-@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+.wrap{padding:18px;display:grid;gap:16px;max-width:1720px}
+.note{padding:10px 13px;border:1px solid var(--line);border-radius:var(--r);
+  background:var(--surface-2);font:400 11px/1.6 var(--mono);color:var(--dim)}
+.note:empty{display:none}
 
+.split{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:16px;align-items:start}
+.sec{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface);overflow:hidden}
+.sechd{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding:10px 14px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.sechd h2{margin:0;font-size:12px;font-weight:650;letter-spacing:.06em;text-transform:uppercase}
+.sechd .sub{font:500 10px/1 var(--mono);letter-spacing:.09em;color:var(--faint)}
+.secbd{padding:14px}
 
-/* Rendering and motion safeguards: keep the people visible and controls usable. */
-header .tools{display:flex;flex-wrap:wrap;gap:9px;align-items:center;max-width:100%}
-header .tools button,header .tools select{min-height:40px;max-width:100%;white-space:normal}
-.world canvas{display:block;width:100%;height:auto;aspect-ratio:960/620;min-height:0}
-.roster button{min-width:0;min-height:42px;white-space:normal;text-align:left;line-height:1.3}
-#office{background:#10070a}
-#office-status{overflow-wrap:anywhere}
-@media(max-width:560px){.world canvas{min-height:340px}header .tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}header .tools>*{min-width:0;width:100%}#source{grid-column:1/-1}}
+/* Floor canvas */
+.stage{background:#0a0e13;position:relative}
+#office{display:block;width:100%;height:auto;aspect-ratio:960/540}
+.floorfoot{padding:9px 14px;border-top:1px solid var(--line);background:var(--surface-2);
+  font:400 10.5px/1.6 var(--mono);color:var(--dim)}
 
-/* Cinematic floor polish: atmosphere, readable status, and restrained motion. */
-.world{isolation:isolate;background:linear-gradient(145deg,#16070b,#080506)!important;border-color:#ff52605c!important;box-shadow:0 28px 90px #000b,0 0 42px #ff263c13!important}
-.world:before{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;border-radius:inherit;background:linear-gradient(115deg,#ff465808,transparent 35%,transparent 70%,#ff465806);mix-blend-mode:screen}
-.world canvas{position:relative;z-index:0;filter:contrast(1.035) saturate(1.12)}
-.world footer{position:relative;z-index:2;background:linear-gradient(90deg,#260b12,#11070a)!important;color:#f2b4bd!important;letter-spacing:.02em}
-.sidebar{border-color:#ff46583b!important;background:radial-gradient(ellipse at 100% 0,#3b101b55,transparent 48%),linear-gradient(160deg,#210b11,#0b0608)!important}
-.sidebar h2{display:flex;align-items:center;gap:8px}
-#role-status{display:inline-flex;align-items:center;gap:7px;border:1px solid #ff465830;background:#ff46580c;border-radius:999px;padding:5px 9px;font-size:11px;letter-spacing:.04em}
-#role-status:before{content:"";width:6px;height:6px;border-radius:50%;background:#ff6575;box-shadow:0 0 10px #ff4658}
-#detail{font-size:13px;color:#f0cbd0!important}
-.stats span{transition:transform .18s,border-color .18s,background .18s}
-.stats span:hover{transform:translateY(-2px);border-color:#ff647755;background:#3a101a!important}
-#feed li{border-left:1px solid #ff465833;padding-left:12px;margin-left:2px;position:relative}
-#feed li:before{content:"";position:absolute;left:-4px;top:5px;width:6px;height:6px;border-radius:50%;background:#ff6575;box-shadow:0 0 10px #ff465855}
-.roster button{position:relative;overflow:hidden;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease!important}
-.roster button:hover{transform:translateY(-2px)!important;box-shadow:0 8px 24px #ff263c1c!important}
-.roster button[aria-pressed=true]:after{content:"SELECTED";display:block;margin-top:4px;font-size:8px;letter-spacing:.12em;color:#ffd8de}
-#pause{border-color:#a96c7b66!important}
-#run-agent-cycle:not(:disabled){box-shadow:0 0 0 1px #ff46581a,0 0 22px #ff465812}
-#run-agent-cycle:disabled{opacity:.7;cursor:progress}
-@keyframes emberPulse{0%,100%{box-shadow:0 0 0 0 #ff465800}50%{box-shadow:0 0 0 5px #ff46580c}}
-#mode-badge{animation:emberPulse 3.2s ease-in-out infinite}
-@media(prefers-reduced-motion:reduce){#mode-badge{animation:none!important}.roster button:hover{transform:none!important}}
-</style></head><body>
-<header><div><h1>AGENT COMPANY</h1><small>Your paper-trading team, on the office floor</small></div><span class="badge" id="mode-badge">LIVE OBSERVER</span><div class="tools"><button id="back-to-floor" onclick="location.href='index.html'">← Research floor</button><select id="source" aria-label="Activity source"><option value="live">Live paper team</option><option value="team" disabled>Experiment team · unavailable in forex build</option><option value="demo">Office demo · no AI calls</option></select><button id="run-agent-cycle">Run agent cycle</button><button id="pause">Pause animation</button></div></header>
-<p id="notice" role="status">Waiting for a dashboard update. Idle characters do not mean an AI model is running.</p>
-<div id="ceo-brief" style="margin:10px 14px;padding:12px 16px;border:1px solid #713342;border-radius:9px;background:#2a1921;color:#efbdc7;font-size:12px" role="status">CEO · Waiting for team status.</div><div class="layout"><section class="world"><canvas id="office" width="960" height="620" aria-label="Animated office with six agent workstations and a CEO supervisor. Select an agent using the buttons below."></canvas><footer id="office-status">Click a character or workstation to inspect its latest activity.</footer></section><aside class="sidebar"><h2 id="role-name">Market researcher</h2><span id="role-status">Waiting</span><p id="detail">No agent report received yet.</p><div class="stats" id="stats"></div><h2>Office activity</h2><ol id="feed"></ol><p class="muted" style="font-size:12px">Characters and handoff effects are a visualization. Only recorded reports represent AI work. The performance reviewer is deterministic accounting.</p></aside></div>
-<p class="muted" style="padding:0 18px;font-size:11px">Walking, coffee breaks and desk gestures are visual animation. Recorded reports in the activity panel identify actual AI work. Demo mode shows a sample collaboration cycle.</p><div class="roster" id="roster" aria-label="Choose agent"></div><div class="tagline">Research → screening → strategy → risk → coordination → accounting · Paper only</div>
+/* Inspector */
+.who{display:flex;align-items:center;gap:9px;margin-bottom:11px}
+.who .ix{font:700 10px/1 var(--mono);color:var(--faint);letter-spacing:.1em}
+.who .nm{font-size:14px;font-weight:650}
+.st{font:600 9px/1 var(--mono);letter-spacing:.13em;margin:9px 0}
+.st.live{color:var(--up)} .st.idle{color:var(--warn)} .st.off{color:var(--faint)}
+.detail{font-size:12px;line-height:1.6;color:var(--ink-2)}
+.kv{display:grid;gap:1px;background:var(--line);margin-top:13px;border:1px solid var(--line);border-radius:var(--r)}
+.kv div{background:var(--surface);padding:8px 11px;display:flex;justify-content:space-between;gap:10px}
+.kv b{font:500 9.5px/1.4 var(--mono);letter-spacing:.12em;color:var(--faint);font-weight:600}
+.kv span{font:600 11.5px/1.4 var(--mono);color:var(--ink);text-align:right}
+.roster{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;
+  background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.roster button{background:var(--surface);border:0;border-radius:0;padding:10px 12px;
+  text-align:left;cursor:pointer;font-size:12px;color:var(--ink-2);
+  display:grid;gap:5px;transition:background .12s,color .12s}
+.roster button:hover{background:var(--surface-2);color:var(--ink)}
+.roster button[aria-pressed="true"]{background:#14213a;color:var(--ink)}
+.roster button .r{font:600 9px/1 var(--mono);letter-spacing:.12em;color:var(--faint)}
+.roster button .s{font:600 9px/1 var(--mono);letter-spacing:.1em}
+.riskbox{border-top:1px solid var(--line);padding:11px 13px;
+  font:400 10.5px/1.7 var(--mono);color:var(--dim)}
+.riskbox.halt{border-top-color:#e2555f55;color:#f0939a;background:#1a0e10}
+
+.log{display:grid;max-height:300px;overflow-y:auto}
+.log .row{display:grid;grid-template-columns:7px minmax(0,1fr);gap:9px;
+  padding:9px 13px;border-bottom:1px solid var(--line);align-items:start}
+.log .row:last-child{border-bottom:0}
+.log .tx{font-size:11.5px;line-height:1.5;color:var(--ink-2)}
+.log .tx b{color:var(--ink);font-weight:600}
+.empty{padding:20px 13px;text-align:center;font:400 11.5px/1.6 var(--mono);color:var(--faint)}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--faint);margin-top:5px;flex:none}
+.dot.ok{background:var(--up)} .dot.warn{background:var(--warn)}
+
+@media(max-width:1100px){.split{grid-template-columns:1fr}}
+@media(max-width:640px){.wrap{padding:12px}.bar{padding:10px 12px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="path">TradingLab / <b>Floor Plan</b></div>
+  <div class="bt">
+    <span class="tag" id="modeTag">CONNECTING</span>
+    <button class="btn" onclick="location.href='index.html'">&#8592; Overview</button>
+    <button class="btn" id="cycle">Run agent cycle</button>
+    <button class="btn" id="pauseBtn">Pause</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="note" id="notice"></div>
+
+  <div class="split">
+    <div style="display:grid;gap:16px;min-width:0">
+      <section class="sec">
+        <div class="sechd">
+          <h2>Floor Plan</h2>
+          <span class="sub" id="stageMeta">—</span>
+        </div>
+        <div class="stage"><canvas id="office" width="960" height="540"
+          aria-label="Schematic floor plan of six agent stations and a supervisor"></canvas></div>
+        <div class="floorfoot" id="floorFoot">Loading floor state…</div>
+      </section>
+
+      <section class="sec">
+        <div class="sechd"><h2>Activity</h2><span class="sub">RECORDED REPORTS</span></div>
+        <div class="log" id="log"></div>
+      </section>
+    </div>
+
+    <div style="display:grid;gap:16px;min-width:0">
+      <section class="sec">
+        <div class="sechd"><h2>Inspector</h2></div>
+        <div class="secbd">
+          <div class="who"><span class="ix" id="selIx">01</span><span class="nm" id="selName">—</span></div>
+          <div class="st off" id="selState">NO DATA</div>
+          <div class="detail" id="selText">Select a station on the plan or in the roster.</div>
+          <div class="kv">
+            <div><b>ROLE</b><span id="selRole">—</span></div>
+            <div><b>STATE</b><span id="selAct">—</span></div>
+            <div><b>REPORTS</b><span id="selCount">0</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="sec">
+        <div class="sechd"><h2>Stations</h2></div>
+        <div class="roster" id="roster"></div>
+      </section>
+
+      <section class="sec">
+        <div class="sechd"><h2>Account &amp; Risk</h2><span class="sub" id="acctState">—</span></div>
+        <div class="kv" id="acct"></div>
+        <div class="riskbox" id="riskBox">Loading risk parameters…</div>
+      </section>
+    </div>
+  </div>
+</div>
+
 <script>
-const $=id=>document.getElementById(id),canvas=$('office'),ctx=canvas.getContext('2d');
-const roles=['Market researcher','Macro analyst','Strategy analyst','Risk critic','Portfolio coordinator','Performance reviewer','CEO'];
-const short=['RESEARCH','MACRO DESK','STRATEGY','RISK DESK','COORDINATION','ACCOUNTING','CEO'];
-const colors=['#ff4658','#ff7785','#ff9b73','#ff3048','#d72a43','#b51f35','#ff8290'];
-const desks=[{x:190,y:220},{x:480,y:220},{x:770,y:220},{x:190,y:430},{x:480,y:430},{x:770,y:430},{x:75,y:290}];
-let selected=0,mode='live',paused=matchMedia('(prefers-reduced-motion: reduce)').matches,live=null,team=null,lastSeen=0,visualTime=0,lastFrame=0,demoStep=-1;
-let staff=roles.map(()=>({status:'Waiting',summary:'No report received yet.',approve:[],concerns:[],at:0,activeUntil:0}));
-let operations=null,organization=null;
-let seen=new Set(),entries=[],packets=[];
-const motions=roles.map(()=>({x:0,y:0}));
-const demoReports=['Reviewing sample prices and missing observations.','Checking sample pool age and liquidity.','Comparing a sample momentum signal against costs.','Holding a sample proposal because evidence is incomplete.','Respecting the risk veto; no sample entry approved.','Preparing illustrative paper accounting.','Team check-in: keep reports clear, respect the risk veto and wait for sound evidence.'];
-function reset(){staff=roles.map(()=>({status:'Waiting',summary:'No report received yet.',approve:[],concerns:[],at:0,activeUntil:0}));seen.clear();entries=[];packets=[];demoStep=-1;renderDetails()}
-function renderDetails(){const a=staff[selected];$('role-name').textContent=roles[selected];$('role-status').textContent=a.status;$('detail').textContent=a.summary+(a.concerns.length?' Concerns: '+a.concerns.join('; '):'');$('stats').replaceChildren();for(const value of ['Approvals: '+a.approve.length,a.at?'Report: '+new Date(a.at*1000).toLocaleTimeString():'No recorded report','Handoff: '+(selected<5?roles[selected+1]:selected===5?'CEO review':'Team oversight'),a.at?'Report age: '+Math.max(0,Math.floor(Date.now()/1000-a.at))+'s':'Task: waiting for evidence']){const node=document.createElement('span');node.textContent=value;$('stats').append(node)}for(const button of $('roster').children)button.setAttribute('aria-pressed',String(Number(button.dataset.index)===selected));$('feed').replaceChildren();for(const e of entries.slice(-6).reverse()){const item=document.createElement('li');item.textContent=e;$('feed').append(item)}}
-function apply(records,initial){for(const record of records){const index=roles.indexOf(record.agent);if(index<0)continue;const key=JSON.stringify([record.agent,record.status,record.timestamp,record.recorded_at,record.step,record.summary]);if(seen.has(key))continue;seen.add(key);if(seen.size>2000)seen.delete(seen.values().next().value);const a=staff[index];a.status=record.status||'Report received';a.summary=typeof record.summary==='string'?record.summary:'Reviewing supplied evidence.';a.approve=Array.isArray(record.approve)?record.approve:[];a.concerns=Array.isArray(record.concerns)?record.concerns:[];a.at=record.timestamp||record.recorded_at||0;if(!initial){a.activeUntil=visualTime+12;if(index<5)packets.push({from:index,to:index+1,born:visualTime});entries.push(short[index]+': '+a.status+' — '+a.summary.slice(0,100));if(entries.length>20)entries.shift()}}renderDetails()}
-function supervise(){
-let status='Waiting',message='Waiting for verified team updates. Good decisions start with clear evidence.';
-if(mode==='demo'){status='Demo leadership';message='Sample check-in: collaborate, challenge weak evidence and respect the risk veto. Demo only.'}
-else if(mode==='live'&&live){const blockers=live.readiness?.blockers||[];const latest=Math.max(0,...staff.slice(0,5).map(a=>a.at));const stale=lastSeen&&Date.now()-lastSeen>20000||live.last_tick&&Date.now()/1000-live.last_tick>90;
-if(stale){status='Updates stale';message='Team updates are stale. Check the server and data connection before trusting activity.'}
-else if(live.config?.provider==='none'){status='Paper observer only';message='The forex paper account is connected, but this server has no autonomous AI-agent runtime. Agent reports are unavailable; character motion is presentation only.'}
-else if(live.config?.provider==='forex-paper'&&!live.worker_running){status='Manual cycle mode';message='The forex agent pipeline is ready. Use Run agent cycle to record a real research, strategy, risk, paper-execution and audit pass. Automatic cycles are opt-in.'}
-else if(!live.worker_running){status='Worker stopped';message='The paper worker is stopped. Resume it from Connections & setup when ready.'}
-else if(live.strategy?.halted){status='Risk shutdown';message='Protect capital. New entries remain stopped; the CEO cannot override the risk controller.'}
-else if(blockers.length){status='Blocked / waiting';message=blockers.join(' ')+' Staying selective is part of the job.'}
-else if(latest&&Date.now()/1000-latest<180){status='Team reporting';message='Reports are arriving. Keep evidence clear, challenge assumptions and respect every risk veto.'}
-else {status='Waiting for reports';message='Monitoring is active; no recent AI report has arrived. Check eligibility, call allowance and the activity log. Never trade just to look busy.'}}
-else if(mode==='team'&&team){status=team.status==='running'?'Team running':team.status==='failed'?'Review failure':'Review complete';message=team.status==='running'?'The experiment team is running. Keep handoffs clear; report failures and respect the risk veto.':team.status==='failed'?'An experiment failed. Review its activity before retrying.':'Review the results and costs before drawing conclusions.'}
-const a=staff[6];if(a.summary!==message){a.status=status;a.summary=message;a.at=Date.now()/1000;a.approve=[];a.concerns=['Rule-based office supervisor; no trading authority or extra model calls.'];if(entries.length>20)entries.shift();entries.push('CEO: '+status+' — '+message.slice(0,100))}
-const daily=operations?.daily;const digest=daily?' Today (UTC): '+daily.calls_today+' model calls; '+daily.eligible_now+' eligible now; '+daily.unresolved_alerts+' active incidents.':'';a.summary=message; $('ceo-brief').textContent='CEO · '+status+' — '+message+digest+(organization?' '+organization.name+': '+organization.open_tasks+' open work orders; $'+organization.budget.remaining.toFixed(2)+' AI allowance left.':'');renderDetails();
-}
-function refreshSource(initial=false){if(mode==='demo')return;if(mode==='live'){if(!live){$('notice').textContent='Waiting for live paper state.';return}const noModel=live.config?.provider==='none';$('mode-badge').textContent='LIVE PAPER · '+(noModel?'NO AI CONFIGURED':live.config.provider.toUpperCase());$('notice').textContent=noModel?'Market observer running without an AI provider. The team stays idle until a model is configured and eligible evidence exists.':live.worker_running?'Displaying recorded live-paper agent reports. Visual handoffs show newly received reports.':'Paper worker stopped. Displaying retained reports.';const records=(live.events||[]).filter(e=>['live_agent_report','live_agent_started','accounting_report'].includes(e.kind)).reverse().map(e=>({...e,status:e.kind==='live_agent_started'?'working':e.kind==='accounting_report'?'Accounting update':'Report received'}));apply(records,initial);$('office-status').textContent=(live.worker_running?'Observer online':'Observer stopped')+' · '+(live.valid_price_snapshots||0)+' usable prices · '+(live.eligible_count||0)+' eligible · '+(live.calls_today||0)+' model calls today · '+(live.strategy?.halted?'Risk shutdown':'Paper only');}
-else{ $('mode-badge').textContent='EXPERIMENT · '+(team?.provider==='scripted'?'SCRIPTED / NO AI':'RECORDED ACTIVITY');$('notice').textContent=team?'Showing the latest observed experiment handoffs; the experiment uses synthetic market data. Status: '+team.status:'Start an experiment in the dashboard to see its handoffs here.';if(team)apply(team.records||[],initial);$('office-status').textContent=team?'Experiment '+team.status+' · '+team.provider+' · synthetic market data':'No experiment observed in this page.';}
-}
-window.addEventListener('message',event=>{if(event.source!==parent||event.data?.channel!=='agent-company')return;if(event.data.type==='organization'){organization=event.data.state;supervise()}if(event.data.type==='operations'){operations=event.data.state;supervise()}if(event.data.type==='live'){live=event.data.state;lastSeen=Date.now();if(mode==='live')refreshSource(!seen.size)}if(event.data.type==='team'){team=event.data.state;if(mode==='team')refreshSource(!seen.size)}canvas.setAttribute('aria-label','Animated agent office. Company capital: '+capitalDisplay().amount+'. '+capitalDisplay().change+'. '+capitalDisplay().status+'. Select an agent using the buttons below.');supervise()});
-$('source').onchange=()=>{mode=$('source').value;reset();if(mode==='demo'){$('mode-badge').textContent='OFFICE DEMO · NO AI';$('notice').textContent='Illustrative animation only. Demo does not call models, start trials or move funds.';$('office-status').textContent='Demo office · sample messages · no real agent activity';}else refreshSource(true);supervise()};
-$('pause').textContent=paused?'Resume animation':'Pause animation';$('pause').onclick=()=>{paused=!paused;$('pause').textContent=paused?'Resume animation':'Pause animation'};
-for(let i=0;i<roles.length;i++){const button=document.createElement('button');button.textContent=roles[i];button.dataset.index=i;button.onclick=()=>{selected=i;renderDetails()};$('roster').append(button)}
-canvas.onclick=event=>{const bounds=canvas.getBoundingClientRect(),x=(event.clientX-bounds.left)*960/bounds.width,y=(event.clientY-bounds.top)*620/bounds.height;let index=motions.findIndex(p=>Math.hypot(x-p.x,y-p.y)<30);if(index<0)index=desks.findIndex(d=>Math.abs(x-d.x)<105&&y>d.y-75&&y<d.y+85);if(index>=0){selected=index;renderDetails()}};
+const $=id=>document.getElementById(id);
+const canvas=$('office'),ctx=canvas.getContext('2d');
+const W=960,H=540;
 
-function rect(x,y,w,h,color){ctx.fillStyle=color;ctx.fillRect(x,y,w,h)}
-function box(x,y,w,h,color,r=8){ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill()}
-function text(value,x,y,color='#a9a6b4',size=12,align='center'){ctx.fillStyle=color;ctx.font='600 '+size+'px system-ui';ctx.textAlign=align;ctx.fillText(value,x,y)}
-function line(x,y,x2,y2,c,w=1){ctx.strokeStyle=c;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x2,y2);ctx.stroke()}
-function plant(x,y){ctx.fillStyle='#0005';ctx.beginPath();ctx.ellipse(x+3,y+15,23,8,0,0,Math.PI*2);ctx.fill();box(x-13,y,26,24,'#8b5556',5);for(let i=0;i<6;i++){ctx.save();ctx.translate(x,y-6);ctx.rotate(i*Math.PI/3);ctx.fillStyle=i%2?'#537e70':'#73a58a';ctx.beginPath();ctx.ellipse(0,-15,7,20,0,0,Math.PI*2);ctx.fill();ctx.restore()}}
-function avatar(i,x,y,walking,working){
-  const phase=visualTime*9+i*1.7,step=walking?Math.sin(phase)*6:0,bob=walking?Math.abs(Math.sin(phase))*2.6:working?Math.sin(visualTime*4+i)*1.2:Math.sin(visualTime*1.7+i)*.35;
-  const skin=['#e5b99a','#c58f70','#f0c5a4','#d4a083','#e8b89a','#b98569','#e8c2a4'][i],hair=['#34232b','#56352e','#24252d','#5a303c','#33251f','#57515d','#2b1a23'][i];
-  ctx.save();ctx.translate(x,y-bob);
-  ctx.fillStyle='#0008';ctx.beginPath();ctx.ellipse(0,29,walking?18+Math.abs(step)*.35:17,6,0,0,Math.PI*2);ctx.fill();
-  // Animated legs, polished shoes and a small walking stride.
-  line(-5,11,-7+step,25,'#201a22',7);line(5,11,7-step,25,'#201a22',7);
-  line(-7+step,25,-10+step,26,'#b3a0a5',4);line(7-step,25,10-step,26,'#b3a0a5',4);
-  // Tailored jacket with a shaded silhouette and lapels.
-  const coat=ctx.createLinearGradient(-14,-9,14,18);coat.addColorStop(0,colors[i]);coat.addColorStop(1,'#47111d');
-  rounded(-14,-14,28,30,coat,8,'#ffffff25');
-  ctx.fillStyle='#fff0f2';ctx.beginPath();ctx.moveTo(-5,-10);ctx.lineTo(0,1);ctx.lineTo(5,-10);ctx.closePath();ctx.fill();
-  ctx.fillStyle=i===3?'#ffc1ca':'#25101a';ctx.beginPath();ctx.moveTo(-2,-7);ctx.lineTo(2,-7);ctx.lineTo(1,4);ctx.lineTo(-1,4);ctx.closePath();ctx.fill();
-  // Shoulder seams and a moving arm pose make idle vs desk work readable.
-  const arm=walking?step*.72:Math.sin(phase*.4)*1.2;
-  if(working){
-    // Seated typing pose: hands stay on the keyboard instead of swinging like a walker.
-    const typing=Math.sin(visualTime*10+i*2)*1.3;
-    line(-12,-7,-15,-21+typing,skin,4.5);line(12,-7,15,-21-typing,skin,4.5);
-    ctx.fillStyle=skin;ctx.beginPath();ctx.arc(-15,-22+typing,2.8,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(15,-22-typing,2.8,0,Math.PI*2);ctx.fill();
-  }else{
-    line(-12,-7,-18,4+arm,skin,5);line(12,-7,18,4-arm,skin,5);
-    ctx.fillStyle=skin;ctx.beginPath();ctx.arc(-18,5+arm,3,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(18,5-arm,3,0,Math.PI*2);ctx.fill();
+/* Stations: fixed plan positions, in canvas units. */
+const ROLES=[
+  {ix:'01',name:'Market Researcher', role:'Feeds and data quality', x:160,y:196, hue:'#4c8dff'},
+  {ix:'02',name:'Macro Analyst',     role:'Regime and context',    x:480,y:196, hue:'#7c6cff'},
+  {ix:'03',name:'Strategy Analyst',  role:'Signal construction',   x:800,y:196, hue:'#00a3c4'},
+  {ix:'04',name:'Risk Critic',       role:'Veto authority',        x:160,y:356, hue:'#d9a441'},
+  {ix:'05',name:'Portfolio Coord.',  role:'Allocation',            x:480,y:356, hue:'#2fbf87'},
+  {ix:'06',name:'Supervisor',       role:'Deterministic oversight',x:800,y:356,hue:'#8fa3b8'}
+];
+const STATE={WORK:{t:'WORKING',c:'#2fbf87'},MOVE:{t:'IN TRANSIT',c:'#4c8dff'},
+             IDLE:{t:'STANDBY',c:'#4d565f'},REPORT:{t:'REPORTING',c:'#d9a441'}};
+
+let live=null,sel=0,paused=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let t0=performance.now(),logRows=[],counted={};
+ROLES.forEach((_,i)=>counted[i]=0);
+
+const match=role=>{
+  if(!live)return null;
+  const key=role.name.split(' ')[0].toLowerCase();
+  if(role.ix==='06')return live.brief||null;
+  return (live.events||[]).find(e=>String(e.agent||'').toLowerCase().includes(key))||null;
+};
+
+function seed(){
+  live={events:[]};logRows=[];counted={};ROLES.forEach((_,i)=>counted[i]=0);paint();
+}
+
+/* ── canvas helpers ────────────────────────────────────── */
+const rect=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(x,y,w,h)};
+const box=(x,y,w,h,c,r=4)=>{ctx.fillStyle=c;ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill()};
+const line=(x,y,x2,y2,c,w=1)=>{ctx.strokeStyle=c;ctx.lineWidth=w;ctx.beginPath();
+  ctx.moveTo(x,y);ctx.lineTo(x2,y2);ctx.stroke()};
+const txt=(v,x,y,c='#78838f',s=10,a='left')=>{ctx.fillStyle=c;ctx.font=(s>=12?'600 ':'500 ')+s+'px ui-monospace,Menlo,monospace';
+  ctx.textAlign=a;ctx.fillText(v,x,y)};
+const circle=(x,y,r,c)=>{ctx.fillStyle=c;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill()};
+
+/* ── schematic agent marker ─────────────────────────────── */
+function marker(role,x,y,st,active,moving){
+  const hue=role.hue;
+  // selection / activity footprint
+  if(active){
+    ctx.strokeStyle=hue;ctx.lineWidth=1;ctx.globalAlpha=.45;
+    ctx.beginPath();ctx.arc(x,y+16,20,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
   }
-  // Neck, face, hairline, eyebrows and facial features.
-  rounded(-4,-19,8,9,skin,3);
-  ctx.fillStyle=skin;ctx.beginPath();ctx.ellipse(0,-27,12,14,0,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle=hair;ctx.beginPath();ctx.moveTo(-12,-27);ctx.quadraticCurveTo(-15,-43,0,-42);ctx.quadraticCurveTo(15,-42,12,-26);ctx.lineTo(8,-32);ctx.quadraticCurveTo(0,-36,-8,-31);ctx.closePath();ctx.fill();
-  // Distinct headset for the research desk; subtle glasses for the macro analyst.
-  if(i===0||i===1){ctx.strokeStyle=i===0?'#ffb8c1':'#d4e6f2';ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(0,-28,13,Math.PI*1.02,Math.PI*1.98);ctx.stroke();if(i===0){rounded(-13,-29,4,10,'#ff6c7c',2);line(-12,-20,-9,-15,'#ff6c7c',1.5)}else{ctx.strokeRect(-9,-29,7,5);ctx.strokeRect(2,-29,7,5);line(-2,-27,2,-27,'#d4e6f2',1)}}
-  ctx.fillStyle='#35232b';ctx.beginPath();ctx.ellipse(-4,-27,1.4,1.8,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(4,-27,1.4,1.8,0,0,Math.PI*2);ctx.fill();
-  line(-3,-20,3,-20,'#9d5c54',1.2);
-  // Lanyard and ID badge give each employee a finished, readable silhouette.
-  line(0,-10,1,4,'#ffd8de',1.3);rounded(-3,1,7,9,'#f4e6e8',2,'#ffffff66');rect(-1,3,3,2,colors[i]);
-  if(i===4){ctx.fillStyle='#ffdf8a';ctx.beginPath();ctx.arc(9,-8,2,0,Math.PI*2);ctx.fill()}
-  if(i===selected){ctx.strokeStyle=colors[i];ctx.lineWidth=2;ctx.shadowColor=colors[i];ctx.shadowBlur=12;ctx.beginPath();ctx.ellipse(0,29,24,9,0,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0}
-  ctx.restore();
-}
-function position(i,active){
-  const d=desks[i],home={x:d.x,y:d.y+30};
-  // The desk is the default state. Agents leave only into their own clear aisle,
-  // then stroll inside a small lane assigned to their workstation column.
-  const lane=i<3?330:550;
-  const zone=[{min:160,max:278},{min:405,max:555},{min:690,max:785}][i%3];
-  const target={x:i%3===0?zone.max-24:zone.min+24,y:lane};
-  const homeLane={x:home.x,y:lane};
-  const smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t)};
-  const lerp=(a,b,t)=>({x:a.x+(b.x-a.x)*smooth(t),y:a.y+(b.y-a.y)*smooth(t)});
-  const cycle=(visualTime+i*6.3)%42;
-  if(cycle<27)return {...home,walking:false,activity:'working'};
-  if(cycle<30)return {...lerp(home,homeLane,(cycle-27)/3),walking:true,activity:'walking'};
-  if(cycle<35)return {...lerp(homeLane,target,(cycle-30)/5),walking:true,activity:'walking'};
-  if(cycle<38)return {...target,walking:false,activity:'collaborating'};
-  if(cycle<41)return {...lerp(target,homeLane,(cycle-38)/3),walking:true,activity:'walking'};
-  return {...lerp(homeLane,home,(cycle-41)/1),walking:true,activity:'walking'};
-}
-function resolvePose(i,p,placed){
-  // A final spacing guard prevents sprite overlap even if a future route is edited.
-  const clear=(q)=>placed.every(other=>Math.hypot(q.x-other.p.x,q.y-other.p.y)>=43);
-  if(clear(p))return p;
-  const old=motions[i];
-  if(old&&old.x>0&&old.y>0&&clear(old))return {...old,walking:false,activity:'waiting'};
-  const d=desks[i],fallback={x:d.x,y:i<3?330:550,walking:false,activity:'waiting'};
-  return clear(fallback)?fallback:{...p,walking:false,activity:'waiting'};
-}
-function floorText(value,x,y,color='#8fa5be',size=10,align='left'){ctx.fillStyle=color;ctx.font='700 '+size+'px system-ui';ctx.textAlign=align;ctx.fillText(value,x,y)}
-function rounded(x,y,w,h,fill,r=8,stroke){ctx.fillStyle=fill;ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke()}}
-function floorDesk(i,d,active){
-  // Individual desk pods, twin monitors, chairs, peripherals and a soft under-desk light.
-  ctx.save();
-  ctx.shadowColor=colors[i]+'22';ctx.shadowBlur=active?18:7;
-  rounded(d.x-91,d.y-52,182,96,'#0006',12);
-  rounded(d.x-88,d.y-57,176,76,'#352029',9,'#ffffff12');
-  ctx.shadowBlur=0;
-  rounded(d.x-82,d.y-51,164,65,'#1b0c11',7,'#ffffff12');
-  for(const [n,dx] of [[0,-37],[1,28]]){
-    rounded(d.x+dx-24,d.y-45,49,34,'#070b12',4,'#8e4651');
-    rounded(d.x+dx-21,d.y-42,43,27,active?'#142b3a':'#111c2b',3);
-    for(let j=0;j<4;j++){const len=active?10+((Math.floor(visualTime*5)+j*13+i*7)%27):14+j*4;ctx.fillStyle=colors[i]+(j===0?'ee':'88');ctx.fillRect(d.x+dx-17,d.y-37+j*5,len,2)}
-    if(active){ctx.save();ctx.globalAlpha=.18+.14*Math.sin(visualTime*5+i);const glow=ctx.createRadialGradient(d.x+dx,d.y-30,1,d.x+dx,d.y-30,45);glow.addColorStop(0,colors[i]);glow.addColorStop(1,'#ff465800');ctx.fillStyle=glow;ctx.fillRect(d.x+dx-45,d.y-50,90,50);ctx.restore()}
-    ctx.fillStyle='#ff718088';ctx.fillRect(d.x+dx-4,d.y-12,8,7);
+  // schematic figure: head + shoulders, drawn as flat geometry
+  circle(x,y-6,6.5,'#1b2430');
+  ctx.strokeStyle=hue;ctx.lineWidth=1.4;ctx.beginPath();ctx.arc(x,y-6,6.5,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle=hue;ctx.beginPath();
+  ctx.moveTo(x-11,y+16);ctx.quadraticCurveTo(x,y+1,x+11,y+16);ctx.closePath();ctx.fill();
+  if(active)circle(x,y-6,2,hue);
+  // status lamp
+  circle(x+13,y-13,2.6,st.c);
+  if(moving){
+    ctx.strokeStyle=st.c;ctx.lineWidth=1;ctx.globalAlpha=.5;
+    ctx.beginPath();ctx.ellipse(x,y+17,10,3,0,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
   }
-  rounded(d.x-29,d.y+4,58,7,'#15090d',3);
-  for(let k=0;k<12;k++){ctx.fillStyle=k%4===0?'#8be4f4':'#526176';ctx.fillRect(d.x-24+k*4.1,d.y+6,2.5,2)}
-  rounded(d.x+57,d.y-14,13,15,'#c7a48c',3);
-  rounded(d.x-70,d.y-17,12,20,'#0a111c',3,'#7c3a45');
-  ctx.fillStyle='#ff4658';ctx.fillRect(d.x-67,d.y-13,6,12);
-  rounded(d.x-20,d.y+39,40,22,'#39212a',7);rounded(d.x-17,d.y+59,34,5,'#151b26',3);
-  floorText(short[i],d.x,d.y-70,colors[i],10,'center');
-  rounded(d.x-4,d.y-64,8,3,active?colors[i]:'#47586d',2);
-  if(i===selected){ctx.strokeStyle=colors[i]+'b0';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);ctx.strokeRect(d.x-95,d.y-62,190,108);ctx.setLineDash([])}
-  ctx.restore();
 }
-function avatar(i,x,y,walking,working){
-  const phase=visualTime*9+i*1.63,step=walking?Math.sin(phase)*6.2:0,bob=walking?Math.abs(Math.sin(phase))*3.2:working?Math.sin(visualTime*4+i)*.65:Math.sin(visualTime*1.7+i)*.25;
-  const skins=['#f1c39f','#e8b78e','#ffd45c','#8bd88b','#d99b78','#c4a6e8','#f0c5a5'];
-  const hair=['#40e3cf','#67402e','#f5a72e','#263b35','#8f3248','#3b3150','#251a25'];
-  const coats=['#f2f1e8','#f4f0e8','#4a9b55','#9b6de0','#d94b56','#3d4658','#a82f45'];
-  const skin=skins[i],hairColor=hair[i],coat=coats[i];
-  ctx.save();ctx.translate(x,y-bob);ctx.rotate(walking?Math.sin(phase)*.075:working?Math.sin(phase*.45)*.012:0);ctx.scale(.82,.82);
-  ctx.fillStyle='#0009';ctx.beginPath();ctx.ellipse(0,31,18,5.5,0,0,Math.PI*2);ctx.fill();
-  // Big-head original cartoon cast: every role has a distinct silhouette and outfit.
-  line(-5,10,-7+step,25,'#24202a',6);line(5,10,7-step,25,'#24202a',6);
-  line(-7+step,25,-11+step,26,'#e6c3a5',3.5);line(7-step,25,11-step,26,'#e6c3a5',3.5);
-  const jacket=ctx.createLinearGradient(-15,-8,14,18);jacket.addColorStop(0,coat);jacket.addColorStop(1,i===0?'#a9c9d1':'#35111d');
-  rounded(-14,-13,28,27,jacket,8,'#ffffff55');
-  if(i===0){ // eccentric sci-fi researcher: lab coat, teal hair and orange shirt
-    rounded(-5,-8,10,18,'#f5f1e6',2);ctx.fillStyle='#f2a14b';ctx.beginPath();ctx.moveTo(-4,-8);ctx.lineTo(0,1);ctx.lineTo(4,-8);ctx.closePath();ctx.fill();
-  }else if(i===1){ // friendly sitcom dad: white shirt and green tie
-    ctx.fillStyle='#f4f1e8';ctx.beginPath();ctx.moveTo(-6,-10);ctx.lineTo(0,-2);ctx.lineTo(6,-10);ctx.closePath();ctx.fill();
-    ctx.fillStyle='#4aa66b';ctx.beginPath();ctx.moveTo(-2,-5);ctx.lineTo(2,-5);ctx.lineTo(3,6);ctx.lineTo(0,9);ctx.lineTo(-3,6);ctx.closePath();ctx.fill();
-  }else if(i===2){ // bright yellow, spiky-haired cartoon analyst
-    ctx.fillStyle='#f4d75e';ctx.fillRect(-5,-9,10,15);ctx.fillStyle='#e7edf7';ctx.beginPath();ctx.moveTo(-5,-9);ctx.lineTo(0,-2);ctx.lineTo(5,-9);ctx.closePath();ctx.fill();
-  }else if(i===3){ // green alien strategist
-    ctx.fillStyle='#d8f7b2';ctx.fillRect(-4,-9,8,16);line(0,-13,0,-21,'#8bd88b',2);ctx.fillStyle='#ff6477';ctx.beginPath();ctx.arc(0,-22,3,0,Math.PI*2);ctx.fill();
-  }else if(i===4){ // energetic red-jacketed coordinator
-    ctx.fillStyle='#f8d8a2';ctx.beginPath();ctx.moveTo(-5,-9);ctx.lineTo(0,-2);ctx.lineTo(5,-9);ctx.closePath();ctx.fill();
-  }else if(i===5){ // compact robot-like auditor
-    rounded(-10,-10,20,18,'#65758c',5,'#aab9d0');rounded(-6,-5,12,6,'#101d30',2,'#ff4658');ctx.fillStyle='#ff687b';ctx.fillRect(-3,-3,2,2);ctx.fillRect(2,-3,2,2);
-  }else{ctx.fillStyle='#f4e5e7';ctx.beginPath();ctx.moveTo(-6,-10);ctx.lineTo(0,-2);ctx.lineTo(6,-10);ctx.closePath();ctx.fill()}
-  // Neck and expressive oversized face.
-  rounded(-4,-20,8,10,skin,3);
-  ctx.fillStyle=skin;ctx.beginPath();ctx.ellipse(0,-29,13,15,0,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle=hairColor;
-  if(i===0){ctx.beginPath();ctx.moveTo(-13,-29);ctx.lineTo(-17,-42);ctx.lineTo(-8,-38);ctx.lineTo(-4,-48);ctx.lineTo(2,-39);ctx.lineTo(10,-46);ctx.lineTo(10,-37);ctx.lineTo(14,-40);ctx.lineTo(12,-25);ctx.closePath();ctx.fill()}
-  else if(i===1){ctx.beginPath();ctx.moveTo(-13,-30);ctx.quadraticCurveTo(-16,-43,-3,-43);ctx.quadraticCurveTo(9,-45,13,-33);ctx.lineTo(10,-27);ctx.lineTo(-10,-27);ctx.closePath();ctx.fill()}
-  else if(i===2){for(let k=0;k<7;k++){const xx=-12+k*4;ctx.beginPath();ctx.moveTo(xx,-35);ctx.lineTo(xx+2,-44-(k%2)*3);ctx.lineTo(xx+5,-35);ctx.closePath();ctx.fill()}ctx.fillRect(-12,-35,24,7)}
-  else if(i===3){ctx.beginPath();ctx.ellipse(0,-34,14,8,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#8bd88b';ctx.beginPath();ctx.arc(-8,-40,4,0,Math.PI*2);ctx.arc(8,-40,4,0,Math.PI*2);ctx.fill()}
-  else if(i===4){ctx.beginPath();ctx.moveTo(-13,-29);ctx.quadraticCurveTo(-16,-43,-3,-44);ctx.quadraticCurveTo(12,-44,13,-28);ctx.lineTo(8,-32);ctx.lineTo(-8,-31);ctx.closePath();ctx.fill()}
-  else if(i===5){rounded(-14,-41,28,22,'#59677d',8,'#aab9d0')}
-  else{ctx.beginPath();ctx.moveTo(-13,-29);ctx.quadraticCurveTo(-15,-45,0,-44);ctx.quadraticCurveTo(15,-43,13,-27);ctx.lineTo(7,-33);ctx.lineTo(-7,-32);ctx.closePath();ctx.fill()}
-  if(i!==5){
-    ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(-4,-29,4.1,5,0,0,Math.PI*2);ctx.ellipse(4,-29,4.1,5,0,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#26212a';ctx.beginPath();ctx.arc(-3,-28,1.8,0,Math.PI*2);ctx.arc(5,-28,1.8,0,Math.PI*2);ctx.fill();
-    ctx.strokeStyle=hairColor;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-9,-35);ctx.lineTo(-2,-36);ctx.moveTo(2,-36);ctx.lineTo(9,-34);ctx.stroke();
-    ctx.strokeStyle='#8f4d51';ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(0,-23,4,.15,Math.PI-.15);ctx.stroke();
-    if(i===1||i===5){ctx.strokeStyle=i===1?'#6d5c55':'#aab9d0';ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(-10,-32,8,7,2);ctx.roundRect(2,-32,8,7,2);ctx.moveTo(-2,-29);ctx.lineTo(2,-29);ctx.stroke()}
+
+/* ── floor plan ────────────────────────────────────────── */
+function paint(){
+  const now=(performance.now()-t0)/1000;
+  ctx.clearRect(0,0,W,H);
+  rect(0,0,W,H,'#0a0e13');
+
+  // grid
+  ctx.strokeStyle='#12181f';ctx.lineWidth=1;
+  for(let x=0;x<=W;x+=40){ctx.beginPath();ctx.moveTo(x+.5,0);ctx.lineTo(x+.5,H);ctx.stroke()}
+  for(let y=0;y<=H;y+=40){ctx.beginPath();ctx.moveTo(0,y+.5);ctx.lineTo(W,y+.5);ctx.stroke()}
+
+  // header band
+  rect(0,0,W,52,'#0d1218');line(0,52.5,W,52.5,'#1d242e');
+  txt('FLOOR PLAN',18,32,'#e4ebf2',13);
+  txt('AGENT STATION SCHEMATIC',18,45,'#4d565f',9);
+  if(live){
+    txt('CASH  $'+Number(live.equity||0).toFixed(2),W-190,26,'#e4ebf2',12,'right');
+    txt(live.open+' OPEN  ·  '+(live.halted?'HALTED':'ARMED'),W-190,42,
+      live.halted?'#e2555f':'#2fbf87',9,'right');
   }
-  // Distinct cheek dots, ID pins and headset details make the cast feel handcrafted.
-  if(i===0){ctx.fillStyle='#f08a76';ctx.beginPath();ctx.arc(-8,-24,1.7,0,Math.PI*2);ctx.arc(8,-24,1.7,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#ffbd5b';ctx.lineWidth=2;ctx.beginPath();ctx.arc(-13,-28,4,Math.PI*1.5,Math.PI*.5);ctx.stroke()}
-  if(i===2){ctx.fillStyle='#e59e36';ctx.beginPath();ctx.arc(-8,-22,2,0,Math.PI*2);ctx.arc(8,-22,2,0,Math.PI*2);ctx.fill()}
-  if(i!==5){line(0,-11,1,3,'#ffd8de',1.4);rounded(-3,1,7,8,'#f4e6e8',2,'#ffffff66');rect(-1,3,3,2,colors[i])}
-  if(i===selected){ctx.strokeStyle=colors[i];ctx.lineWidth=2.2;ctx.shadowColor=colors[i];ctx.shadowBlur=12;ctx.beginPath();ctx.ellipse(0,31,24,8,0,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0}
-  ctx.restore();
+
+  // three zone bands
+  const zones=[[16,'ZONE A · FEEDS'],[336,'ZONE B · ANALYSIS'],[656,'ZONE C · EXECUTION']];
+  zones.forEach(([x,label])=>{
+    box(x,62,288,404,'#0d1218',6);
+    ctx.strokeStyle='#1a212a';ctx.lineWidth=1;ctx.beginPath();ctx.roundRect(x,62,288,404,6);ctx.stroke();
+    txt(label,x+12,82,'#4d565f',9);
+  });
+
+  // desk for each station
+  ROLES.forEach((r,i)=>{
+    const hit=match(r);
+    const active=Boolean(hit);
+    const moving=!active&&!paused&&((now*0.14+i*0.31)%1)<0.34;
+    const st=active?STATE.REPORT:moving?STATE.MOVE:STATE.IDLE;
+    const bob=moving?Math.sin(now*7+i)*1.6:0;
+    const dx=moving?Math.sin(now*0.8+i)*10:0;
+    const deskY=r.y-40;
+
+    // desk slab
+    box(r.x-62,deskY,124,52,'#141a22',5);
+    ctx.strokeStyle=active?r.hue:'#232c37';ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(r.x-62,deskY,124,52,5);ctx.stroke();
+    rect(r.x-62,deskY,124,1,active?r.hue:'#232c37');
+    // monitor
+    box(r.x-46,deskY+8,42,26,'#080c11',3);
+    ctx.strokeStyle='#212a34';ctx.beginPath();ctx.roundRect(r.x-46,deskY+8,42,26,3);ctx.stroke();
+    if(active){
+      rect(r.x-42,deskY+14,34,1,r.hue);rect(r.x-42,deskY+19,24,1,r.hue);
+    }
+    // terminal block
+    box(r.x+6,deskY+16,26,14,'#0b1017',3);
+    txt(r.ix,r.x+19,deskY+27,'#3d4650',9,'center');
+
+    // figure stands clear in front of the desk, never overlapping it
+    marker(r,r.x+dx,deskY+88+bob,st,active,moving);
+    txt(r.name.toUpperCase(),r.x,deskY+124,active?'#aeb9c6':'#5b6570',9,'center');
+    txt(st.t,r.x,deskY+138,st.c,8,'center');
+
+    if(sel===i){
+      ctx.strokeStyle=r.hue;ctx.lineWidth=1.5;
+      ctx.strokeRect(r.x-72,deskY-48,144,196);
+      for(const [cx,cy,sx,sy] of [[-72,-48,1,1],[72,-48,-1,1],[-72,148,1,-1],[72,148,-1,-1]]){
+        line(r.x+cx,deskY+cy,r.x+cx+sx*13,deskY+cy,r.hue,2);
+        line(r.x+cx,deskY+cy,r.x+cx,deskY+cy+sy*13,r.hue,2);
+      }
+    }
+  });
+
+  // legend
+  rect(16,482,928,32,'#0d1218');
+  txt('LEGEND',28,502,'#4d565f',9);
+  let lx=110;
+  [[STATE.REPORT,'REPORTING'],[STATE.MOVE,'IN TRANSIT'],[STATE.IDLE,'STANDBY']].forEach(([s,l])=>{
+    circle(lx,498,3,s.c);txt(l,lx+9,502,'#5b6570',9);lx+=96;
+  });
+  txt('PLAN VIEW IS ILLUSTRATIVE · RECORDED REPORTS ARE THE SOURCE OF TRUTH',
+      W-18,502,'#3d4650',9,'right');
+  txt('T+'+String(Math.floor(now)).padStart(3,'0')+'s',W-18,522,'#3d4650',9,'right');
 }
-function capitalDisplay(){
-  const account=live?.account||{};
-  const equity=Number(account.equity);
-  const pnl=Number(account.daily_pnl??account.realized_pnl??0);
-  return {
-    amount:Number.isFinite(equity)?equity.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'—',
-    change:'P/L '+(Number.isFinite(pnl)&&pnl>0?'+':'')+(Number.isFinite(pnl)?pnl.toFixed(2):'—'),
-    status:account.daily_halted?'RISK HALT':'PAPER ONLY'
-  };
+
+/* ── readouts ──────────────────────────────────────────── */
+function paintInspector(){
+  const r=ROLES[sel],hit=match(r);
+  $('selIx').textContent=r.ix;
+  $('selName').textContent=r.name;
+  $('selRole').textContent=r.role;
+  const st=hit?STATE.REPORT:STATE.IDLE;
+  $('selState').textContent=st.t;
+  $('selState').className='st '+(hit?'live':'off');
+  $('selText').textContent=hit?.summary||'No report recorded for this station yet.';
+  $('selAct').textContent=hit?'REPORTING':'STANDBY';
+  $('selCount').textContent=String(counted[sel]||0);
 }
-function capitalScreen(){
-  const d=capitalDisplay();
-  rounded(720,29,194,53,'#1b090f',8,'#ff465833');
-  floorText('PAPER EQUITY',734,43,'#c38b93',8,'left');
-  floorText(d.amount,734,61,'#ffe2e6',15,'left');
-  floorText(d.change+' · '+d.status,900,43,d.status==='RISK HALT'?'#ff9b73':'#ff6472',8,'right');
+
+function paintRoster(){
+  $('roster').innerHTML=ROLES.map((r,i)=>{
+    const hit=match(r);
+    return '<button aria-pressed="'+(i===sel)+'" onclick="pick('+i+')">'+
+      '<span class="r">'+r.ix+' · '+r.name+'</span>'+
+      '<span class="s" style="color:'+(hit?'#2fbf87':'#4d565f')+'">'+
+      (hit?'REPORT RECEIVED':'NO REPORT')+'</span></button>';
+  }).join('');
 }
-function draw(){
-  ctx.clearRect(0,0,960,620);
-  const bg=ctx.createLinearGradient(0,0,0,620);bg.addColorStop(0,'#291017');bg.addColorStop(.45,'#1b0b10');bg.addColorStop(1,'#0b0608');rect(0,0,960,620,bg);
-  // Perimeter glass, structural columns and a precise floor grid.
-  rounded(13,12,934,596,'#080d15',18,'#71303d');
-  rounded(23,101,914,487,'#241016',12,'#ffffff10');
-  for(let y=107;y<580;y+=28)for(let x=28;x<933;x+=36){ctx.fillStyle=((Math.floor(x/36)+Math.floor(y/28))%2)?'#2a1218':'#241016';ctx.fillRect(x,y,35,27)}
-  // Cinematic ambient light: slow-moving red light pools and tiny dust motes, purely decorative.
-  for(let n=0;n<3;n++){const gx=165+n*315+Math.sin(visualTime*.42+n*2)*72,gy=220+Math.cos(visualTime*.35+n)*85,g=ctx.createRadialGradient(gx,gy,2,gx,gy,190);g.addColorStop(0,['#ff465817','#ff8b5810','#d52c4b12'][n]);g.addColorStop(1,'#ff465800');ctx.fillStyle=g;ctx.fillRect(gx-190,gy-190,380,380)}
-  for(let n=0;n<34;n++){const px=34+((n*83+visualTime*(5+n%4))%890),py=116+((n*47+Math.sin(visualTime*.7+n)*13)%445);ctx.fillStyle=n%5===0?'#ff9ba677':'#ffc6d01e';ctx.fillRect(px,py,n%5===0?2:1,n%5===0?2:1)}
-  const sweepY=112+((visualTime*19)%450);ctx.fillStyle='#ff647509';ctx.fillRect(31,sweepY,896,2);
-  // Department zones: the floor now reads as an intentional workplace rather than scattered props.
-  rounded(32,111,282,456,'#291017aa',12,'#ff465822');
-  rounded(339,111,282,456,'#281018aa',12,'#b29aff22');
-  rounded(646,111,282,456,'#271016aa',12,'#72e2b422');
-  floorText('01  ·  RESEARCH & MARKET DATA',47,132,'#80dff2',10);
-  floorText('02  ·  STRATEGY & RISK',354,132,'#c2a9ff',10);
-  floorText('03  ·  PORTFOLIO & REVIEW',661,132,'#8ee8c6',10);
-  // glass partitions and acoustic dividers
-  for(const x of [324,631]){ctx.fillStyle='#ff718011';ctx.fillRect(x,146,4,405);ctx.strokeStyle='#ff8b9833';ctx.lineWidth=1;ctx.strokeRect(x-3,146,10,405)}
-  // Window wall / market ticker
-  rounded(30,20,900,73,'#10070a',10,'#ffffff16');
-  for(let i=0;i<24;i++){const x=42+i*36,h=8+((i*17+Math.floor(visualTime*2))%28);ctx.fillStyle=i%4===0?'#ff596a77':'#7891bb55';ctx.fillRect(x,78-h,5,h)}
-  floorText('EMBER  /  TRADING OPERATIONS',49,47,'#ffe2e6',13);
-  floorText('MARKET INTELLIGENCE   ·   CONTROLLED PAPER ENVIRONMENT',49,68,'#c38b93',9);
-  capitalScreen();
-  // A clearly marked central corridor connects every team zone.
-  rounded(35,304,890,47,'#0b131d',8,'#ffffff0a');
-  ctx.strokeStyle='#a51e3455';ctx.lineWidth=1;ctx.setLineDash([8,8]);ctx.beginPath();ctx.moveTo(45,327);ctx.lineTo(915,327);ctx.stroke();ctx.setLineDash([]);
-  floorText('MAIN AISLE',48,319,'#597d96',8);
-  // Meeting table, rolling chairs and a wall-mounted collaborative screen.
-  rounded(389,364,182,70,'#10070a',12,'#ffffff12');
-  rounded(402,374,156,49,'#392029',10,'#91404c');
-  rounded(430,384,100,27,'#200b11',5,'#ff718033');
-  for(let j=0;j<5;j++){ctx.fillStyle=['#49d7f2','#7bdcb7','#c4a4ff','#e6a8b4','#e8bd76'][j];ctx.fillRect(438+j*17,390,10,3);ctx.fillRect(438+j*17,397,7,2)}
-  floorText('COLLABORATION ROOM',480,457,'#c79ba2',9,'center');
-  for(const [x,y] of [[382,383],[578,383],[382,419],[578,419]]){rounded(x-8,y-8,16,17,'#3a2029',6,'#9bb3c222');ctx.fillStyle='#10070a';ctx.beginPath();ctx.arc(x,y+9,5,0,Math.PI*2);ctx.fill()}
-  // Shared amenities in a separate corner.
-  rounded(808,466,103,70,'#2c171d',9,'#ffffff14');rounded(821,477,34,37,'#18090d',5,'#8b3b47');rounded(827,483,22,25,'#321019',3);ctx.fillStyle='#8ee5f1';ctx.fillRect(833,488,10,2);floorText('COFFEE / RESET',860,522,'#c89ba2',8,'center');
-  // CEO pod is visually distinct and separated from execution desks.
-  rounded(38,154,110,112,'#302029',11,'#b8667d55');rounded(46,164,94,47,'#210d12',6);rounded(58,172,70,30,'#172e3b',4,'#ff647555');floorText('CEO / SUPERVISION',93,230,'#f0a9bb',8,'center');rounded(67,238,52,21,'#332029',7);rounded(72,256,42,5,'#121824',3);
-  // Plants, lights and structural detail.
-  function plant(x,y){ctx.fillStyle='#0005';ctx.beginPath();ctx.ellipse(x+3,y+15,18,6,0,0,Math.PI*2);ctx.fill();rounded(x-11,y+1,22,18,'#81565a',5);for(let k=0;k<6;k++){ctx.save();ctx.translate(x,y);ctx.rotate(k*Math.PI/3);ctx.fillStyle=k%2?'#477f70':'#75b29a';ctx.beginPath();ctx.ellipse(0,-11,5,13,0,0,Math.PI*2);ctx.fill();ctx.restore()}}
-  plant(177,176);plant(770,177);
-  // Desks, people and visible work state.
-  const poses=[];
-  // Draw all furniture first and every person in a second pass. This prevents later desks
-  // from painting over workers walking through the shared aisles.
-  const placed=[];
-  for(let i=0;i<6;i++){
-    const d=desks[i],a=staff[i],active=a.activeUntil>visualTime||a.status==='working'&&mode==='team'&&team?.status==='running';
-    floorDesk(i,d,active);
-    const p=resolvePose(i,position(i,active),placed);
-    motions[i]=p;placed.push({i,p});
-    poses.push({i,d,a,active,p});
+
+function paintLog(){
+  if(!logRows.length){
+    $('log').innerHTML='<div class="empty">No recorded activity yet.<br>'+
+      'Run an agent cycle to produce reports.</div>';
+    return;
   }
-  for(const {i,d,a,active,p} of poses){
-    avatar(i,p.x,p.y,p.walking,p.activity==='working');
-    if(active){rounded(p.x+15,p.y-50,66,17,'#0a1c29',5,'#ff526555');floorText(a.status==='working'?'FOCUS':'HANDOFF',p.x+48,p.y-38,'#9beeff',7,'center')}
-    // Foreground desk fascia naturally occludes the seated torso and hides the
-    // character until they step clear of the desk, rather than appearing to walk through it.
-    rounded(d.x-88,d.y+19,176,46,'#352029',7,'#ffffff10');
-    line(d.x-82,d.y+20,d.x+82,d.y+20,'#6e3b46',1);
-    floorText(active?'ACTIVE REPORT':p.activity==='working'?'WORKING AT DESK':p.activity==='collaborating'?'TEAM HUDDLE':p.activity==='walking'?'DEDICATED WALK LANE':'AT WORKSTATION',d.x,d.y+92,active?colors[i]:'#7e9ab3',8,'center');
-  }
-  // The supervisor has a private side aisle and never cuts through the team or their desks.
-  const ceoHome={x:93,y:278},ceoLane={x:93,y:330},ceoTarget={x:116,y:330};
-  const ceoCycle=(visualTime+7)%42,smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t)},mix=(a,b,t)=>({x:a.x+(b.x-a.x)*smooth(t),y:a.y+(b.y-a.y)*smooth(t)});
-  let ceo=ceoCycle<29?{...ceoHome,walking:false,activity:'working'}:ceoCycle<32?{...mix(ceoHome,ceoLane,(ceoCycle-29)/3),walking:true,activity:'walking'}:ceoCycle<36?{...mix(ceoLane,ceoTarget,(ceoCycle-32)/4),walking:true,activity:'walking'}:ceoCycle<39?{...ceoTarget,walking:false,activity:'collaborating'}:ceoCycle<41?{...mix(ceoTarget,ceoLane,(ceoCycle-39)/2),walking:true,activity:'walking'}:{...mix(ceoLane,ceoHome,(ceoCycle-41)),walking:true,activity:'walking'};
-  ceo=resolvePose(6,ceo,placed);motions[6]=ceo;
-  avatar(6,ceo.x,ceo.y,ceo.walking,ceo.activity==='working');
-  rounded(ceo.x+14,ceo.y-49,70,17,'#321a29',5,'#e96d9055');floorText(ceo.activity==='working'?'DESK FOCUS':'OVERSIGHT',ceo.x+49,ceo.y-37,'#f6a6ba',7,'center');
-  // Handoff packets travel from one desk to the next when a report is actually observed.
-  packets=packets.filter(p=>visualTime-p.born<3);
-  for(const p of packets){const t=Math.min(1,(visualTime-p.born)/3),a=desks[p.from],b=desks[p.to],x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t-42*Math.sin(t*Math.PI);ctx.save();ctx.globalAlpha=Math.sin(Math.PI*t);ctx.strokeStyle='#ff6477aa';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x-19,y);ctx.lineTo(x-7,y);ctx.moveTo(x+7,y);ctx.lineTo(x+19,y);ctx.stroke();ctx.shadowColor='#ff5a6b';ctx.shadowBlur=17;rounded(x-8,y-6,16,12,'#ff7180',4,'#ffd8de');ctx.shadowBlur=0;ctx.strokeStyle='#671628';ctx.strokeRect(x-3,y-2,6,4);ctx.restore()}
-  rounded(170,578,620,22,'#09131e',7,'#ffffff12');
-  floorText(mode==='demo'?'DEMO COLLABORATION  ·  NO AI CALLS':mode==='live'?'LIVE PAPER OFFICE  ·  VISUAL ROUTINES ARE SIMULATED':'EXPERIMENT TEAM  ·  SYNTHETIC MARKET DATA',480,592,'#d6a0a7',9,'center');
+  $('log').innerHTML=logRows.slice(0,40).map(l=>
+    '<div class="row"><i class="dot '+(l.ok?'ok':'warn')+'"></i>'+
+    '<div class="tx"><b>'+l.a+'</b><br>'+l.s+'</div></div>').join('');
 }
-function frame(now){const delta=lastFrame?Math.min(.1,(now-lastFrame)/1000):0;lastFrame=now;if(!paused&&!document.hidden){visualTime+=delta;if(mode==='demo'){const step=Math.floor(visualTime/3);if(step!==demoStep){demoStep=step;const i=step%7;for(const a of staff)a.status='Waiting';apply([{agent:roles[i],status:'Demo handoff',summary:demoReports[i],concerns:[],approve:[],timestamp:Date.now()/1000}],false);staff[i].activeUntil=visualTime+12;selected=i;renderDetails()}}}if(mode==='live'&&lastSeen&&Date.now()-lastSeen>20000){supervise();}if(mode==='live'&&lastSeen&&Date.now()-lastSeen>20000)$('notice').textContent='Dashboard updates are stale. Displaying last received state; this is not current AI activity.';try{draw()}catch(e){$('office-status').textContent='Office rendering error: '+e.message}requestAnimationFrame(frame)}
-async function pollStandaloneOffice(){if(window.parent!==window)return;try{let response=await fetch('/api/live',{cache:'no-store'});if(response.ok){live=await response.json();const cr=await fetch('/api/company',{cache:'no-store'});if(cr.ok){const c=await cr.json();organization={name:c.config?.name||'Trading company',open_tasks:(c.tasks||[]).filter(t=>t.status!=='done').length,budget:c.budget||{remaining:0}}}}else{const fx=await fetch('/api/forex',{cache:'no-store'});if(!fx.ok)throw Error('Forex paper API is unavailable.');const data=await fx.json(),agentResponse=await fetch('/api/forex/agents',{cache:'no-store'});if(!agentResponse.ok)throw Error('Forex agent observer API is unavailable.');const agents=await agentResponse.json(),account=agents.account||data.account||{},pairs=data.market?.pairs||{};live={config:{provider:'forex-paper'},worker_running:Boolean(agents.auto_run_enabled),strategy:{equity:Number(account.equity||0),pnl:Number(account.daily_pnl??account.realized_pnl??0),halted:Boolean(account.daily_halted)},events:agents.events||[],valid_price_snapshots:Object.values(pairs).filter(q=>q&&Number.isFinite(q.price)&&q.price>0).length,eligible_count:(agents.samples||[]).filter(s=>s.observations>=3).length,calls_today:0,last_tick:Number(data.timestamp||agents.last_cycle||0),readiness:{blockers:agents.events?.length?[]:['No agent cycle has been recorded yet. Press Run agent cycle to start the pipeline.']}};organization=null;$('office-status').textContent='Forex paper-agent runtime · '+(account.positions||[]).length+' open positions · equity '+Number(account.equity||0).toFixed(2)+' · '+live.valid_price_snapshots+' returned price rows · '+(agents.auto_run_enabled?'automatic paper cycles enabled':'manual cycles · automatic mode off');if(data.error)$('notice').textContent='Forex observer warning: '+data.error}lastSeen=Date.now();refreshSource(!seen.size);supervise();if(live.config?.provider==='forex-paper'){$('mode-badge').textContent='FOREX PAPER · '+(live.worker_running?'AUTO-RUN':'MANUAL CYCLES');$('notice').textContent=live.worker_running?'Recorded forex paper-agent reports. Automatic cycles are enabled; broker execution remains disabled.':'Forex agent runtime connected. Press Run agent cycle to create recorded work; moving characters alone are not agent activity.'}renderDetails()}catch(e){$('mode-badge').textContent='OFFICE DISCONNECTED';$('notice').textContent=e.message;$('office-status').textContent='No live dashboard connection · visual activity is not evidence of agent work.'}}
-if(window.parent===window){pollStandaloneOffice();setInterval(pollStandaloneOffice,10000)}
-$('run-agent-cycle').addEventListener('click',async()=>{const b=$('run-agent-cycle');b.disabled=true;b.textContent='Running…';try{const r=await fetch('/api/forex/agents/run',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});const data=await r.json();if(!r.ok)throw Error(data.error||'Agent cycle failed');$('notice').textContent='Cycle '+data.cycle_id+' completed · '+data.events.length+' recorded specialist reports · '+data.executed.length+' paper entries.';await pollStandaloneOffice()}catch(e){$('notice').textContent='Agent cycle error: '+e.message}finally{b.disabled=false;b.textContent='Run agent cycle'}});
-supervise();renderDetails();requestAnimationFrame(frame);
-</script></body></html>
+
+function paintShell(){
+  if(!live)return;
+  $('modeTag').textContent=live.halted?'RISK HALT':live.auto?'AUTO CYCLES':'MANUAL CYCLES';
+  $('modeTag').className='tag '+(live.halted?'bad':live.auto?'ok':'warn');
+  $('floorFoot').textContent='Equity $'+Number(live.equity||0).toFixed(2)+
+    '  ·  exposure $'+Number(live.exposure||0).toFixed(2)+
+    '  ·  '+live.open+' open  ·  '+live.reports+' recorded report(s)  ·  '+
+    (live.stale?'feed stale':'feed current');
+  $('stageMeta').textContent=live.prices+' price rows  ·  '+live.date;
+  $('acctState').textContent=live.halted?'HALTED':'ARMED';
+  $('acctState').style.color=live.halted?'#e2555f':'#2fbf87';
+  const r=live.risk||{};
+  const row=(k,v)=>'<div><b>'+k+'</b><span>'+v+'</span></div>';
+  $('acct').innerHTML=
+    row('EQUITY','$'+Number(live.equity||0).toFixed(2))+
+    row('EXPOSURE','$'+Number(live.exposure||0).toFixed(2))+
+    row('OPEN POSITIONS',String(live.open)+' / '+(r.max_positions??'—'))+
+    row('REALISED P/L','$'+Number(live.realized??0).toFixed(2))+
+    row('RISK GATE',live.halted?'HALTED':'ARMED');
+  $('riskBox').className='riskbox'+(live.halted?' halt':'');
+  $('riskBox').textContent='max trade $'+Number(r.max_trade_notional??0).toFixed(0)+
+    '  ·  max exposure $'+Number(r.max_exposure??0).toFixed(0)+
+    '  ·  daily loss $'+Number(r.max_daily_loss??0).toFixed(0)+
+    '  ·  SL '+Number((r.stop_loss_pct||0)*100).toFixed(1)+'%'+
+    '  ·  TP '+Number((r.take_profit_pct||0)*100).toFixed(1)+'%'+
+    '  ·  leverage '+(r.max_leverage??'—')+'x';
+  $('notice').textContent=live.prices
+    ? ''
+    : 'No price rows returned by the provider. The plan still renders, but no report can be produced.';
+}
+
+/* ── data ──────────────────────────────────────────────── */
+async function poll(){
+  if(window.parent!==window)return;
+  try{
+    const [fx,ag]=await Promise.all([
+      fetch('/api/forex',{cache:'no-store'}).then(r=>r.json()),
+      fetch('/api/forex/agents',{cache:'no-store'}).then(r=>r.json())
+    ]);
+    const acc=fx.account||{},pairs=fx.market?.pairs||{};
+    const rows=Object.values(pairs).filter(q=>q&&Number.isFinite(q.price)&&q.price>0).length;
+    const events=ag.events||[];
+
+    if(events.length!==logRows.length){
+      const seen=new Set(logRows.map(l=>l.k));
+      events.filter(e=>e.agent).forEach(e=>{
+        const k=e.agent+e.timestamp+e.step;
+        if(seen.has(k))return;
+        logRows.unshift({k,a:e.agent,s:e.summary||'Recorded event.',ok:true});
+        const i=ROLES.findIndex(r=>r.name.split(' ')[0].toLowerCase()===String(e.agent).split(' ')[0].toLowerCase());
+        if(i>=0)counted[i]++;
+      });
+      paintLog();
+    }
+
+    live={
+      events,
+      equity:acc.equity??0,
+      exposure:acc.exposure??0,
+      realized:acc.realized_pnl??0,
+      risk:fx.risk||{},
+      open:(acc.positions||[]).length,
+      halted:Boolean(acc.daily_halted),
+      auto:Boolean(ag.auto_run_enabled),
+      prices:rows,
+      date:fx.market?.provider_date||'—',
+      reports:events.filter(e=>e.agent).length,
+      stale:false,
+      brief:'Deterministic supervisor. Has no trading authority and makes no model calls.'
+    };
+    paintShell();paintRoster();paintInspector();paint();
+  }catch(e){
+    if(live)live.stale=true;
+    $('modeTag').textContent='DISCONNECTED';
+    $('modeTag').className='tag bad';
+    $('notice').textContent='Server unreachable: '+e.message;
+  }
+}
+
+function pick(i){sel=i;paintInspector();paintRoster();paint()}
+
+$('cycle').addEventListener('click',async()=>{
+  const b=$('cycle');b.disabled=true;b.textContent='Running…';
+  try{
+    const r=await fetch('/api/forex/agents/run',{method:'POST',
+      headers:{'Content-Type':'application/json'},body:'{}'});
+    const d=await r.json();
+    if(!r.ok)throw Error(d.error||'Cycle failed');
+    $('notice').textContent='Cycle complete — '+(d.events||[]).length+
+      ' recorded report(s), '+(d.executed||[]).length+' paper entr(ies).';
+    await poll();
+  }catch(e){$('notice').textContent='Cycle error: '+e.message}
+  finally{b.disabled=false;b.textContent='Run agent cycle'}
+});
+
+$('pauseBtn').addEventListener('click',()=>{
+  paused=!paused;
+  $('pauseBtn').textContent=paused?'Resume':'Pause';
+});
+
+ROLES.forEach((_,i)=>{
+  const b=document.createElement('button');
+  b.textContent=ROLES[i].name;b.onclick=()=>pick(i);
+  $('roster').appendChild(b);
+});
+
+canvas.addEventListener('click',ev=>{
+  const b=canvas.getBoundingClientRect();
+  const x=(ev.clientX-b.left)*W/b.width,y=(ev.clientY-b.top)*H/b.height;
+  let best=-1,bd=1e9;
+  ROLES.forEach((r,i)=>{const d=Math.hypot(x-r.x,y-(r.y+48));if(d<bd){bd=d;best=i}});
+  if(bd<100)pick(best);
+});
+
+seed();
+poll();
+setInterval(poll,10000);
+(function loop(){paint();requestAnimationFrame(loop)})();
+</script>
+</body>
+</html>
