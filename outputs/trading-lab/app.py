@@ -189,7 +189,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/healthz":
             self.send_json({"status": "ok"})
             return
-        if not self._require_auth():
+        # Let the static dashboard load so it can present an in-page login.
+        # All API data and state-changing requests remain authenticated.
+        if path.startswith("/api/") and not self._require_auth():
             return
         if path == "/api/forex":
             self.send_json(LAB.tick())
