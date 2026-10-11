@@ -57,6 +57,7 @@ MEME_TRADER = MemePaperTrader(
     fee_bps=float(os.environ.get("MEME_PAPER_FEE_BPS", "30")),
     slippage_bps=float(os.environ.get("MEME_PAPER_SLIPPAGE_BPS", "50")),
     min_liquidity_usd=float(os.environ.get("MEME_PAPER_MIN_LIQUIDITY_USD", "10000")),
+    min_volume_24h_usd=float(os.environ.get("MEME_PAPER_MIN_VOLUME_24H_USD", "25000")),
 )
 
 
