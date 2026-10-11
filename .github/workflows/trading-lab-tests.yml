@@ -1,7 +1,7 @@
 name: trading-lab-tests
 on:
   push:
-    branches: [main, secure-autonomous-execution, forex-migration]
+    branches: [main, secure-autonomous-execution, forex-migration, feat/solana-meme-research-engine]
   pull_request:
     branches: [main]
 jobs:
