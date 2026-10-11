@@ -257,9 +257,10 @@ nav a.on .ic{color:var(--accent)}
       <a href="#overview" class="on"><span class="ic">01</span>Overview</a>
       <a href="#markets"><span class="ic">02</span>Markets</a>
       <a href="#pipeline"><span class="ic">03</span>Agent Pipeline</a>
-      <a href="#positions"><span class="ic">04</span>Positions</a>
-      <a href="#activity"><span class="ic">05</span>Event Log</a>
-      <a href="company.html"><span class="ic">06</span>Office View</a>
+      <a href="#meme-research"><span class="ic">04</span>Meme Research</a>
+      <a href="#positions"><span class="ic">05</span>Positions</a>
+      <a href="#activity"><span class="ic">06</span>Event Log</a>
+      <a href="company.html"><span class="ic">07</span>Office View</a>
     </nav>
     <div class="railfoot">
       <div class="sysline"><i class="dot ok" id="sysDot"></i><span class="t" id="sysTxt">CONNECTED</span></div>
@@ -320,6 +321,19 @@ nav a.on .ic{color:var(--accent)}
           <span class="sub" id="pipeMeta">—</span>
         </div>
         <div class="pipe" id="pipe"></div>
+      </section>
+
+      <section class="sec" id="meme-research">
+        <div class="sechd">
+          <h2>Solana Meme-Coin Research</h2>
+          <span class="sub" id="memeMeta">READ-ONLY · NOT A BUY SIGNAL</span>
+          <button class="btn go" id="memeScan">Scan candidates</button>
+        </div>
+        <div class="secbd">
+          <p class="fine" style="margin-top:0">Screens public DEX market data for liquidity, turnover, activity and short-term momentum. This does not check contract safety, holder concentration or sellability. No wallet or transaction execution is connected.</p>
+          <div class="msg" id="memeMsg"></div>
+          <div id="memeResults"><div class="empty">No scan yet. Press “Scan candidates” to run the read-only Solana research pass.</div></div>
+        </div>
       </section>
 
       <div class="split">
@@ -942,6 +956,243 @@ $id('aiProvider').addEventListener('change',()=>{
   $id('aiModel').value='';
   applyProviderHints();
 });
+
+
+/* ── Solana meme-coin research: discovery only, no trading action ── */
+function renderMemeResearch(result){
+  const candidates=result.candidates||[];
+  $id('memeMeta').textContent=(result.watchlist_count||0)+' WATCH · '+
+    (result.scored_candidates||0)+' SCORED · '+(result.discovered_tokens||0)+' DISCOVERED';
+  const msg=$id('memeMsg');
+  msg.textContent='Research-only scan from '+(result.provider||'market data')+
+    '. Security checks are not performed; WATCH is not a buy signal.';
+  msg.className='msg'+(result.errors&&result.errors.length?'':' ok');
+  if(!candidates.length){
+    $id('memeResults').innerHTML='<div class="empty">No candidates scored in this pass. Check provider errors below, then try another scan later.</div>'+
+      ((result.errors||[]).length?'<div class="notes">'+result.errors.map(e=>esc(e.token_address||'provider')+': '+esc(e.error)).join('<br>')+'</div>':'');
+    return;
+  }
+  $id('memeResults').innerHTML='<div style="overflow-x:auto"><table class="dt"><thead><tr>'+
+    '<th>TOKEN</th><th class="r">SCORE</th><th class="r">LIQUIDITY</th><th class="r">24H VOL</th>'+
+    '<th class="r">24H TXNS</th><th class="r">1H CHANGE</th><th>DECISION</th></tr></thead><tbody>'+
+    candidates.map(c=>{
+      const url=String(c.pair_url||'');
+      const safeUrl=/^https:\/\/dexscreener\.com\//i.test(url)?url:'';
+      const name=esc(c.name||'Unknown')+' ('+esc(c.symbol||'?')+')';
+      const token=safeUrl?'<a href="'+esc(safeUrl)+'" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">'+name+'</a>':name;
+      const change=Number(c.price_change_1h_pct)||0;
+      const reasons=(c.rejection_reasons||[]).map(esc).join(', ');
+      return '<tr><td>'+token+'<span class="sub2">'+esc(c.token_address||'')+
+        (reasons?' · '+reasons:'')+'</span></td>'+
+        '<td class="r mono">'+Number(c.score||0).toFixed(1)+'</td>'+
+        '<td class="r mono">
+function applyState(s){
+  state=s;
+  renderKpis(s);renderPipeline(s);renderPositions(s);renderFeed(s);renderTags(s);
+  quotes=s.market?.pairs||{};
+  renderTape();loadPair(chartPair);
+  // The metal basis arrives with the quote, so metal bars must be re-based
+  // before they can be drawn against it.
+  if(PAIRS.some(isMetal))refreshSeries();
+  const r=s.risk||{};
+  $id('risk').className='riskbox'+(r.halted?' halt':'');
+  $id('risk').textContent='Max trade $'+money(r.max_trade_notional)+
+    '  ·  Max exposure $'+money(r.max_exposure)+
+    '  ·  Max positions '+r.max_positions+
+    '  ·  Daily loss $'+money(r.max_daily_loss)+
+    '  ·  SL '+Number((r.stop_loss_pct||0)*100).toFixed(1)+'%'+
+    '  ·  TP '+Number((r.take_profit_pct||0)*100).toFixed(1)+'%'+
+    '  ·  Leverage '+r.max_leverage+'x'+(r.halted?'  ·  HALT ACTIVE':'');
+}
+
+async function refresh(){
+  try{
+    $id('sysDot').className='dot ok';
+    $id('sysTxt').textContent='CONNECTED';
+    const s=await api('/api/forex');
+    s.account=s.account||{};
+    // agent positions expose realised pnl; the account endpoint does not
+    if(typeof s.account.unrealized_pnl!=='number')
+      s.account.unrealized_pnl=(s.account.positions||[])
+        .reduce((t,p)=>t+(Number(p.unrealized_pnl)||0),0);
+    try{s.agentState=await api('/api/forex/agents');s.events=s.agentState.events||[]}
+    catch(_){s.events=state?.events||[]}
+    applyState(s);
+  }catch(e){
+    $id('sysDot').className='dot bad';
+    $id('sysTxt').textContent='DISCONNECTED';
+    say('Server unreachable — '+e.message,'bad');
+    if(!state)applyState({account:{},risk:{},market:{},events:[]});
+  }
+}
+
+function say(text,kind){
+  const m=$id('msg');
+  m.textContent=text||'';
+  m.className='msg'+(kind?' '+kind:'');
+}
+
+async function submitOrder(){
+  const b=$id('submit'),label=b.textContent;
+  b.disabled=true;b.textContent='Submitting…';
+  try{
+    await api('/api/forex/open',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({pair:$id('pair').value,side:$id('side').value,notional:Number($id('notional').value)})});
+    await refresh();
+    say('Paper order accepted by the simulator. No live broker order was sent.','ok');
+  }catch(e){
+    await refresh();
+    say(e.message,'bad');
+  }finally{b.disabled=false;b.textContent=label}
+}
+
+async function closePosition(id){
+  try{
+    await api('/api/forex/close',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id})});
+    await refresh();
+    say('Paper position closed in the simulator.','ok');
+  }catch(e){say(e.message,'bad')}
+}
+
+$id('submit').addEventListener('click',submitOrder);
+window.closePosition=closePosition;
+$id('interval').addEventListener('change',async e=>{
+  interval=e.target.value;
+  await refreshSeries();
+  loadPair(chartPair);
+});
+
+addEventListener('resize',drawChart);
+refreshSeries();
+aiStatus();
+loadMemeResearch();
+refresh();
+setInterval(refresh,15000);
+setInterval(aiStatus,30000);
+setInterval(()=>{loadSeries(chartPair)},60000);
+</script>
+</body>
+</html>+money(c.liquidity_usd)+'</td>'+
+        '<td class="r mono">
+function applyState(s){
+  state=s;
+  renderKpis(s);renderPipeline(s);renderPositions(s);renderFeed(s);renderTags(s);
+  quotes=s.market?.pairs||{};
+  renderTape();loadPair(chartPair);
+  // The metal basis arrives with the quote, so metal bars must be re-based
+  // before they can be drawn against it.
+  if(PAIRS.some(isMetal))refreshSeries();
+  const r=s.risk||{};
+  $id('risk').className='riskbox'+(r.halted?' halt':'');
+  $id('risk').textContent='Max trade $'+money(r.max_trade_notional)+
+    '  ·  Max exposure $'+money(r.max_exposure)+
+    '  ·  Max positions '+r.max_positions+
+    '  ·  Daily loss $'+money(r.max_daily_loss)+
+    '  ·  SL '+Number((r.stop_loss_pct||0)*100).toFixed(1)+'%'+
+    '  ·  TP '+Number((r.take_profit_pct||0)*100).toFixed(1)+'%'+
+    '  ·  Leverage '+r.max_leverage+'x'+(r.halted?'  ·  HALT ACTIVE':'');
+}
+
+async function refresh(){
+  try{
+    $id('sysDot').className='dot ok';
+    $id('sysTxt').textContent='CONNECTED';
+    const s=await api('/api/forex');
+    s.account=s.account||{};
+    // agent positions expose realised pnl; the account endpoint does not
+    if(typeof s.account.unrealized_pnl!=='number')
+      s.account.unrealized_pnl=(s.account.positions||[])
+        .reduce((t,p)=>t+(Number(p.unrealized_pnl)||0),0);
+    try{s.agentState=await api('/api/forex/agents');s.events=s.agentState.events||[]}
+    catch(_){s.events=state?.events||[]}
+    applyState(s);
+  }catch(e){
+    $id('sysDot').className='dot bad';
+    $id('sysTxt').textContent='DISCONNECTED';
+    say('Server unreachable — '+e.message,'bad');
+    if(!state)applyState({account:{},risk:{},market:{},events:[]});
+  }
+}
+
+function say(text,kind){
+  const m=$id('msg');
+  m.textContent=text||'';
+  m.className='msg'+(kind?' '+kind:'');
+}
+
+async function submitOrder(){
+  const b=$id('submit'),label=b.textContent;
+  b.disabled=true;b.textContent='Submitting…';
+  try{
+    await api('/api/forex/open',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({pair:$id('pair').value,side:$id('side').value,notional:Number($id('notional').value)})});
+    await refresh();
+    say('Paper order accepted by the simulator. No live broker order was sent.','ok');
+  }catch(e){
+    await refresh();
+    say(e.message,'bad');
+  }finally{b.disabled=false;b.textContent=label}
+}
+
+async function closePosition(id){
+  try{
+    await api('/api/forex/close',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id})});
+    await refresh();
+    say('Paper position closed in the simulator.','ok');
+  }catch(e){say(e.message,'bad')}
+}
+
+$id('submit').addEventListener('click',submitOrder);
+window.closePosition=closePosition;
+$id('interval').addEventListener('change',async e=>{
+  interval=e.target.value;
+  await refreshSeries();
+  loadPair(chartPair);
+});
+
+addEventListener('resize',drawChart);
+refreshSeries();
+aiStatus();
+refresh();
+setInterval(refresh,15000);
+setInterval(aiStatus,30000);
+setInterval(()=>{loadSeries(chartPair)},60000);
+</script>
+</body>
+</html>+money(c.volume_24h_usd)+'</td>'+
+        '<td class="r mono">'+Number(c.transactions_24h||0).toLocaleString()+'</td>'+
+        '<td class="r mono '+cls(change)+'">'+(change>0?'+':'')+change.toFixed(1)+'%</td>'+
+        '<td><span class="tag '+(c.decision==='WATCH'?'ok':'bad')+'">'+esc(c.decision)+'</span></td></tr>';
+    }).join('')+'</tbody></table></div>'+
+    ((result.errors||[]).length?'<div class="notes">Provider issues: '+result.errors.map(e=>esc(e.token_address||'provider')+': '+esc(e.error)).join(' · ')+'</div>':'')+
+    '<div class="notes">Scanned '+esc(result.generated_at||'')+'. Holder concentration, contract permissions and sellability remain unchecked.</div>';
+}
+async function loadMemeResearch(){
+  try{
+    const result=await api('/api/meme/research');
+    if(Array.isArray(result.candidates))renderMemeResearch(result);
+  }catch(e){
+    $id('memeMsg').textContent='Research status unavailable: '+e.message;
+    $id('memeMsg').className='msg bad';
+  }
+}
+async function scanMemeResearch(){
+  const button=$id('memeScan'),label=button.textContent;
+  button.disabled=true;button.textContent='Scanning…';
+  $id('memeMsg').textContent='Fetching candidate lists and checking available Solana pools…';
+  $id('memeMsg').className='msg';
+  try{
+    const result=await api('/api/meme/research/run',{method:'POST',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({limit:20})});
+    renderMemeResearch(result);
+  }catch(e){
+    $id('memeMsg').textContent='Scan failed: '+e.message;
+    $id('memeMsg').className='msg bad';
+  }finally{button.disabled=false;button.textContent=label}
+}
+$id('memeScan').addEventListener('click',scanMemeResearch);
 
 /* ── data flow ─────────────────────────────────────────── */
 function applyState(s){
