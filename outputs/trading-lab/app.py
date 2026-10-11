@@ -128,6 +128,18 @@ def run_meme_paper_cycle(limit=20):
                 1 for candidate in all_candidates if candidate.get("decision") != "WATCH"
             ),
             "market_rejection_reasons": market_rejection_counts,
+            "market_rejection_examples": [
+                {
+                    "name": candidate.get("name", "Unknown"),
+                    "symbol": candidate.get("symbol", "UNKNOWN"),
+                    "liquidity_usd": candidate.get("liquidity_usd"),
+                    "volume_24h_usd": candidate.get("volume_24h_usd"),
+                    "price_change_1h_pct": candidate.get("price_change_1h_pct"),
+                    "rejection_reasons": candidate.get("rejection_reasons", []),
+                }
+                for candidate in all_candidates
+                if candidate.get("decision") != "WATCH"
+            ][:3],
             "errors": scan.get("errors", []),
         },
         "cycle": {**decisions, "decision_counts": decision_counts},
