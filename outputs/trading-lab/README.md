@@ -214,3 +214,41 @@ misleading. Neither this module nor its tests imply profitability. See the
 [QuantConnect research guide](https://www.quantconnect.com/docs/v2/writing-algorithms/key-concepts/research-guide)
 for discussion of walk-forward validation and look-ahead/survivorship bias.
 
+### Forward-outcome paper evaluation
+
+Every research scan now records WATCH candidates with a valid observed USD price
+in a local SQLite database (`meme-paper.sqlite`). When a later scan or an
+explicit update runs, the tracker samples current DexScreener prices for due
+snapshots at 5-minute, 15-minute, 1-hour, 4-hour, and 24-hour horizons. It
+reports gross returns, net returns after configurable *modeled* costs, average
+net return, and win rate.
+
+```bash
+# Summary of accumulated paper observations
+curl -s http://127.0.0.1:8765/api/meme/paper
+
+# Sample due outcomes now (useful for a scheduled local task)
+curl -s -X POST http://127.0.0.1:8765/api/meme/paper/update \
+  -H 'Content-Type: application/json' -d '{}'
+```
+
+Default assumptions are 50 bps slippage per side and 30 bps fees per side
+(1.6% modeled round-trip cost). Set `MEME_PAPER_SLIPPAGE_BPS` and
+`MEME_PAPER_FEE_BPS` in the environment before starting the server to change
+them. These are assumptions, not measured fills. Outcome prices are sampled near each target horizon, within a grace window
+(maximum of 60 seconds or 25% of the horizon). Late samples are marked missed
+and excluded from return statistics instead of being misreported as target-time
+returns. Missed provider prices remain pending rather than being counted as
+losses or zeros. Each scan is a
+separate sample, so repeated scans can create overlapping observations. The
+tracker is paper-only and never submits trades.
+
+## Tests
+
+```
+cd outputs/trading-lab
+python -m unittest -v test_forex.py test_forex_lab.py test_forex_agents.py test_forex_market.py test_meme_research.py test_meme_safety.py test_meme_paper.py test_backtest.py test_strategies.py test_robustness.py test_historical.py test_dataset.py test_intraday.py test_intraday_dataset.py test_true_walkforward.py test_research_selection.py test_research_report.py test_research_runner.py test_portfolio_report.py test_portfolio_backtest.py test_portfolio_selection.py test_portfolio_walkforward.py
+```
+
+Live broker execution remains intentionally out of scope.
+

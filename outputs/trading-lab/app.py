@@ -16,6 +16,7 @@ from key_store import KeyStore, PROVIDER_SPECS
 from llm_research import ResearchLayer, ModelError, verify_connection
 from meme_research import MemeCoinResearchEngine
 from meme_safety import SolanaMintSafetyChecker
+from meme_paper import MemePaperTracker
 
 ROOT = Path(__file__).resolve().parent
 LAB = ForexLab(ROOT / "lab.sqlite")
@@ -35,6 +36,11 @@ RESEARCH = ResearchLayer(KEYS)
 AGENTS.attach_research(RESEARCH)
 MEME_RESEARCH = MemeCoinResearchEngine()
 MEME_SAFETY = SolanaMintSafetyChecker()
+MEME_PAPER = MemePaperTracker(
+    ROOT / "meme-paper.sqlite",
+    slippage_bps=float(os.environ.get("MEME_PAPER_SLIPPAGE_BPS", "50")),
+    fee_bps=float(os.environ.get("MEME_PAPER_FEE_BPS", "30")),
+)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -66,6 +72,9 @@ class Handler(BaseHTTPRequestHandler):
                 "execution_enabled": False,
                 "note": "POST /api/meme/research/run to discover and screen candidates.",
             })
+            return
+        if path == "/api/meme/paper":
+            self.send_json(MEME_PAPER.status())
             return
         if path == "/api/connections/model":
             self.send_json({**KEYS.status(),
@@ -154,6 +163,7 @@ class Handler(BaseHTTPRequestHandler):
         if self.path not in (
             "/api/forex/open", "/api/forex/close", "/api/forex/agents/run",
             "/api/meme/research/run", "/api/meme/security/check",
+            "/api/meme/paper/update",
         ):
             self.send_json({"error": "not found"}, 404)
             return
@@ -173,6 +183,12 @@ class Handler(BaseHTTPRequestHandler):
                 result = LAB.close(data.get("id"))
             elif self.path == "/api/meme/research/run":
                 result = MEME_RESEARCH.run(data.get("limit", 20))
+                result["paper_tracking"] = MEME_PAPER.record_scan(result.get("candidates", []))
+                result["paper_outcome_update"] = MEME_PAPER.update_due()
+                result["paper_status"] = MEME_PAPER.status()
+            elif self.path == "/api/meme/paper/update":
+                result = MEME_PAPER.update_due()
+                result["status"] = MEME_PAPER.status()
             elif self.path == "/api/meme/security/check":
                 result = MEME_SAFETY.check(data.get("mint_address"))
             else:
@@ -181,7 +197,7 @@ class Handler(BaseHTTPRequestHandler):
         except ValueError as exc:
             self.send_json({"error": str(exc)}, 400)
         except Exception as exc:
-            self.send_json({"error": str(exc)}, 502 if self.path in ("/api/meme/research/run", "/api/meme/security/check") else 400)
+            self.send_json({"error": str(exc)}, 502 if self.path in ("/api/meme/research/run", "/api/meme/security/check", "/api/meme/paper/update") else 400)
 
     def _read_json(self):
         n = int(self.headers.get("Content-Length", "0"))

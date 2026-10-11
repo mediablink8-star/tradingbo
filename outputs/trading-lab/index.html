@@ -333,6 +333,12 @@ nav a.on .ic{color:var(--accent)}
           <p class="fine" style="margin-top:0">Screens public DEX market data for liquidity, turnover, activity and short-term momentum. This does not check contract safety, holder concentration or sellability. No wallet or transaction execution is connected.</p>
           <div class="msg" id="memeMsg"></div>
           <div id="memeResults"><div class="empty">No scan yet. Press “Scan candidates” to run the read-only Solana research pass.</div></div>
+          <div class="sechd" style="margin-top:18px">
+            <h3>Paper Outcome Tracking</h3>
+            <span class="sub" id="memePaperMeta">LOADING</span>
+            <button class="btn" id="memePaperUpdate">Update outcomes</button>
+          </div>
+          <div id="memePaperStatus"><div class="empty">Loading stored paper outcomes…</div></div>
         </div>
       </section>
 
@@ -960,7 +966,7 @@ $id('aiProvider').addEventListener('change',()=>{
 
 /* ── Solana meme-coin research: discovery only, no trading action ── */
 function renderMemeResearch(result){
-  const candidates=result.candidates||[];
+  const candidates=Array.isArray(result.candidates)?result.candidates:[];
   $id('memeMeta').textContent=(result.watchlist_count||0)+' WATCH · '+
     (result.scored_candidates||0)+' SCORED · '+(result.discovered_tokens||0)+' DISCOVERED';
   const msg=$id('memeMsg');
@@ -985,189 +991,40 @@ function renderMemeResearch(result){
       return '<tr><td>'+token+'<span class="sub2">'+esc(c.token_address||'')+
         (reasons?' · '+reasons:'')+'</span></td>'+
         '<td class="r mono">'+Number(c.score||0).toFixed(1)+'</td>'+
-        '<td class="r mono">
-function applyState(s){
-  state=s;
-  renderKpis(s);renderPipeline(s);renderPositions(s);renderFeed(s);renderTags(s);
-  quotes=s.market?.pairs||{};
-  renderTape();loadPair(chartPair);
-  // The metal basis arrives with the quote, so metal bars must be re-based
-  // before they can be drawn against it.
-  if(PAIRS.some(isMetal))refreshSeries();
-  const r=s.risk||{};
-  $id('risk').className='riskbox'+(r.halted?' halt':'');
-  $id('risk').textContent='Max trade $'+money(r.max_trade_notional)+
-    '  ·  Max exposure $'+money(r.max_exposure)+
-    '  ·  Max positions '+r.max_positions+
-    '  ·  Daily loss $'+money(r.max_daily_loss)+
-    '  ·  SL '+Number((r.stop_loss_pct||0)*100).toFixed(1)+'%'+
-    '  ·  TP '+Number((r.take_profit_pct||0)*100).toFixed(1)+'%'+
-    '  ·  Leverage '+r.max_leverage+'x'+(r.halted?'  ·  HALT ACTIVE':'');
-}
-
-async function refresh(){
-  try{
-    $id('sysDot').className='dot ok';
-    $id('sysTxt').textContent='CONNECTED';
-    const s=await api('/api/forex');
-    s.account=s.account||{};
-    // agent positions expose realised pnl; the account endpoint does not
-    if(typeof s.account.unrealized_pnl!=='number')
-      s.account.unrealized_pnl=(s.account.positions||[])
-        .reduce((t,p)=>t+(Number(p.unrealized_pnl)||0),0);
-    try{s.agentState=await api('/api/forex/agents');s.events=s.agentState.events||[]}
-    catch(_){s.events=state?.events||[]}
-    applyState(s);
-  }catch(e){
-    $id('sysDot').className='dot bad';
-    $id('sysTxt').textContent='DISCONNECTED';
-    say('Server unreachable — '+e.message,'bad');
-    if(!state)applyState({account:{},risk:{},market:{},events:[]});
-  }
-}
-
-function say(text,kind){
-  const m=$id('msg');
-  m.textContent=text||'';
-  m.className='msg'+(kind?' '+kind:'');
-}
-
-async function submitOrder(){
-  const b=$id('submit'),label=b.textContent;
-  b.disabled=true;b.textContent='Submitting…';
-  try{
-    await api('/api/forex/open',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({pair:$id('pair').value,side:$id('side').value,notional:Number($id('notional').value)})});
-    await refresh();
-    say('Paper order accepted by the simulator. No live broker order was sent.','ok');
-  }catch(e){
-    await refresh();
-    say(e.message,'bad');
-  }finally{b.disabled=false;b.textContent=label}
-}
-
-async function closePosition(id){
-  try{
-    await api('/api/forex/close',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({id})});
-    await refresh();
-    say('Paper position closed in the simulator.','ok');
-  }catch(e){say(e.message,'bad')}
-}
-
-$id('submit').addEventListener('click',submitOrder);
-window.closePosition=closePosition;
-$id('interval').addEventListener('change',async e=>{
-  interval=e.target.value;
-  await refreshSeries();
-  loadPair(chartPair);
-});
-
-addEventListener('resize',drawChart);
-refreshSeries();
-aiStatus();
-loadMemeResearch();
-refresh();
-setInterval(refresh,15000);
-setInterval(aiStatus,30000);
-setInterval(()=>{loadSeries(chartPair)},60000);
-</script>
-</body>
-</html>+money(c.liquidity_usd)+'</td>'+
-        '<td class="r mono">
-function applyState(s){
-  state=s;
-  renderKpis(s);renderPipeline(s);renderPositions(s);renderFeed(s);renderTags(s);
-  quotes=s.market?.pairs||{};
-  renderTape();loadPair(chartPair);
-  // The metal basis arrives with the quote, so metal bars must be re-based
-  // before they can be drawn against it.
-  if(PAIRS.some(isMetal))refreshSeries();
-  const r=s.risk||{};
-  $id('risk').className='riskbox'+(r.halted?' halt':'');
-  $id('risk').textContent='Max trade $'+money(r.max_trade_notional)+
-    '  ·  Max exposure $'+money(r.max_exposure)+
-    '  ·  Max positions '+r.max_positions+
-    '  ·  Daily loss $'+money(r.max_daily_loss)+
-    '  ·  SL '+Number((r.stop_loss_pct||0)*100).toFixed(1)+'%'+
-    '  ·  TP '+Number((r.take_profit_pct||0)*100).toFixed(1)+'%'+
-    '  ·  Leverage '+r.max_leverage+'x'+(r.halted?'  ·  HALT ACTIVE':'');
-}
-
-async function refresh(){
-  try{
-    $id('sysDot').className='dot ok';
-    $id('sysTxt').textContent='CONNECTED';
-    const s=await api('/api/forex');
-    s.account=s.account||{};
-    // agent positions expose realised pnl; the account endpoint does not
-    if(typeof s.account.unrealized_pnl!=='number')
-      s.account.unrealized_pnl=(s.account.positions||[])
-        .reduce((t,p)=>t+(Number(p.unrealized_pnl)||0),0);
-    try{s.agentState=await api('/api/forex/agents');s.events=s.agentState.events||[]}
-    catch(_){s.events=state?.events||[]}
-    applyState(s);
-  }catch(e){
-    $id('sysDot').className='dot bad';
-    $id('sysTxt').textContent='DISCONNECTED';
-    say('Server unreachable — '+e.message,'bad');
-    if(!state)applyState({account:{},risk:{},market:{},events:[]});
-  }
-}
-
-function say(text,kind){
-  const m=$id('msg');
-  m.textContent=text||'';
-  m.className='msg'+(kind?' '+kind:'');
-}
-
-async function submitOrder(){
-  const b=$id('submit'),label=b.textContent;
-  b.disabled=true;b.textContent='Submitting…';
-  try{
-    await api('/api/forex/open',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({pair:$id('pair').value,side:$id('side').value,notional:Number($id('notional').value)})});
-    await refresh();
-    say('Paper order accepted by the simulator. No live broker order was sent.','ok');
-  }catch(e){
-    await refresh();
-    say(e.message,'bad');
-  }finally{b.disabled=false;b.textContent=label}
-}
-
-async function closePosition(id){
-  try{
-    await api('/api/forex/close',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({id})});
-    await refresh();
-    say('Paper position closed in the simulator.','ok');
-  }catch(e){say(e.message,'bad')}
-}
-
-$id('submit').addEventListener('click',submitOrder);
-window.closePosition=closePosition;
-$id('interval').addEventListener('change',async e=>{
-  interval=e.target.value;
-  await refreshSeries();
-  loadPair(chartPair);
-});
-
-addEventListener('resize',drawChart);
-refreshSeries();
-aiStatus();
-refresh();
-setInterval(refresh,15000);
-setInterval(aiStatus,30000);
-setInterval(()=>{loadSeries(chartPair)},60000);
-</script>
-</body>
-</html>+money(c.volume_24h_usd)+'</td>'+
+        '<td class="r mono">$'+money(c.liquidity_usd)+'</td>'+
+        '<td class="r mono">$'+money(c.volume_24h_usd)+'</td>'+
         '<td class="r mono">'+Number(c.transactions_24h||0).toLocaleString()+'</td>'+
         '<td class="r mono '+cls(change)+'">'+(change>0?'+':'')+change.toFixed(1)+'%</td>'+
         '<td><span class="tag '+(c.decision==='WATCH'?'ok':'bad')+'">'+esc(c.decision)+'</span></td></tr>';
     }).join('')+'</tbody></table></div>'+
     ((result.errors||[]).length?'<div class="notes">Provider issues: '+result.errors.map(e=>esc(e.token_address||'provider')+': '+esc(e.error)).join(' · ')+'</div>':'')+
     '<div class="notes">Scanned '+esc(result.generated_at||'')+'. Holder concentration, contract permissions and sellability remain unchecked.</div>';
+}
+function renderMemePaper(status){
+  const horizons=status.horizons||{};
+  $id('memePaperMeta').textContent=(status.snapshots||0)+' SNAPSHOTS · '+
+    (status.pending_horizon_observations||0)+' PENDING';
+  const names=['5m','15m','1h','4h','24h'];
+  $id('memePaperStatus').innerHTML=
+    '<div class="notes">Paper-only · modeled round-trip cost '+
+    Number(status.cost_assumptions?.modeled_round_trip_cost_pct||0).toFixed(2)+
+    '% · no wallet or live orders</div>'+
+    '<div style="overflow-x:auto"><table class="dt"><thead><tr>'+
+    '<th>HORIZON</th><th class="r">SAMPLES</th><th class="r">AVG NET RETURN</th>'+
+    '<th class="r">WIN RATE</th><th class="r">MISSED</th></tr></thead><tbody>'+
+    names.map(name=>{
+      const h=horizons[name]||{};
+      const avg=typeof h.average_net_return_pct==='number'?((h.average_net_return_pct>0?'+':'')+h.average_net_return_pct.toFixed(2)+'%'):'—';
+      const win=typeof h.win_rate_pct==='number'?h.win_rate_pct.toFixed(1)+'%':'—';
+      return '<tr><td>'+name+'</td><td class="r mono">'+(h.samples||0)+'</td>'+
+        '<td class="r mono '+(typeof h.average_net_return_pct==='number'?cls(h.average_net_return_pct):'')+'">'+avg+'</td>'+
+        '<td class="r mono">'+win+'</td><td class="r mono">'+(h.missed_sampling_windows||0)+'</td></tr>';
+    }).join('')+'</tbody></table></div>'+
+    '<div class="notes">Returns are sampled near each target horizon and adjusted using assumed costs, not real fills. Missed sampling windows are excluded. Repeated scans may create overlapping samples.</div>';
+}
+async function loadMemePaper(){
+  try{renderMemePaper(await api('/api/meme/paper'));}
+  catch(e){$id('memePaperStatus').innerHTML='<div class="notes">Paper evaluation unavailable: '+esc(e.message)+'</div>';}
 }
 async function loadMemeResearch(){
   try{
@@ -1177,6 +1034,7 @@ async function loadMemeResearch(){
     $id('memeMsg').textContent='Research status unavailable: '+e.message;
     $id('memeMsg').className='msg bad';
   }
+  await loadMemePaper();
 }
 async function scanMemeResearch(){
   const button=$id('memeScan'),label=button.textContent;
@@ -1187,12 +1045,26 @@ async function scanMemeResearch(){
     const result=await api('/api/meme/research/run',{method:'POST',
       headers:{'Content-Type':'application/json'},body:JSON.stringify({limit:20})});
     renderMemeResearch(result);
+    if(result.paper_status)renderMemePaper(result.paper_status);
+    else await loadMemePaper();
   }catch(e){
     $id('memeMsg').textContent='Scan failed: '+e.message;
     $id('memeMsg').className='msg bad';
   }finally{button.disabled=false;button.textContent=label}
 }
+async function updateMemePaper(){
+  const button=$id('memePaperUpdate'),label=button.textContent;
+  button.disabled=true;button.textContent='Updating…';
+  try{
+    const result=await api('/api/meme/paper/update',{method:'POST',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({})});
+    renderMemePaper(result.status||{});
+  }catch(e){
+    $id('memePaperStatus').innerHTML='<div class="notes">Update failed: '+esc(e.message)+'</div>';
+  }finally{button.disabled=false;button.textContent=label}
+}
 $id('memeScan').addEventListener('click',scanMemeResearch);
+$id('memePaperUpdate').addEventListener('click',updateMemePaper);
 
 /* ── data flow ─────────────────────────────────────────── */
 function applyState(s){
@@ -1275,6 +1147,7 @@ $id('interval').addEventListener('change',async e=>{
 addEventListener('resize',drawChart);
 refreshSeries();
 aiStatus();
+loadMemeResearch();
 refresh();
 setInterval(refresh,15000);
 setInterval(aiStatus,30000);
