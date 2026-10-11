@@ -244,6 +244,16 @@ class MemePaperTrader:
                                 }
                             except (TypeError, ValueError, OverflowError):
                                 details = {}
+                        elif reason == "momentum_chase_filter":
+                            details = {
+                                "price_change_1h_pct": float(candidate.get("price_change_1h_pct")),
+                                "max_entry_change_1h_pct": self.max_entry_change_1h_pct,
+                            }
+                        elif reason == "negative_momentum_filter":
+                            details = {
+                                "price_change_1h_pct": float(candidate.get("price_change_1h_pct")),
+                                "min_entry_change_1h_pct": -10.0,
+                            }
                         decisions.append(self._rejection(db, candidate, reason, **details))
                     continue
                 address = str(candidate.get("token_address") or "").strip()

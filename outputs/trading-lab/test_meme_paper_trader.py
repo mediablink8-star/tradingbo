@@ -52,6 +52,19 @@ class MemePaperTraderTests(unittest.TestCase):
         self.assertEqual(event["details"]["min_score"], 75.0)
         self.assertEqual(self.trader.status()["open_positions_count"], 0)
 
+    def test_momentum_rejection_records_actual_change_and_limit(self):
+        result = self.trader.run_cycle(
+            [candidate("CHASE", price_change_1h_pct=30)],
+            lambda _: safe_result(), self.price)
+        decision = result["decisions"][0]
+        self.assertEqual(decision["reason"], "momentum_chase_filter")
+        self.assertEqual(decision["price_change_1h_pct"], 30.0)
+        self.assertEqual(decision["max_entry_change_1h_pct"], self.trader.max_entry_change_1h_pct)
+        event = self.trader.status()["events"][0]
+        self.assertEqual(event["details"]["price_change_1h_pct"], 30.0)
+        self.assertEqual(event["details"]["max_entry_change_1h_pct"], self.trader.max_entry_change_1h_pct)
+        self.assertEqual(self.trader.status()["open_positions_count"], 0)
+
     def test_opens_paper_position_after_market_and_safety_gates(self):
         result = self.trader.run_cycle([candidate()], lambda _: safe_result(), self.price)
         self.assertEqual(result["decisions"][0]["action"], "OPEN")
