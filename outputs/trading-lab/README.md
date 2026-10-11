@@ -19,9 +19,7 @@ The immersive office is available at `http://127.0.0.1:8765/company.html` and ha
 
 Automatic paper cycles are **off by default**. To opt in, set `EMBER_FOREX_AUTORUN=1` before starting `python app.py`; the server then attempts a cycle every 60 seconds. A cycle may abstain if quotes are stale, there are too few distinct observations, a risk limit is reached, or the broker rejects the paper order. ECB reference rates are not executable prices. No live broker execution is enabled.
 
-Market data defaults to ECB reference rates through Frankfurter. Frankfurter
-supports provider pinning, so the historical pipeline can use the ECB source
-rather than a blended feed. See https://frankfurter.dev/providers/ecb/.
+The live paper-agent snapshot tries Yahoo intraday candles first, using 1-minute candles by default so the strict 5-minute quote-freshness gate can work. Override with `FX_YAHOO_INTERVAL` only if you understand the resulting freshness behavior. If Yahoo fails, the data layer falls back to ECB reference rates through Frankfurter; those daily reference rates are intentionally rejected by the agent freshness gate and must never be treated as executable prices. For historical daily data, Frankfurter can pin to the ECB source: https://frankfurter.dev/providers/ecb/.
 
 ## Architecture
 
