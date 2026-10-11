@@ -1794,8 +1794,22 @@ async function runMemeTrader(){
     const opened=decisions.filter(d=>d.action==='OPEN').length;
     const closed=decisions.filter(d=>d.action==='CLOSE').length;
     const rejected=decisions.filter(d=>d.action==='REJECT').length;
-    $id('memeTraderMsg').textContent='Cycle complete: '+(result.scan?.scored_candidates||0)+' candidates scored · '+opened+' opened · '+closed+' closed · '+rejected+' rejected. No live orders.';
-    $id('memeTraderMsg').className='msg ok';
+    const scan=result.scan||{},cycle=result.cycle||{};
+    let explanation='';
+    if(opened===0){
+      const blockers=Object.entries(scan.market_rejection_reasons||{}).sort((a,b)=>b[1]-a[1]).slice(0,3);
+      const reasons=Object.entries(cycle.decision_counts||{}).filter(([k])=>!['open','close'].includes(k)).sort((a,b)=>b[1]-a[1]).slice(0,3);
+      if(!(scan.watchlist_count||0)){
+        explanation=' No entries: no token passed the market screen.';
+        if(blockers.length)explanation+=' Main market filters: '+blockers.map(([k,v])=>k.replaceAll('_',' ')+' ('+v+')').join(', ')+'.';
+      }else if(reasons.length){
+        explanation=' No entries: '+reasons.map(([k,v])=>k.replaceAll('_',' ')+' ('+v+')').join(', ')+'.';
+      }else{
+        explanation=' No entries this cycle; market scan found '+(scan.watchlist_count||0)+' watchlist candidate(s), '+(scan.watchlist_considered||0)+' checked.';
+      }
+    }
+    $id('memeTraderMsg').textContent='Cycle complete: '+(scan.scored_candidates||0)+' candidates scored · '+(scan.watchlist_count||0)+' passed market screen · '+(scan.watchlist_considered||0)+' safety-screened · '+opened+' opened · '+closed+' closed · '+rejected+' rejected. No live orders.'+explanation;
+    $id('memeTraderMsg').className=opened>0?'msg ok':((scan.errors||[]).length?'msg bad':'msg');
     await loadMemePaper();
   }catch(e){
     $id('memeTraderMsg').textContent='Paper cycle failed: '+e.message;
