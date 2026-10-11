@@ -158,6 +158,8 @@ class EquityBacktester:
                 history[-1]["equity"] = cash
                 history[-1]["return_pct"] = (cash / self.starting_cash - 1.0) * 100.0
                 history[-1]["open_position"] = False
+                prior_equity = equity_values[-2] if len(equity_values) > 1 else self.starting_cash
+                history[-1]["period_return"] = cash / prior_equity - 1.0 if prior_equity else 0.0
                 equity_values[-1] = cash
 
         ending = cash if not position else cash + position["shares"] * candles[-1].close
