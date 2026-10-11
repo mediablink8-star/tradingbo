@@ -1,4 +1,9 @@
+import io
 import unittest
+import urllib.error
+from email.message import Message
+from unittest.mock import patch
+import meme_research
 from meme_research import MemeCoinResearchEngine, MemeResearchConfig, BASE_URL
 
 
@@ -18,6 +23,49 @@ def good_pair(address="TOKEN1", liquidity=50000, volume=100000, buys=180, sells=
         "priceChange": {"h1": change_1h, "h24": 24},
         "pairCreatedAt": now_ms - age_minutes * 60_000,
     }
+
+
+class DexScreenerFetchTests(unittest.TestCase):
+    def setUp(self):
+        with meme_research._RESPONSE_CACHE_LOCK:
+            meme_research._RESPONSE_CACHE.clear()
+
+    def test_429_retries_and_honours_retry_after(self):
+        headers = Message()
+        headers["Retry-After"] = "2"
+        rate_limited = urllib.error.HTTPError(
+            "https://example.test/data", 429, "Too Many Requests", headers, None
+        )
+
+        class Response(io.BytesIO):
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                self.close()
+
+        with patch.object(meme_research.urllib.request, "urlopen",
+                          side_effect=[rate_limited, Response(b'{"ok": true}')]) as fetch, \
+             patch.object(meme_research.time, "sleep") as sleep:
+            result = meme_research._fetch_json("https://example.test/data")
+        self.assertEqual(result, {"ok": True})
+        self.assertEqual(fetch.call_count, 2)
+        sleep.assert_called_once_with(2.0)
+
+    def test_successful_response_is_cached_briefly(self):
+        class Response(io.BytesIO):
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                self.close()
+
+        with patch.object(meme_research.urllib.request, "urlopen",
+                          return_value=Response(b'{"price": 1}')) as fetch:
+            first = meme_research._fetch_json("https://example.test/price")
+            second = meme_research._fetch_json("https://example.test/price")
+        self.assertEqual(first, second)
+        self.assertEqual(fetch.call_count, 1)
 
 
 class MemeResearchTests(unittest.TestCase):
