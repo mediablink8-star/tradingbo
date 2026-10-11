@@ -204,186 +204,107 @@ const txt=(v,x,y,c='#78838f',s=10,a='left')=>{ctx.fillStyle=c;ctx.font=(s>=12?'6
   ctx.textAlign=a;ctx.fillText(v,x,y)};
 const circle=(x,y,r,c)=>{ctx.fillStyle=c;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill()};
 
-/* ── original cartoon agent marker ──────────────────────── */
-const SKIN=['#e6b58b','#c98d68','#f0c9a3','#9f694f','#dfaa81','#d3a17e'];
+/* ── schematic agent marker ─────────────────────────────── */
 function marker(role,x,y,st,active,moving){
-  const hue=role.hue, i=ROLES.indexOf(role), skin=SKIN[i%SKIN.length];
-  // A small shadow keeps each character grounded on the floor.
-  ctx.globalAlpha=.28;ctx.fillStyle='#000';ctx.beginPath();
-  ctx.ellipse(x,y+22,13,4,0,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
+  const hue=role.hue;
+  // selection / activity footprint
   if(active){
-    ctx.strokeStyle=hue;ctx.lineWidth=1.4;ctx.globalAlpha=.7;
-    ctx.beginPath();ctx.arc(x,y+9,22,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
+    ctx.strokeStyle=hue;ctx.lineWidth=1;ctx.globalAlpha=.45;
+    ctx.beginPath();ctx.arc(x,y+16,20,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
   }
-  // Feet and trousers.
-  line(x-4,y+14,x-5,y+21,'#354454',3);
-  line(x+4,y+14,x+5,y+21,'#354454',3);
-  line(x-8,y+22,x-3,y+22,'#9aa8b8',3);
-  line(x+3,y+22,x+8,y+22,'#9aa8b8',3);
-  // Arms, jacket and shirt.
-  line(x-7,y+1,x-11,y+10,hue,3);
-  line(x+7,y+1,x+11,y+10,hue,3);
+  // schematic figure: head + shoulders, drawn as flat geometry
+  circle(x,y-6,6.5,'#1b2430');
+  ctx.strokeStyle=hue;ctx.lineWidth=1.4;ctx.beginPath();ctx.arc(x,y-6,6.5,0,Math.PI*2);ctx.stroke();
   ctx.fillStyle=hue;ctx.beginPath();
-  ctx.moveTo(x-7,y-1);ctx.quadraticCurveTo(x,y-5,x+7,y-1);
-  ctx.lineTo(x+8,y+14);ctx.quadraticCurveTo(x,y+18,x-8,y+14);ctx.closePath();ctx.fill();
-  line(x,y+1,x,y+12,'#e8eef5',1.3);
-  // Face, hair, eyes and a friendly expression.
-  circle(x,y-8,7.8,skin);
-  ctx.fillStyle=['#25303b','#402e28','#403b32','#211d1a','#3d2d26','#202832'][i%6];
-  ctx.beginPath();ctx.arc(x,y-9,8,Math.PI,Math.PI*2);ctx.lineTo(x+7,y-5);
-  ctx.quadraticCurveTo(x+2,y-9,x-7,y-5);ctx.closePath();ctx.fill();
-  circle(x-2.5,y-7,0.8,'#22252b');circle(x+2.5,y-7,0.8,'#22252b');
-  ctx.strokeStyle='#805447';ctx.lineWidth=.8;ctx.beginPath();
-  ctx.arc(x,y-4.8,2,0.15,Math.PI-.15);ctx.stroke();
-  // Status pin and tiny movement cue.
-  circle(x+12,y-15,3.1,'#080d12');circle(x+12,y-15,2,st.c);
+  ctx.moveTo(x-11,y+16);ctx.quadraticCurveTo(x,y+1,x+11,y+16);ctx.closePath();ctx.fill();
+  if(active)circle(x,y-6,2,hue);
+  // status lamp
+  circle(x+13,y-13,2.6,st.c);
   if(moving){
     ctx.strokeStyle=st.c;ctx.lineWidth=1;ctx.globalAlpha=.5;
-    ctx.beginPath();ctx.ellipse(x,y+24,11,2.5,0,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
+    ctx.beginPath();ctx.ellipse(x,y+17,10,3,0,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
   }
 }
 
-/* ── architectural floor plan ──────────────────────────── */
-function plant(x,y){
-  // Planter and three leaves; decorative only, kept outside walking lanes.
-  box(x-8,y+3,16,9,'#263b35',3);
-  line(x,y+4,x,y-7,'#4f8b68',2);
-  line(x,y-1,x-7,y-7,'#4f8b68',2);
-  line(x,y-3,x+7,y-9,'#4f8b68',2);
-  circle(x-7,y-7,3,'#4e9a70');circle(x+7,y-9,3,'#62ad7d');circle(x,y-8,3,'#3f805e');
-}
-function windowStrip(x,y,w){
-  box(x,y,w,8,'#182d3a',3);
-  for(let xx=x+6;xx<x+w;xx+=18)line(xx,y+2,xx,y+6,'#31566a',1);
-  line(x+3,y+2,x+w-3,y+2,'#527b8d',1);
-}
-function desk(role,active,deskY){
-  const x=role.x,hue=role.hue;
-  // soft workstation rug, then chair, then desk furniture.
-  box(x-75,deskY-7,150,151,active?'#182334':'#131b24',8);
-  ctx.strokeStyle=active?hue:'#25313d';ctx.lineWidth=1;
-  ctx.beginPath();ctx.roundRect(x-75,deskY-7,150,151,8);ctx.stroke();
-  // chair tucked under the front edge of the desk
-  box(x-17,deskY+57,34,18,'#202b36',6);
-  box(x-13,deskY+72,26,7,'#2b3947',3);
-  line(x,deskY+77,x,deskY+82,'#536273',2);
-  line(x-7,deskY+82,x+7,deskY+82,'#536273',2);
-  // rounded desk surface with a restrained wood/metal edge
-  box(x-62,deskY+3,124,50,'#080d12',6);
-  box(x-62,deskY,124,49,'#26313d',6);
-  ctx.strokeStyle=active?hue:'#3b4857';ctx.lineWidth=1;
-  ctx.beginPath();ctx.roundRect(x-62,deskY,124,49,6);ctx.stroke();
-  line(x-55,deskY+48,x-55,deskY+54,'#657180',2);
-  line(x+55,deskY+48,x+55,deskY+54,'#657180',2);
-  // monitor with live-looking, purely illustrative chart lines
-  box(x-43,deskY+7,47,28,'#071018',4);
-  ctx.strokeStyle='#344858';ctx.beginPath();ctx.roundRect(x-43,deskY+7,47,28,4);ctx.stroke();
-  line(x-38,deskY+29,x-38,deskY+13,'#2fbf87',1);
-  line(x-38,deskY+29,x-29,deskY+21,'#2fbf87',1.3);
-  line(x-29,deskY+21,x-22,deskY+24,'#2fbf87',1.3);
-  line(x-22,deskY+24,x-11,deskY+14,'#2fbf87',1.3);
-  line(x-25,deskY+35,x-25,deskY+38,'#718092',2);
-  line(x-33,deskY+38,x-17,deskY+38,'#718092',2);
-  // keyboard, terminal and a tiny coffee mug
-  box(x-31,deskY+40,36,4,'#526171',2);
-  box(x+10,deskY+12,28,20,'#101923',3);
-  txt(role.ix,x+24,deskY+25,'#7e91a4',8,'center');
-  box(x+39,deskY+36,8,8,'#9a7659',2);
-  ctx.strokeStyle='#9a7659';ctx.lineWidth=1.4;ctx.beginPath();
-  ctx.arc(x+48,deskY+40,3,-Math.PI/2,Math.PI/2);ctx.stroke();
-  // selected station gets a crisp focus frame, not a giant cross-room box.
-  if(sel===ROLES.indexOf(role)){
-    ctx.strokeStyle=hue;ctx.lineWidth=1.5;
-    ctx.beginPath();ctx.roundRect(x-79,deskY-11,158,159,10);ctx.stroke();
-    circle(x-70,deskY-2,2.5,hue);circle(x+70,deskY-2,2.5,hue);
-  }
-}
+/* ── floor plan ────────────────────────────────────────── */
 function paint(){
   const now=(performance.now()-t0)/1000;
   ctx.clearRect(0,0,W,H);
   rect(0,0,W,H,'#0a0e13');
 
-  // outer architectural shell and quiet stone floor tile
-  box(9,57,942,414,'#101720',9);
-  ctx.strokeStyle='#33404d';ctx.lineWidth=1.2;
-  ctx.beginPath();ctx.roundRect(9,57,942,414,9);ctx.stroke();
-  ctx.save();ctx.beginPath();ctx.roundRect(12,60,936,408,7);ctx.clip();
-  rect(12,60,936,408,'#111922');
-  ctx.strokeStyle='#19232d';ctx.lineWidth=1;
-  for(let x=28;x<948;x+=32){line(x,60,x,468,'#19232d',.65)}
-  for(let y=76;y<468;y+=32){line(12,y,948,y,'#19232d',.65)}
-  // Three glass-walled team pods.
-  const zones=[
-    {x:16,label:'01  /  INTELLIGENCE',sub:'MARKET DATA & RESEARCH',c:'#4c8dff'},
-    {x:336,label:'02  /  STRATEGY',sub:'MACRO & SIGNALS',c:'#8c7cff'},
-    {x:656,label:'03  /  CONTROL',sub:'RISK & OVERSIGHT',c:'#2fbf87'}
-  ];
-  zones.forEach((z,i)=>{
-    box(z.x,65,288,397,'#121b25',7);
-    ctx.strokeStyle='#293746';ctx.lineWidth=1;
-    ctx.beginPath();ctx.roundRect(z.x,65,288,397,7);ctx.stroke();
-    // glass partition rails and pod heading
-    line(z.x+10,92,z.x+278,92,'#293746',1);
-    circle(z.x+15,80,3,z.c);
-    txt(z.label,z.x+25,83,'#c0ccd8',9);
-    txt(z.sub,z.x+12,106,'#617284',8);
-    windowStrip(z.x+14,116,88);
-    windowStrip(z.x+186,116,88);
-    // small plant, deliberately outside desk and agent lanes
-    plant(z.x+22,141);
-    plant(z.x+266,444);
-  });
-  // Clear shared corridor between the two workstation rows.
-  rect(16,294,928,14,'#0b1118');
-  line(16,294.5,944,294.5,'#2c3b49',1);
-  line(16,307.5,944,307.5,'#2c3b49',1);
-  for(let x=28;x<944;x+=32)line(x,301,x+15,301,'#364756',1);
-  box(414,296,132,10,'#1b2b38',4);
-  txt('SHARED WALKWAY',480,304,'#71869a',7,'center');
-  ctx.restore();
+  // grid
+  ctx.strokeStyle='#12181f';ctx.lineWidth=1;
+  for(let x=0;x<=W;x+=40){ctx.beginPath();ctx.moveTo(x+.5,0);ctx.lineTo(x+.5,H);ctx.stroke()}
+  for(let y=0;y<=H;y+=40){ctx.beginPath();ctx.moveTo(0,y+.5);ctx.lineTo(W,y+.5);ctx.stroke()}
 
-  // Room header and live account readout.
-  rect(0,0,W,52,'#0d1218');line(0,52.5,W,52.5,'#27313d');
-  txt('TRADING OPERATIONS',18,25,'#e4ebf2',13);
-  txt('AGENT OFFICE  /  LIVE FLOOR VIEW',18,41,'#657587',8);
+  // header band
+  rect(0,0,W,52,'#0d1218');line(0,52.5,W,52.5,'#1d242e');
+  txt('FLOOR PLAN',18,32,'#e4ebf2',13);
+  txt('AGENT STATION SCHEMATIC',18,45,'#4d565f',9);
   if(live){
-    txt('EQUITY  $'+Number(live.equity||0).toFixed(2),W-18,23,'#e4ebf2',11,'right');
-    txt(String(live.open)+' OPEN  ·  '+(live.halted?'RISK HALT':'RISK GATE ACTIVE'),
-      W-18,40,live.halted?'#e2555f':'#2fbf87',8,'right');
+    txt('CASH  $'+Number(live.equity||0).toFixed(2),W-190,26,'#e4ebf2',12,'right');
+    txt(live.open+' OPEN  ·  '+(live.halted?'HALTED':'ARMED'),W-190,42,
+      live.halted?'#e2555f':'#2fbf87',9,'right');
   }
 
-  // Each station owns a fixed desk bay. The small idle animation stays inside
-  // its bay; agents never drift through desks, partitions, or other characters.
-  ROLES.forEach((r,i)=>{
-    const hit=match(r),active=Boolean(hit);
-    const moving=!paused&&((now*.12+i*.29)%1)<.2;
-    const bob=moving?Math.sin(now*5+i)*1.1:Math.sin(now*1.8+i)*.35;
-    const dx=moving?Math.sin(now*.55+i*1.7)*5:Math.sin(now*.3+i)*1.2;
-    const deskY=r.y-40;
-    desk(r,active,deskY);
-    const st=active?STATE.REPORT:moving?STATE.MOVE:STATE.IDLE;
-    marker(r,r.x+dx,deskY+88+bob,st,active,moving);
-    txt(r.name.toUpperCase(),r.x,deskY+124,active?'#d2dce7':'#8a99a8',9,'center');
-    txt(st.t,r.x,deskY+137,st.c,7,'center');
+  // three zone bands
+  const zones=[[16,'ZONE A · FEEDS'],[336,'ZONE B · ANALYSIS'],[656,'ZONE C · EXECUTION']];
+  zones.forEach(([x,label])=>{
+    box(x,62,288,404,'#0d1218',6);
+    ctx.strokeStyle='#1a212a';ctx.lineWidth=1;ctx.beginPath();ctx.roundRect(x,62,288,404,6);ctx.stroke();
+    txt(label,x+12,82,'#4d565f',9);
   });
 
-  // Shared facilities at the foot of the room, outside the movement lanes.
-  box(24,474,912,45,'#0d131a',6);
-  ctx.strokeStyle='#25313d';ctx.beginPath();ctx.roundRect(24,474,912,45,6);ctx.stroke();
-  txt('STATUS',38,491,'#66788a',8);
-  let lx=91;
-  [[STATE.REPORT,'REPORTING'],[STATE.MOVE,'MOVING'],[STATE.IDLE,'AT DESK']].forEach(([s,l])=>{
-    circle(lx,488,3,s.c);txt(l,lx+8,491,'#9baaba',8);lx+=91;
+  // desk for each station
+  ROLES.forEach((r,i)=>{
+    const hit=match(r);
+    const active=Boolean(hit);
+    const moving=!active&&!paused&&((now*0.14+i*0.31)%1)<0.34;
+    const st=active?STATE.REPORT:moving?STATE.MOVE:STATE.IDLE;
+    const bob=moving?Math.sin(now*7+i)*1.6:0;
+    const dx=moving?Math.sin(now*0.8+i)*10:0;
+    const deskY=r.y-40;
+
+    // desk slab
+    box(r.x-62,deskY,124,52,'#141a22',5);
+    ctx.strokeStyle=active?r.hue:'#232c37';ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(r.x-62,deskY,124,52,5);ctx.stroke();
+    rect(r.x-62,deskY,124,1,active?r.hue:'#232c37');
+    // monitor
+    box(r.x-46,deskY+8,42,26,'#080c11',3);
+    ctx.strokeStyle='#212a34';ctx.beginPath();ctx.roundRect(r.x-46,deskY+8,42,26,3);ctx.stroke();
+    if(active){
+      rect(r.x-42,deskY+14,34,1,r.hue);rect(r.x-42,deskY+19,24,1,r.hue);
+    }
+    // terminal block
+    box(r.x+6,deskY+16,26,14,'#0b1017',3);
+    txt(r.ix,r.x+19,deskY+27,'#3d4650',9,'center');
+
+    // figure stands clear in front of the desk, never overlapping it
+    marker(r,r.x+dx,deskY+88+bob,st,active,moving);
+    txt(r.name.toUpperCase(),r.x,deskY+124,active?'#aeb9c6':'#5b6570',9,'center');
+    txt(st.t,r.x,deskY+138,st.c,8,'center');
+
+    if(sel===i){
+      ctx.strokeStyle=r.hue;ctx.lineWidth=1.5;
+      ctx.strokeRect(r.x-72,deskY-48,144,196);
+      for(const [cx,cy,sx,sy] of [[-72,-48,1,1],[72,-48,-1,1],[-72,148,1,-1],[72,148,-1,-1]]){
+        line(r.x+cx,deskY+cy,r.x+cx+sx*13,deskY+cy,r.hue,2);
+        line(r.x+cx,deskY+cy,r.x+cx,deskY+cy+sy*13,r.hue,2);
+      }
+    }
   });
-  line(367,482,367,511,'#25313d',1);
-  // Miniature coffee nook and meeting spot make the room read as a workplace.
-  box(385,482,24,18,'#1b2933',4);circle(397,491,5,'#304c5a');circle(397,491,2,'#6ca2ae');
-  txt('BREAK NOOK',416,493,'#71869a',8);
-  line(512,482,512,511,'#25313d',1);
-  circle(530,491,5,'#243849');circle(530,491,2,'#7c6cff');
-  txt('TEAM HUDDLE',541,493,'#71869a',8);
-  txt('ILLUSTRATIVE MOTION  ·  REPORTS ARE REAL APP DATA',W-38,507,'#526273',7,'right');
-  txt('T+'+String(Math.floor(now)).padStart(3,'0')+'s',W-38,516,'#3d4a57',7,'right');
+
+  // legend
+  rect(16,482,928,32,'#0d1218');
+  txt('LEGEND',28,502,'#4d565f',9);
+  let lx=110;
+  [[STATE.REPORT,'REPORTING'],[STATE.MOVE,'IN TRANSIT'],[STATE.IDLE,'STANDBY']].forEach(([s,l])=>{
+    circle(lx,498,3,s.c);txt(l,lx+9,502,'#5b6570',9);lx+=96;
+  });
+  txt('PLAN VIEW IS ILLUSTRATIVE · RECORDED REPORTS ARE THE SOURCE OF TRUTH',
+      W-18,502,'#3d4650',9,'right');
+  txt('T+'+String(Math.floor(now)).padStart(3,'0')+'s',W-18,522,'#3d4650',9,'right');
 }
 
 /* ── readouts ──────────────────────────────────────────── */
