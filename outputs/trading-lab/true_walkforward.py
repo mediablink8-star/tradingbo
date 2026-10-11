@@ -4,6 +4,9 @@ Every selection decision uses only candles available before the OOS window.
 A configurable gap can be inserted between train and test to reduce leakage
 from overlapping lookback/holding periods.
 """
+import math
+import statistics
+
 from research_selection import select_candidate
 
 
@@ -56,6 +59,39 @@ def optimize_window(
     return selected, scored
 
 
+
+def run_with_warmup(backtester, signal, warmup_candles, test_candles):
+    """Evaluate test candles with prior indicator context but no warm-up trades."""
+    warmup = list(warmup_candles)
+    test = list(test_candles)
+    if not test:
+        raise ValueError("test_candles must not be empty")
+    combined = warmup + test
+
+    def guarded_signal(history):
+        if len(history) <= len(warmup):
+            return None
+        return signal(history)
+
+    result = backtester.run(combined, guarded_signal)
+    result["history"] = result.get("history", [])[len(warmup):]
+    equities = [float(row["equity"]) for row in result["history"]]
+    previous = float(result.get("starting_cash", 0.0))
+    returns = []
+    for equity in equities:
+        returns.append(equity / previous - 1.0 if previous > 0 else 0.0)
+        previous = equity
+    deviation = statistics.stdev(returns) if len(returns) > 1 else 0.0
+    annualizer = getattr(backtester, "_annualization", None)
+    periods = annualizer(test) if callable(annualizer) else float(
+        getattr(backtester, "periods_per_year", 252.0)
+    )
+    result["sharpe"] = (
+        statistics.mean(returns) / deviation * math.sqrt(max(float(periods), 1.0))
+        if deviation > 0 else 0.0
+    )
+    return result
+
 def true_walk_forward(
     candles,
     backtester_factory,
@@ -67,9 +103,10 @@ def true_walk_forward(
     min_trades=1,
     max_drawdown=None,
     min_return_pct=None,
+    warmup_size=0,
 ):
-    if train_size < 2 or test_size < 1 or gap < 0:
-        raise ValueError("train_size >= 2, test_size >= 1, gap >= 0 required")
+    if train_size < 2 or test_size < 1 or gap < 0 or warmup_size < 0:
+        raise ValueError("train_size >= 2, test_size >= 1, gap >= 0, warmup_size >= 0 required")
     windows = []
     start = 0
     factories = dict(strategy_candidates)
@@ -88,7 +125,9 @@ def true_walk_forward(
             min_return_pct=min_return_pct,
         )
         tester = backtester_factory()
-        oos = _run_factory(tester, factories[selected["name"]], test)
+        warmup_start = max(0, test_start - warmup_size)
+        warmup = candles[warmup_start:test_start]
+        oos = run_with_warmup(tester, factories[selected["name"]](), warmup, test)
         windows.append({
             "train_start": train[0].timestamp,
             "train_end": train[-1].timestamp,
