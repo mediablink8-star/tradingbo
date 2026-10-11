@@ -191,3 +191,26 @@ Sharpe calculation. The research runner uses up to 100 preceding candles,
 covering the current candidate library's longest EMA lookback. This avoids
 silently evaluating long-lookback strategies with empty indicator history at
 every test-window boundary.
+
+## Equity/stocks evaluation foundation
+
+The repository now includes a separate long-only, cash-only equity backtester in
+`equity_backtest.py`. It reuses the same `Candle` format and the existing
+chronological `true_walk_forward` selector used by FX research. It supports
+explicit spread, slippage and per-fill commission assumptions, next-bar-open
+fills after completed-candle signals, end-of-data liquidation, and trade,
+equity, drawdown and risk-adjusted summaries. It has no broker or live-order
+integration.
+
+Use `true_walk_forward` with an `EquityBacktester` factory and candidate
+signal factories to select on training windows and score later windows. Choose
+a `periods_per_year` value appropriate to the candle interval.
+
+**Important limitations:** fractional shares are assumed; dividends, splits,
+taxes, borrow, halts, delistings and corporate actions are not modeled. This
+module does not fetch stock prices. Historical studies must use timestamped,
+point-in-time data and a survivorship-aware universe, or results can be
+misleading. Neither this module nor its tests imply profitability. See the
+[QuantConnect research guide](https://www.quantconnect.com/docs/v2/writing-algorithms/key-concepts/research-guide)
+for discussion of walk-forward validation and look-ahead/survivorship bias.
+
