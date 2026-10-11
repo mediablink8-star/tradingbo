@@ -742,7 +742,62 @@ body:before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:60
 .ava .ring-fg{stroke-width:3.5!important}
 .hb i.hit{filter:brightness(1.3) saturate(1.2)}
 .fleetbar .fmeter i{box-shadow:0 0 12px #00ff88aa}
-.event b{color:#fff!important}</style>
+.event b{color:#fff!important}
+/* Mobile-only usability pass. Desktop layout and existing components remain unchanged. */
+@media(max-width:640px){
+  html,body{min-height:100%;height:auto;overflow-x:hidden}
+  .wrap{padding:10px;gap:12px}
+  .bar{gap:8px;padding:9px 10px}
+  .bar .path{font-size:10.5px}
+  .topnav{gap:4px;scrollbar-width:thin;overscroll-behavior-x:contain;
+    -webkit-overflow-scrolling:touch;padding-bottom:3px!important}
+  .topnav a{min-height:38px;display:inline-flex;align-items:center;padding:8px 10px!important}
+  .bar .btags{gap:5px}
+  .tag{min-height:26px;display:inline-flex;align-items:center}
+  .tickerbar{-webkit-mask-image:linear-gradient(90deg,transparent,#000 10px,#000 calc(100% - 10px),transparent);
+    mask-image:linear-gradient(90deg,transparent,#000 10px,#000 calc(100% - 10px),transparent)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpi{padding:10px}
+  .kpi .k{font-size:8.5px;letter-spacing:.1em;line-height:1.35}
+  .kpi .v{font-size:clamp(17px,5.4vw,22px);overflow-wrap:anywhere}
+  .kpi .s{font-size:9px;line-height:1.35;letter-spacing:.03em}
+  .secbd{padding:10px}
+  .sechd{padding:10px;gap:7px}
+  .sechd .sub{max-width:58%;font-size:9px;line-height:1.35}
+  .tape{flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x proximity;
+    -webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+  .tape .q{flex:0 0 42%;scroll-snap-align:start;padding:9px 10px}
+  .chartbox{padding:10px}
+  .charttop{align-items:center;gap:8px}
+  .charttop .sym{font-size:12px}
+  .charttop .px{font-size:18px}
+  .charttop .mt{font-size:9px}
+  #spark{height:190px;touch-action:pan-y}
+  .qtscroll,.dtscroll{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;
+    -webkit-overflow-scrolling:touch}
+  .qtscroll .qt{min-width:440px}
+  .dtscroll .dt{min-width:460px}
+  .qt th,.qt td,.dt th,.dt td{padding:9px 8px;white-space:nowrap}
+  .row-btns{gap:7px}
+  .row-btns .btn{min-height:42px;flex:1 1 44%}
+  button,.btn,select,input{min-height:40px}
+  input,select,textarea{font-size:16px}
+  .pipe{gap:8px}
+  .pn{padding:11px}
+  .kv div{gap:7px}
+  .kv div>*{min-width:0;overflow-wrap:anywhere}
+  .feed{max-height:280px;overscroll-behavior:contain}
+}
+@media(max-width:380px){
+  .wrap{padding:8px;gap:10px}
+  .kpi{padding:9px}
+  .kpi .v{font-size:17px}
+  .tape .q{flex-basis:55%}
+  .charttop .mt{max-width:100%;overflow-wrap:anywhere}
+  .tag{letter-spacing:.06em;padding:4px 6px}
+}
+
+</style>
 </head>
 <body>
 <div class="shell">
