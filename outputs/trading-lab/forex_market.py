@@ -221,64 +221,101 @@ def _spot_metal(pair):
 
 
 def _yahoo(pairs):
-    """Live snapshot built from the most recent Yahoo bar per pair.
+    """Fetch each symbol independently so one provider failure cannot blank the dashboard.
 
-    The bar close is a mid reference, not an executable broker quote. Bid/ask
-    remain simulated from the configured spread, exactly as with ECB.
+    Quotes are reference prices with a simulated spread, not executable broker
+    prices. Missing symbols are reported instead of being replaced with zeroes.
     """
     interval = os.environ.get("FX_YAHOO_INTERVAL", "1m")
     out = {}
+    errors = {}
     latest = 0.0
     for pair in pairs:
-        if is_metal(pair):
-            # Spot is authoritative for a metal quote. The futures contract is
-            # fetched only to report the basis, never in place of the spot price.
-            quote = _spot_metal(pair)
-            basis = None
-            try:
-                futures = _yahoo_series(pair, interval)[-1]
-                basis = (float(quote["price"]) - float(futures["c"]))
-                quote["basis_vs_futures"] = round(basis, 4)
-                quote["futures_symbol"] = _yahoo_symbol(pair).upper()
-            except Exception:
-                pass
-            out[pair] = quote
-            latest = max(latest, float(quote["observed"]))
-            continue
-        bars = _yahoo_series(pair, interval)
-        bar = bars[-1]
-        mid = float(bar["c"])
-        spread_bps = _spread(pair)
-        half = spread_bps / 20000
-        source = "Yahoo Finance chart endpoint (unofficial)"
-        if is_metal(pair):
-            source = ("Yahoo " + _yahoo_symbol(pair).upper()
-                      + " futures, not spot metal")
-        out[pair] = {
-            "pair": pair, "price": mid,
-            "bid": mid * (1 - half), "ask": mid * (1 + half),
-            "spread_bps": spread_bps, "observed": float(bar["t"]),
-            "fetched_at": time.time(),
-            "provider_date": datetime.datetime.fromtimestamp(
-                bar["t"], datetime.timezone.utc
-            ).strftime("%Y-%m-%d %H:%M:%S"),
-            "instrument": ("metal" if is_metal(pair)
-                             else "stock" if is_stock(pair) else "fx"),
-            "source": source,
-        }
-        latest = max(latest, float(bar["t"]))
+        try:
+            if is_metal(pair):
+                # Spot is authoritative for a metal quote; futures are basis-only.
+                quote = _spot_metal(pair)
+                try:
+                    futures = _yahoo_series(pair, interval)[-1]
+                    quote["basis_vs_futures"] = round(
+                        float(quote["price"]) - float(futures["c"]), 4
+                    )
+                    quote["futures_symbol"] = _yahoo_symbol(pair).upper()
+                except Exception:
+                    pass
+                out[pair] = quote
+                latest = max(latest, float(quote["observed"]))
+                continue
+
+            bars = _yahoo_series(pair, interval)
+            bar = bars[-1]
+            mid = float(bar["c"])
+            spread_bps = _spread(pair)
+            half = spread_bps / 20000
+            out[pair] = {
+                "pair": pair, "price": mid,
+                "bid": mid * (1 - half), "ask": mid * (1 + half),
+                "spread_bps": spread_bps, "observed": float(bar["t"]),
+                "fetched_at": time.time(),
+                "provider_date": datetime.datetime.fromtimestamp(
+                    bar["t"], datetime.timezone.utc
+                ).strftime("%Y-%m-%d %H:%M:%S"),
+                "instrument": ("metal" if is_metal(pair)
+                               else "stock" if is_stock(pair) else "fx"),
+                "source": "Yahoo Finance chart endpoint (unofficial)",
+            }
+            latest = max(latest, float(bar["t"]))
+        except Exception as exc:
+            # A bad/unavailable ticker must not discard quotes for every other asset.
+            errors[pair] = str(exc) or type(exc).__name__
+
     if not out:
-        raise ValueError("No usable FX rates were returned.")
-    sources = sorted({q.get("source", "") for q in out.values()})
+        details = "; ".join(f"{pair}: {error}" for pair, error in errors.items())
+        raise ValueError("No market quotes available from Yahoo" +
+                         (": " + details if details else "."))
+
+    sources = sorted({q.get("source", "") for q in out.values() if q.get("source")})
+    latest_quote = max(out.values(), key=lambda q: float(q.get("observed") or 0))
     return {
         "observed": latest, "fetched_at": time.time(),
-        "provider_date": datetime.datetime.fromtimestamp(
-            latest, datetime.timezone.utc
-        ).strftime("%Y-%m-%d %H:%M:%S"),
-        "source": " + ".join(s for s in sources if s),
-        "pairs": out, "market_open": None,
+        "provider_date": latest_quote.get("provider_date"),
+        "source": " + ".join(sources),
+        "pairs": out, "market_open": None, "errors": errors,
     }
 
+
+def _merge_snapshots(parts, errors=None):
+    """Merge independent providers without inventing missing prices."""
+    quotes = {}
+    sources = []
+    combined_errors = dict(errors or {})
+    for part in parts:
+        quotes.update(part.get("pairs") or {})
+        source = part.get("source")
+        if source:
+            sources.append(source)
+        for pair, message in (part.get("errors") or {}).items():
+            if pair not in quotes:
+                combined_errors[pair] = message
+    for pair in quotes:
+        combined_errors.pop(pair, None)
+    if not quotes:
+        details = "; ".join(f"{pair}: {message}"
+                            for pair, message in combined_errors.items())
+        raise ValueError("No market quotes available" +
+                         (": " + details if details else "."))
+    latest_quote = max(
+        quotes.values(), key=lambda q: float(q.get("observed") or 0)
+    )
+    return {
+        "observed": max(float(q.get("observed") or 0) for q in quotes.values()),
+        "fetched_at": time.time(),
+        "provider_date": latest_quote.get("provider_date"),
+        "source": " + ".join(dict.fromkeys(sources)),
+        "pairs": quotes,
+        "market_open": None,
+        "errors": combined_errors,
+    }
 
 def _alpha_vantage(pairs):
     key = os.environ.get("ALPHAVANTAGE_API_KEY")
@@ -324,23 +361,70 @@ def _alpha_vantage(pairs):
 
 
 def snapshot(pairs=DEFAULT_PAIRS):
+    """Return every usable quote; a failed symbol/provider must not blank all data."""
     pairs = [p.upper() for p in pairs if isinstance(p, str) and "/" in p]
     if not pairs:
-        raise ValueError("At least one valid FX pair is required.")
+        raise ValueError("At least one valid market pair is required.")
+
     provider = os.environ.get("FX_PROVIDER", "").lower()
+    fx_pairs = [p for p in pairs if not is_metal(p) and not is_stock(p)]
+    non_fx_pairs = [p for p in pairs if is_metal(p) or is_stock(p)]
+    parts = []
+    errors = {}
+
+    # Metals/equities are never sent to currency-rate providers.
     if provider == "alpha_vantage":
-        return _alpha_vantage(pairs)
+        if fx_pairs:
+            try:
+                parts.append(_alpha_vantage(fx_pairs))
+            except Exception as exc:
+                errors.update({p: str(exc) for p in fx_pairs})
+        if non_fx_pairs:
+            try:
+                parts.append(_yahoo(non_fx_pairs))
+            except Exception as exc:
+                errors.update({p: str(exc) for p in non_fx_pairs})
+        return _merge_snapshots(parts, errors)
+
     if provider == "ecb":
-        return _frankfurter(pairs)
+        if fx_pairs:
+            try:
+                parts.append(_frankfurter(fx_pairs))
+            except Exception as exc:
+                errors.update({p: str(exc) for p in fx_pairs})
+        if non_fx_pairs:
+            try:
+                parts.append(_yahoo(non_fx_pairs))
+            except Exception as exc:
+                errors.update({p: str(exc) for p in non_fx_pairs})
+        return _merge_snapshots(parts, errors)
+
     if provider == "yahoo":
         return _yahoo(pairs)
-    # Default: prefer the intraday Yahoo feed, but never lose the snapshot if it
-    # fails. Frankfurter is slower but independent, so it is a genuine fallback.
-    try:
-        return _yahoo(pairs)
-    except Exception:
-        return _frankfurter(pairs)
 
+    # Default: prefer Yahoo for intraday quotes. If any currency pair is missing,
+    # fill only those currency pairs with dated ECB reference rates. ECB is never
+    # asked for stock tickers or metals, and existing fresh Yahoo quotes win.
+    try:
+        yahoo = _yahoo(pairs)
+        parts.append(yahoo)
+        errors.update(yahoo.get("errors") or {})
+    except Exception as exc:
+        errors.update({p: str(exc) for p in pairs})
+
+    present = set()
+    for part in parts:
+        present.update((part.get("pairs") or {}).keys())
+    missing_fx = [p for p in fx_pairs if p not in present]
+    if missing_fx:
+        try:
+            fallback = _frankfurter(missing_fx)
+            parts.append(fallback)
+        except Exception as exc:
+            for pair in missing_fx:
+                errors[pair] = str(exc)
+
+    return _merge_snapshots(parts, errors)
 
 def _frankfurter(pairs):
 
