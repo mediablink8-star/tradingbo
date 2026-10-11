@@ -28,7 +28,7 @@ AUTH_USERNAME = os.environ.get("TRADINGLAB_USERNAME", "")
 AUTH_PASSWORD = os.environ.get("TRADINGLAB_PASSWORD", "")
 LAB = ForexLab(DATA_DIR / "lab.sqlite")
 AGENTS = ForexAgentRuntime(
-    ROOT / "lab.sqlite", LAB,
+    DATA_DIR / "lab.sqlite", LAB,
     auto_run=os.environ.get("EMBER_FOREX_AUTORUN", "").strip() == "1",
 )
 # The AI layer is advisory: it writes recorded commentary only. Entry, sizing,
