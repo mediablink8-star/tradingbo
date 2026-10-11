@@ -313,7 +313,7 @@ class MemePaperTrader:
                          - p["quantity"] * p["current_price"] * self._cost_rate()
                          for p in open_positions)
         realized = sum(float(p["realized_pnl"] or 0) for p in positions if p["status"] == "CLOSED")
-        equity = cash + gross_value
+        equity = cash + gross_value - gross_value * self._cost_rate()
         return {
             "mode": "autonomous_paper_trading", "execution_enabled": False,
             "risk_halted": daily_loss >= self.daily_loss_limit,
@@ -332,7 +332,8 @@ class MemePaperTrader:
                        "min_volume_24h_usd": self.min_volume_24h_usd,
                        "daily_loss_limit_usd": self.daily_loss_limit},
             "positions": positions, "events": [
-                {**e, "details": json.loads(e.pop("details_json"))} for e in events
+                {**{k: v for k, v in e.items() if k != "details_json"},
+                 "details": json.loads(e["details_json"])} for e in events
             ],
             "limitations": ["Paper prices are provider quotes, not executable fills.",
                             "Public RPC safety checks are indicators, not a token audit.",
