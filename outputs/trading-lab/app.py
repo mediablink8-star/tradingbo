@@ -98,6 +98,9 @@ def run_meme_paper_cycle(limit=20):
     """Discover, safety-screen, paper-trade and persist one complete cycle."""
     scan = MEME_RESEARCH.run(limit)
     all_candidates = scan.get("candidates", [])
+    # Record trader-cycle candidates for forward evaluation as well as research scans.
+    # The tracker accepts only WATCH candidates with valid observed prices.
+    paper_tracking = MEME_PAPER.record_scan(all_candidates)
     watchlist = sorted(
         (candidate for candidate in all_candidates
          if candidate.get("decision") == "WATCH"),
@@ -144,7 +147,9 @@ def run_meme_paper_cycle(limit=20):
         },
         "cycle": {**decisions, "decision_counts": decision_counts},
         "status": MEME_TRADER.status(),
+        "paper_tracking": paper_tracking,
         "paper_outcome_update": MEME_PAPER.update_due(),
+        "paper_status": MEME_PAPER.status(),
         "execution_enabled": False,
     }
 
