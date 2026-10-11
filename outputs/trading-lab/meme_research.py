@@ -179,7 +179,14 @@ class MemeCoinResearchEngine:
         buy_ratio = buys / transactions if transactions else 0.0
         balance_score = 20.0 * min(1.0, buy_ratio / 0.60)
         momentum_score = min(15.0, max(0.0, change_1h) * 0.3)
-        score = round(min(100.0, liquidity_score + turnover_score + activity_score + balance_score + momentum_score), 2)
+        score_components = {
+            "liquidity": round(liquidity_score, 2),
+            "turnover": round(turnover_score, 2),
+            "activity": round(activity_score, 2),
+            "buy_balance": round(balance_score, 2),
+            "momentum": round(momentum_score, 2),
+        }
+        score = round(min(100.0, sum(score_components.values())), 2)
 
         if reasons:
             decision = "REJECT"
@@ -206,6 +213,7 @@ class MemeCoinResearchEngine:
             "price_change_1h_pct": round(change_1h, 2),
             "price_change_24h_pct": round(change_24h, 2),
             "score": score,
+            "score_components": score_components,
             "decision": decision,
             "rejection_reasons": reasons,
             "security_checks": "not_checked",
