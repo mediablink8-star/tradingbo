@@ -6,6 +6,7 @@ consume observed quotes; deterministic risk controls remain the final authority.
 import json
 import math
 import sqlite3
+import threading
 import time
 import uuid
 
@@ -29,6 +30,9 @@ class ForexAgentRuntime:
         self.auto_run = bool(auto_run)
         self.interval = max(15.0, float(interval))
         self.last_cycle = 0.0
+        # The web button and background scheduler can fire at the same time.
+        # A single-flight guard prevents overlapping cycles from duplicating entries.
+        self._cycle_lock = threading.Lock()
         self._init_db()
 
     def _db(self):
@@ -138,6 +142,26 @@ class ForexAgentRuntime:
         return list(reversed(rows))
 
     def run_cycle(self):
+        """Run at most one paper action cycle at a time.
+
+        A manual dashboard action can coincide with the automatic scheduler.
+        The second caller abstains instead of racing through the same signal
+        and potentially submitting a duplicate paper entry.
+        """
+        if not self._cycle_lock.acquire(blocking=False):
+            return {
+                "ok": True,
+                "skipped": True,
+                "reason": "cycle_in_progress",
+                "executed": [],
+                "auto_run_enabled": self.auto_run,
+            }
+        try:
+            return self._run_cycle_locked()
+        finally:
+            self._cycle_lock.release()
+
+    def _run_cycle_locked(self):
         """Run one complete research→strategy→risk→paper-execution→audit cycle."""
         cycle_id = uuid.uuid4().hex[:12]
         data = self.lab.tick()

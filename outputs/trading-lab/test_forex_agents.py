@@ -91,6 +91,20 @@ class ForexAgentRuntimeTests(unittest.TestCase):
         self.assertEqual(result["executed"], [])
         self.assertEqual(self.lab.orders, [])
 
+    def test_overlapping_cycle_abstains_without_duplicate_order(self):
+        # Simulate a scheduler cycle already in progress when the dashboard
+        # button is pressed. The concurrent request must not submit an order.
+        self.runtime._cycle_lock.acquire()
+        try:
+            result = self.runtime.run_cycle()
+        finally:
+            self.runtime._cycle_lock.release()
+        self.assertTrue(result["ok"])
+        self.assertTrue(result["skipped"])
+        self.assertEqual(result["reason"], "cycle_in_progress")
+        self.assertEqual(result["executed"], [])
+        self.assertEqual(self.lab.orders, [])
+
     def test_stale_quote_fails_closed(self):
         original = self.lab.tick
         def stale_tick():
