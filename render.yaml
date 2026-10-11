@@ -11,7 +11,7 @@ services:
       - key: PYTHON_VERSION
         value: 3.12.4
       - key: TRADINGLAB_DATA_DIR
-        value: /var/data
+        value: /tmp/tradingbo-data
       - key: TRADINGLAB_AUTH_REQUIRED
         value: "1"
       - key: TRADINGLAB_USERNAME
