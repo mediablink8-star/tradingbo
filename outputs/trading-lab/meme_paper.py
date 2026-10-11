@@ -109,20 +109,42 @@ class MemePaperTracker:
         return prices
 
     def update_due(self):
-        """Sample current prices for snapshots whose horizon has elapsed."""
+        """Sample outcomes near their target horizon; stale windows are excluded."""
         now = float(self.clock())
         with self._connect() as db:
             rows = db.execute("SELECT * FROM meme_paper_entries ORDER BY observed_at ASC").fetchall()
         pending_by_address = {}
-        for row in rows:
-            outcomes = json.loads(row["outcomes_json"] or "{}")
-            due = [name for name, seconds in HORIZONS_SECONDS.items()
-                   if name not in outcomes and now >= row["observed_at"] + seconds]
-            if due:
-                pending_by_address.setdefault(row["token_address"], []).append((row, outcomes, due))
+        missed = 0
+        round_trip_cost_pct = 2.0 * (self.slippage_bps + self.fee_bps) / 100.0
+        # A horizon is eligible for a price sample only within a grace window.
+        # Older horizons are explicitly marked missed rather than assigned a
+        # much later price or silently counted as a zero return.
+        with self._connect() as db:
+            for row in rows:
+                outcomes = json.loads(row["outcomes_json"] or "{}")
+                sample_due = []
+                elapsed = now - float(row["observed_at"])
+                for horizon, seconds in HORIZONS_SECONDS.items():
+                    if horizon in outcomes or elapsed < seconds:
+                        continue
+                    grace = max(60.0, seconds * 0.25)
+                    delay = max(0.0, elapsed - seconds)
+                    if delay > grace:
+                        outcomes[horizon] = {
+                            "status": "missed_sampling_window",
+                            "sampled_at": now,
+                            "sample_delay_seconds": delay,
+                        }
+                        missed += 1
+                    else:
+                        sample_due.append(horizon)
+                if outcomes != json.loads(row["outcomes_json"] or "{}"):
+                    db.execute("UPDATE meme_paper_entries SET outcomes_json=? WHERE id=?",
+                               (json.dumps(outcomes, separators=(",", ":"), allow_nan=False), row["id"]))
+                if sample_due:
+                    pending_by_address.setdefault(row["token_address"], []).append((row, outcomes, sample_due))
         prices = self._current_prices(list(pending_by_address))
         updated = 0
-        round_trip_cost_pct = 2.0 * (self.slippage_bps + self.fee_bps) / 100.0
         with self._connect() as db:
             for address, items in pending_by_address.items():
                 current = prices.get(address.lower())
@@ -134,6 +156,7 @@ class MemePaperTracker:
                     net = gross - round_trip_cost_pct
                     for horizon in due:
                         outcomes[horizon] = {
+                            "status": "sampled",
                             "sampled_at": now,
                             "sample_delay_seconds": max(0.0, now - row["observed_at"] - HORIZONS_SECONDS[horizon]),
                             "price_usd": current,
@@ -144,7 +167,8 @@ class MemePaperTracker:
                     db.execute("UPDATE meme_paper_entries SET outcomes_json=? WHERE id=?",
                                (json.dumps(outcomes, separators=(",", ":"), allow_nan=False), row["id"]))
                     updated += len(due)
-        return {"outcomes_updated": updated, "snapshots_checked": len(rows),
+        return {"outcomes_updated": updated, "missed_sampling_windows": missed,
+                "snapshots_checked": len(rows),
                 "modeled_round_trip_cost_pct": round(round_trip_cost_pct, 6),
                 "execution_enabled": False}
 
@@ -158,8 +182,13 @@ class MemePaperTracker:
                 outcome = json.loads(row["outcomes_json"] or "{}").get(horizon)
                 if outcome and isinstance(outcome.get("net_return_pct"), (int, float)):
                     returns.append(float(outcome["net_return_pct"]))
+            missed = sum(
+                1 for row in rows
+                if json.loads(row["outcomes_json"] or "{}").get(horizon, {}).get("status") == "missed_sampling_window"
+            )
             by_horizon[horizon] = {
                 "samples": len(returns),
+                "missed_sampling_windows": missed,
                 "average_net_return_pct": round(sum(returns) / len(returns), 4) if returns else None,
                 "win_rate_pct": round(100.0 * sum(value > 0 for value in returns) / len(returns), 2) if returns else None,
                 "execution_enabled": False,
@@ -179,7 +208,7 @@ class MemePaperTracker:
             },
             "horizons": by_horizon,
             "limitations": [
-                "Prices are sampled when the tracker next runs after a horizon, not at an exact historical candle.",
+                "Prices are sampled near each target horizon; late samples outside the grace window are marked missed and excluded from returns.",
                 "Modeled costs are assumptions, not measured execution costs; real meme-coin slippage can be much higher.",
                 "Only WATCH candidates with valid observed prices are recorded; missing provider prices remain pending.",
                 "This is paper evaluation only; it cannot connect a wallet or submit transactions.",
