@@ -230,7 +230,12 @@ class MemePaperTrader:
                 if reason:
                     if candidate.get("decision") == "WATCH":
                         details = {}
-                        if reason == "buy_ratio_outside_entry_band":
+                        if reason == "score_below_entry_threshold":
+                            details = {
+                                "score": float(candidate.get("score")),
+                                "min_score": self.min_score,
+                            }
+                        elif reason == "buy_ratio_outside_entry_band":
                             try:
                                 details = {
                                     "buy_ratio": float(candidate.get("buy_ratio")),
@@ -336,7 +341,7 @@ class MemePaperTrader:
             "cost_assumptions": {"fee_bps_per_side": self.fee_bps,
                                  "slippage_bps_per_side": self.slippage_bps,
                                  "modeled_cost_pct_per_side": round(self._cost_rate() * 100, 4)},
-            "config": {"position_usd": self.position_usd, "stop_loss_pct": self.stop_loss_pct,
+            "config": {"min_score": self.min_score, "position_usd": self.position_usd, "stop_loss_pct": self.stop_loss_pct,
                        "take_profit_pct": self.take_profit_pct, "max_hold_seconds": self.max_hold_seconds,
                        "min_score": self.min_score, "min_liquidity_usd": self.min_liquidity_usd,
                        "min_volume_24h_usd": self.min_volume_24h_usd,
