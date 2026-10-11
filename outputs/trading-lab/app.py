@@ -95,24 +95,40 @@ def meme_current_price(token_address):
 def run_meme_paper_cycle(limit=20):
     """Discover, safety-screen, paper-trade and persist one complete cycle."""
     scan = MEME_RESEARCH.run(limit)
-    candidates = sorted(
-        (candidate for candidate in scan.get("candidates", [])
+    all_candidates = scan.get("candidates", [])
+    watchlist = sorted(
+        (candidate for candidate in all_candidates
          if candidate.get("decision") == "WATCH"),
         key=lambda candidate: float(candidate.get("score") or 0),
         reverse=True,
-    )[:3]
+    )
+    # Keep the number of expensive on-chain checks bounded per manual cycle.
+    candidates = watchlist[:5]
+    market_rejection_counts = {}
+    for candidate in all_candidates:
+        for reason in candidate.get("rejection_reasons", []):
+            market_rejection_counts[reason] = market_rejection_counts.get(reason, 0) + 1
     decisions = MEME_TRADER.run_cycle(
         candidates, MEME_SAFETY.check, meme_current_price
     )
+    decision_counts = {}
+    for decision in decisions.get("decisions", []):
+        key = decision.get("reason") or decision.get("action", "unknown").lower()
+        decision_counts[key] = decision_counts.get(key, 0) + 1
     return {
         "scan": {
             "generated_at": scan.get("generated_at"),
             "discovered_tokens": scan.get("discovered_tokens", 0),
             "scored_candidates": scan.get("scored_candidates", 0),
             "watchlist_count": scan.get("watchlist_count", 0),
+            "watchlist_considered": len(candidates),
+            "market_rejected_count": sum(
+                1 for candidate in all_candidates if candidate.get("decision") != "WATCH"
+            ),
+            "market_rejection_reasons": market_rejection_counts,
             "errors": scan.get("errors", []),
         },
-        "cycle": decisions,
+        "cycle": {**decisions, "decision_counts": decision_counts},
         "status": MEME_TRADER.status(),
         "paper_outcome_update": MEME_PAPER.update_due(),
         "execution_enabled": False,
