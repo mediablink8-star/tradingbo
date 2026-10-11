@@ -78,9 +78,13 @@ def meme_current_price(token_address):
     ]
     if not matching:
         return None
-    best = max(matching, key=lambda pair: float(
-        ((pair.get("liquidity") or {}).get("usd") or 0) or 0
-    ))
+    def liquidity(pair):
+        try:
+            value = float((pair.get("liquidity") or {}).get("usd") or 0)
+            return value if value > 0 and value < float("inf") else 0
+        except (TypeError, ValueError, OverflowError):
+            return 0
+    best = max(matching, key=liquidity)
     try:
         price = float(best.get("priceUsd"))
         return price if price > 0 and price < float("inf") else None
