@@ -1703,9 +1703,16 @@ function renderMemeResearch(result){
       const pairLink=pairUrl?' <a href="'+pairUrl+'" target="_blank" rel="noopener noreferrer" style="color:var(--dim)">PAIR ↗</a>':'';
       const change=Number(c.price_change_1h_pct)||0;
       const reasons=(c.rejection_reasons||[]).map(esc).join(', ');
+      const parts=c.score_components||{};
+      const breakdown=[
+        ['Liq',parts.liquidity],['Turn',parts.turnover],['Activity',parts.activity],
+        ['Buy',parts.buy_balance],['Mom',parts.momentum]
+      ].filter(p=>typeof p[1]==='number')
+       .map(p=>p[0]+' '+p[1].toFixed(1)).join(' · ');
       return '<tr><td>'+token+pairLink+'<span class="sub2">'+esc(address)+
         (reasons?' · '+reasons:'')+'</span></td>'+
-        '<td class="r mono">'+Number(c.score||0).toFixed(1)+'</td>'+
+        '<td class="r mono" title="Score component points: '+esc(breakdown)+'">'+Number(c.score||0).toFixed(1)+
+        (breakdown?'<span class="sub2" style="display:block;white-space:normal;min-width:130px">'+esc(breakdown)+'</span>':'')+'</td>'+
         '<td class="r mono">$'+money(c.liquidity_usd)+'</td>'+
         '<td class="r mono">$'+money(c.volume_24h_usd)+'</td>'+
         '<td class="r mono">'+Number(c.transactions_24h||0).toLocaleString()+'</td>'+
