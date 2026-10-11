@@ -45,7 +45,12 @@ class FXRisk:
         if not isinstance(pair, str) or side not in ("buy", "sell"):
             raise ValueError("Invalid FX pair or side for currency risk.")
         parts = pair.upper().split("/")
-        if len(parts) != 2 or any(len(currency) != 3 for currency in parts) or parts[0] == parts[1]:
+        # Three-letter currencies plus 3-5 letter equity tickers quoted as
+        # SYM/USD. Gross-per-leg concentration then also caps single-name
+        # stock exposure, which is exactly what this gate should do.
+        if (len(parts) != 2 or parts[0] == parts[1]
+                or any(not (c.isalpha() and c.isupper() and 3 <= len(c) <= 5)
+                       for c in parts)):
             raise ValueError("Invalid FX pair for currency risk.")
         direction = 1.0 if side == "buy" else -1.0
         return ((parts[0], direction), (parts[1], -direction))

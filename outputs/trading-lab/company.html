@@ -11,7 +11,7 @@
   --bg:#080a0d; --surface:#0e1218; --surface-2:#12171f; --surface-3:#171d26;
   --line:#1d242e; --line-2:#2a323e;
   --ink:#e4ebf2; --ink-2:#aeb9c6; --dim:#78838f; --faint:#4d565f;
-  --up:#2fbf87; --down:#e2555f; --warn:#d9a441; --accent:#4c8dff;
+  --up:#00d97e; --down:#ff4d4f; --warn:#f0a92b; --accent:#00d97e;
   --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
   --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
   --r:6px; --r-lg:10px;
@@ -20,7 +20,7 @@
 html,body{margin:0;height:100%}
 body{background:var(--bg);color:var(--ink);font:13px/1.45 var(--sans);
   -webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
-::selection{background:#4c8dff44}
+::selection{background:#00d97e44}
 button,select{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 
@@ -32,8 +32,8 @@ button,select{font:inherit;color:inherit}
 .bar .bt{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .tag{font:600 9.5px/1 var(--mono);letter-spacing:.13em;padding:5px 8px;border-radius:4px;
   border:1px solid var(--line-2);color:var(--ink-2);background:var(--surface-2);white-space:nowrap}
-.tag.ok{border-color:#2fbf8755;color:#7fd8b4;background:#12301f}
-.tag.warn{border-color:#d9a44155;color:#e8c583;background:#2e2413}
+.tag.ok{border-color:#00d97e55;color:#5fe3ab;background:#0c1f16}
+.tag.warn{border-color:#f0a92b55;color:#f5c46b;background:#241c0f}
 .tag.bad{border-color:#e2555f55;color:#f0939a;background:#31161a}
 .btn{border:1px solid var(--line-2);background:var(--surface-3);border-radius:var(--r);
   padding:8px 13px;font-size:12px;font-weight:600;cursor:pointer;
@@ -70,10 +70,12 @@ button,select{font:inherit;color:inherit}
 .st.live{color:var(--up)} .st.idle{color:var(--warn)} .st.off{color:var(--faint)}
 .detail{font-size:12px;line-height:1.6;color:var(--ink-2)}
 .kv{display:grid;gap:1px;background:var(--line);margin-top:13px;border:1px solid var(--line);border-radius:var(--r)}
-.kv div{background:var(--surface);padding:8px 11px;display:flex;justify-content:space-between;gap:10px}
+.kv div{background:var(--surface);padding:8px 11px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.kv div>*{min-width:0}
+.kv span{overflow-wrap:anywhere}
 .kv b{font:500 9.5px/1.4 var(--mono);letter-spacing:.12em;color:var(--faint);font-weight:600}
 .kv span{font:600 11.5px/1.4 var(--mono);color:var(--ink);text-align:right}
-.roster{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;
+.roster{display:grid;grid-template-columns:1fr;gap:1px;
   background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
 .roster button{background:var(--surface);border:0;border-radius:0;padding:10px 12px;
   text-align:left;cursor:pointer;font-size:12px;color:var(--ink-2);
@@ -99,26 +101,192 @@ button,select{font:inherit;color:inherit}
 @media(max-width:1100px){.split{grid-template-columns:1fr}}
 @media(max-width:640px){.wrap{padding:12px}.bar{padding:10px 12px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
-</style>
+
+/* ═══ FLEET COMMAND LAYER (office) ═══
+   Same command-center language as the overview: near-black surfaces, green
+   system accent, HUD brackets, live ticker. Station cards reuse the fleet
+   vocabulary (avatar ring = share of recorded reports, heartbeat = presence
+   across recent cycles). Every figure derives from recorded events. */
+:root{
+  --void:#08090a; --edge:#1d1f24; --edge-2:#2a2d33;
+  --acc:#00d97e; --acc-dim:#00a862; --acc-soft:rgba(0,217,126,.12);
+  --gain:#00d97e; --loss:#ff4d4f; --warn:#f0a92b;
+}
+html,body{background:var(--void)}
+body{background:radial-gradient(60rem 30rem at 78% -8%,rgba(0,217,126,.05),transparent 62%),var(--void)}
+.bar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px;
+  flex-wrap:wrap;background:#0c0d10;border-bottom:1px solid var(--edge);
+  padding:8px 16px}
+.topnav{display:flex;gap:2px;flex-wrap:wrap;min-width:0;padding:0;flex:none}
+.topnav a{padding:5px 10px;border-radius:4px;font-size:12px;color:var(--ink-2);
+  text-decoration:none;border:1px solid transparent;white-space:nowrap;
+  transition:background .12s,color .12s}
+.topnav a:hover{background:#15171b;color:var(--ink)}
+.topnav a.on{background:var(--acc-soft);color:var(--ink);
+  border-color:rgba(0,217,126,.3)}
+.bar .bt{margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.tag.live{display:inline-flex;align-items:center;gap:6px}
+.tickerbar{border-bottom:1px solid var(--edge);background:#0b0c0e;
+  overflow:hidden;position:relative}
+.tickerbar:before{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;
+  background:linear-gradient(90deg,#0b0c0e 0,transparent 60px,
+             transparent calc(100% - 60px),#0b0c0e 100%)}
+.ticker{display:flex;width:max-content;animation:tickerRun 44s linear infinite}
+.ticker:hover{animation-play-state:paused}
+@keyframes tickerRun{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.tk{display:inline-flex;align-items:center;gap:7px;padding:7px 15px;
+  border-right:1px solid #141619;white-space:nowrap;
+  font-family:var(--mono);font-size:11px}
+.tk .s{color:var(--faint);font-size:9.5px;letter-spacing:.12em}
+.tk .p{color:var(--ink);font-weight:600}
+.tk .d{font-size:9.5px}
+.tk .d.up{color:var(--gain)} .tk .d.dn{color:var(--loss)}
+.tk .d.fl{color:var(--faint)}
+.tk .age{font-size:9px;color:#3f454c}
+.tk .age.stale{color:var(--warn)}
+.sec{position:relative;border-radius:8px}
+.sec>.hud{position:absolute;width:11px;height:11px;pointer-events:none;z-index:3;
+  border:1.5px solid var(--acc);opacity:.9}
+.sec>.hud.tl{top:0;left:0;border-right:0;border-bottom:0}
+.sec>.hud.tr{top:0;right:0;border-left:0;border-bottom:0}
+.sec>.hud.bl{bottom:0;left:0;border-right:0;border-top:0}
+.sec>.hud.br{bottom:0;right:0;border-left:0;border-top:0}
+.stage{background:#0a0e13}
+.dot.ok{background:var(--up);box-shadow:0 0 6px var(--up);
+  animation:beacon 2.6s ease-in-out infinite}
+@keyframes beacon{0%,100%{opacity:1}50%{opacity:.4}}
+.capstrip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;
+  background:var(--line)}
+.capstrip .cell{background:var(--surface);padding:12px 15px;position:relative;overflow:hidden}
+.capstrip .cell:before{content:"";position:absolute;inset:0 0 auto;height:1px;
+  background:linear-gradient(90deg,transparent,var(--acc),transparent);opacity:.5}
+.capstrip .k{font:600 9px/1 var(--mono);letter-spacing:.16em;color:var(--faint)}
+.capstrip .v{font:700 clamp(20px,2.2vw,30px)/1.1 var(--mono);color:var(--ink);
+  margin-top:7px;font-variant-numeric:tabular-nums}
+.capstrip .v.up{color:var(--up)} .capstrip .v.down{color:#ff4d4f}
+.capstrip .v.warn{color:var(--warn)}
+.capstrip .s{font:500 9px/1.4 var(--mono);letter-spacing:.08em;color:var(--dim);margin-top:5px}
+@media(max-width:860px){.capstrip{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.station{display:grid;gap:7px;padding:11px 12px;background:var(--surface);
+  border:0;border-left:2px solid transparent;border-radius:0;cursor:pointer;
+  font-size:12px;color:var(--ink-2);text-align:left;width:100%;
+  animation:fleetIn .45s ease both;transition:background .12s,color .12s,border-color .12s}
+@keyframes fleetIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.station:hover{background:var(--surface-2);color:var(--ink)}
+.station[aria-pressed="true"]{background:var(--surface-2);color:var(--ink);
+  border-left-color:var(--acc)}
+.station .ahead{display:flex;align-items:center;gap:9px}
+.ava{position:relative;width:34px;height:34px;flex:none}
+.ava svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.ava .ring-bg{fill:none;stroke:var(--line-2);stroke-width:3}
+.ava .ring-fg{fill:none;stroke:var(--acc);stroke-width:3;stroke-linecap:round;
+  transition:stroke-dasharray .5s ease}
+.ava .mo{position:absolute;inset:0;display:grid;place-items:center;
+  font:700 12px/1 var(--mono);color:var(--ink)}
+.ava .lm{position:absolute;right:-2px;bottom:-2px;width:8px;height:8px;
+  border-radius:50%;background:var(--faint);border:2px solid var(--surface)}
+.ava .lm.on{background:var(--acc);box-shadow:0 0 8px var(--acc)}
+.ava .lm.warn{background:var(--warn)}
+.station .nm{font-size:12.5px;font-weight:650}
+.station .rl{font:500 8px/1.4 var(--mono);letter-spacing:.1em;color:var(--faint)}
+.station .meta{display:flex;gap:10px;font:600 10.5px/1 var(--mono)}
+.station .meta b{color:var(--ink)} .station .meta span{color:var(--faint);font-size:8px;letter-spacing:.1em}
+.station .hb{display:flex;gap:2px}
+.station .hb i{flex:1;height:7px;border-radius:1px;background:var(--line-2)}
+.station .hb i.hit{background:var(--acc)}
+.station .hb i.ai{background:var(--acc-dim)}
+.station .hb i.miss{background:transparent;border:1px solid var(--line-2)}
+.station .ctl{display:flex;align-items:center;gap:7px}
+.switch{position:relative;display:inline-flex;flex:none;cursor:pointer}
+.switch input{position:absolute;opacity:0;inset:0;cursor:pointer}
+.switch .tr{width:30px;height:16px;border-radius:9px;background:var(--line-2);
+  border:1px solid var(--edge-2);transition:background .15s,border-color .15s;position:relative}
+.switch .tr:after{content:"";position:absolute;top:2px;left:2px;width:10px;height:10px;
+  border-radius:50%;background:var(--dim);transition:left .15s,background .15s}
+.switch input:checked+.tr{background:rgba(0,217,126,.25);border-color:var(--acc)}
+.switch input:checked+.tr:after{left:15px;background:var(--acc)}
+.switch input:focus-visible+.tr{outline:2px solid var(--acc);outline-offset:2px}
+.switch input:disabled+.tr{opacity:.45;cursor:not-allowed}
+.station .lk{font:500 8.5px/1.5 var(--mono);color:var(--faint)}
+@media(max-width:860px){
+  .bar{gap:8px}
+  .bar .path{width:100%}
+  .bar .bt{margin-left:0;width:100%}
+  .topnav{width:100%;overflow-x:auto;flex-wrap:nowrap}
+  .topnav a{flex:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .ticker{animation:none;flex-wrap:wrap;width:100%}
+  .tickerbar{overflow:visible}
+  .station{animation:none}
+  .dot.ok{animation:none}
+  .ava .ring-fg{transition:none}
+}
+
+/* ═══ NEON COMMAND THEME (office) ═══
+   Same command identity as the overview: neon top edge, glowing rims,
+   gradient display numerals, bright ticker. Figures stay real data. */
+:root{--neon:#b366ff;--cy:#22d3ee}
+body:before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:60;
+  background:linear-gradient(90deg,var(--neon),var(--cy),var(--gain),var(--neon));
+  box-shadow:0 0 18px rgba(150,80,255,.65)}
+.sec{border-color:#ffffff10!important;
+  box-shadow:0 24px 80px rgba(0,0,0,.42),0 0 0 1px #a855ff14,0 0 34px -18px #a855ff55!important}
+.capstrip .v{background:linear-gradient(180deg,#ffffff,#9be8c3)!important;
+  -webkit-background-clip:text!important;background-clip:text!important;
+  -webkit-text-fill-color:transparent!important}
+.tk{color:#e8f3ff!important}
+.tk .s{color:var(--cy)!important;text-shadow:0 0 10px #22d3ee55}
+.tk .d.up{color:var(--gain)!important;text-shadow:0 0 10px #00ff8866}
+.tk .d.dn{color:var(--loss)!important;text-shadow:0 0 10px #ff4d6a66}
+.tk .age.stale{color:var(--warn)!important}
+.tickerbar{border-bottom-color:#a855ff33!important}
+.station:hover{border-color:#a855ff55!important;
+  box-shadow:0 0 24px -8px #a855ff66!important}
+.station[aria-pressed="true"]{border-color:var(--neon)!important;
+  box-shadow:0 0 22px #a855ff33!important}
+.ava .ring-fg{stroke:#c4a4ff!important}
+.topnav a.on{background:linear-gradient(90deg,#2a1650,#101827)!important;
+  box-shadow:inset 2px 0 var(--neon),0 0 18px #a855ff22!important}</style>
 </head>
 <body>
 
 <div class="bar">
   <div class="path">TradingLab / <b>Floor Plan</b></div>
+  <nav class="topnav" aria-label="Sections">
+    <a href="index.html">Overview</a>
+    <a href="index.html#markets">Markets</a>
+    <a href="index.html#pipeline">Agents</a>
+    <a href="index.html#ai">AI Desk</a>
+    <a href="index.html#positions">Positions</a>
+    <a href="index.html#activity">Events</a>
+    <a class="on" href="company.html">Office</a>
+  </nav>
   <div class="bt">
+    <span class="tag" id="clock" title="Coordinated Universal Time">--:--:--</span>
     <span class="tag" id="modeTag">CONNECTING</span>
-    <button class="btn" onclick="location.href='index.html'">&#8592; Overview</button>
+    <span class="tag live"><i class="dot ok" id="sysDot"></i><span class="t" id="sysTxt">LIVE</span></span>
     <button class="btn" id="cycle">Run agent cycle</button>
     <button class="btn" id="pauseBtn">Pause</button>
   </div>
 </div>
 
+<div class="tickerbar" aria-live="off">
+  <div class="ticker" id="ticker"></div>
+</div>
+
 <div class="wrap">
   <div class="note" id="notice"></div>
+
+  <section class="sec" id="capital"><i class="hud tl"></i><i class="hud tr"></i><i class="hud bl"></i><i class="hud br"></i>
+    <div class="sechd"><h2>Capital</h2><span class="sub" id="capMeta">—</span></div>
+    <div class="capstrip" id="capstrip"></div>
+  </section>
 
   <div class="split">
     <div style="display:grid;gap:16px;min-width:0">
       <section class="sec">
+        <i class="hud tl"></i><i class="hud tr"></i><i class="hud bl"></i><i class="hud br"></i>
         <div class="sechd">
           <h2>Floor Plan</h2>
           <span class="sub" id="stageMeta">—</span>
@@ -129,6 +297,7 @@ button,select{font:inherit;color:inherit}
       </section>
 
       <section class="sec">
+        <i class="hud tl"></i><i class="hud tr"></i><i class="hud bl"></i><i class="hud br"></i>
         <div class="sechd"><h2>Activity</h2><span class="sub">RECORDED REPORTS</span></div>
         <div class="log" id="log"></div>
       </section>
@@ -136,6 +305,7 @@ button,select{font:inherit;color:inherit}
 
     <div style="display:grid;gap:16px;min-width:0">
       <section class="sec">
+        <i class="hud tl"></i><i class="hud tr"></i><i class="hud bl"></i><i class="hud br"></i>
         <div class="sechd"><h2>Inspector</h2></div>
         <div class="secbd">
           <div class="who"><span class="ix" id="selIx">01</span><span class="nm" id="selName">—</span></div>
@@ -150,11 +320,13 @@ button,select{font:inherit;color:inherit}
       </section>
 
       <section class="sec">
-        <div class="sechd"><h2>Stations</h2></div>
+        <i class="hud tl"></i><i class="hud tr"></i><i class="hud bl"></i><i class="hud br"></i>
+        <div class="sechd"><h2>Stations</h2><span class="sub" id="rosterMeta">—</span></div>
         <div class="roster" id="roster"></div>
       </section>
 
       <section class="sec">
+        <i class="hud tl"></i><i class="hud tr"></i><i class="hud bl"></i><i class="hud br"></i>
         <div class="sechd"><h2>Account &amp; Risk</h2><span class="sub" id="acctState">—</span></div>
         <div class="kv" id="acct"></div>
         <div class="riskbox" id="riskBox">Loading risk parameters…</div>
@@ -170,15 +342,15 @@ const W=960,H=540;
 
 /* Stations: fixed plan positions, in canvas units. */
 const ROLES=[
-  {ix:'01',name:'Market Researcher', role:'Feeds and data quality', x:160,y:196, hue:'#4c8dff'},
-  {ix:'02',name:'Macro Analyst',     role:'Regime and context',    x:480,y:196, hue:'#7c6cff'},
-  {ix:'03',name:'Strategy Analyst',  role:'Signal construction',   x:800,y:196, hue:'#00a3c4'},
-  {ix:'04',name:'Risk Critic',       role:'Veto authority',        x:160,y:356, hue:'#d9a441'},
-  {ix:'05',name:'Portfolio Coord.',  role:'Allocation',            x:480,y:356, hue:'#2fbf87'},
-  {ix:'06',name:'Supervisor',       role:'Deterministic oversight',x:800,y:356,hue:'#8fa3b8'}
+  {ix:'01',name:'Market Researcher', role:'Feeds and data quality', x:160,y:196, hue:'#22d3ee'},
+  {ix:'02',name:'Macro Analyst',     role:'Regime and context',    x:480,y:196, hue:'#a78bfa'},
+  {ix:'03',name:'Strategy Analyst',  role:'Signal construction',   x:800,y:196, hue:'#00d97e'},
+  {ix:'04',name:'Risk Critic',       role:'Veto authority',        x:160,y:360, hue:'#f0a92b'},
+  {ix:'05',name:'Portfolio Coord.',  role:'Allocation',            x:480,y:360, hue:'#f472b6'},
+  {ix:'06',name:'Supervisor',       role:'Deterministic oversight',x:800,y:360,hue:'#7b828c'}
 ];
-const STATE={WORK:{t:'WORKING',c:'#2fbf87'},MOVE:{t:'IN TRANSIT',c:'#4c8dff'},
-             IDLE:{t:'STANDBY',c:'#4d565f'},REPORT:{t:'REPORTING',c:'#d9a441'}};
+const STATE={WORK:{t:'WORKING',c:'#00d97e'},MOVE:{t:'IN TRANSIT',c:'#00d97e'},
+             IDLE:{t:'STANDBY',c:'#545b64'},REPORT:{t:'REPORTING',c:'#f0a92b'}};
 
 let live=null,sel=0,paused=matchMedia('(prefers-reduced-motion: reduce)').matches;
 let t0=performance.now(),logRows=[],counted={};
@@ -204,85 +376,418 @@ const txt=(v,x,y,c='#78838f',s=10,a='left')=>{ctx.fillStyle=c;ctx.font=(s>=12?'6
   ctx.textAlign=a;ctx.fillText(v,x,y)};
 const circle=(x,y,r,c)=>{ctx.fillStyle=c;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill()};
 
-/* ── schematic agent marker ─────────────────────────────── */
-function marker(role,x,y,st,active,moving){
-  const hue=role.hue;
+/* ── pseudo-3D bot ─────────────────────────────────────────
+   Flat-shaded robot with a lit face, depth shadow and a status lamp. The
+   volume comes from a horizontal gradient (lit face, dark far side) plus a
+   ground shadow — no model files, no network, all canvas primitives. The
+   data packet is shown only while the station holds a report from the newest
+   recorded cycle, so motion on screen always traces real activity. */
+function shade(hex,f){
+  const n=parseInt(String(hex).slice(1),16);
+  const c=v=>Math.min(255,Math.max(0,Math.round(v*f)));
+  const r=c((n>>16)&255),g=c((n>>8)&255),b=c(n&255);
+  return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
+}
+/* ── bot personalities ─────────────────────────────────────
+   One shared schematic language, six distinct machines. Silhouette, gear and
+   gait differ per station; nothing here implies performance, only identity. */
+const PERSONA={
+  '01':{call:'SCOUT',   kind:'scout', pace:1.35,roam:.44,bobA:2.4},
+  '02':{call:'ORACLE',  kind:'oracle',pace:.55, roam:.16,bobA:.8},
+  '03':{call:'DART',    kind:'dart',  pace:1.75,roam:.40,bobA:2.0},
+  '04':{call:'AEGIS',   kind:'aegis', pace:.8,  roam:.30,bobA:3.0},
+  '05':{call:'CARRIER', kind:'carrier',pace:1.0,roam:.36,bobA:2.0},
+  '06':{call:'OVERWATCH',kind:'drone',pace:1.1, roam:.50,bobA:4.5},
+};
+function marker(role,x,y,st,active,moving,carrying,t){
+  const hue=role.hue,P=PERSONA[role.ix]||PERSONA['01'];
+  const kind=P.kind;
+  const bob=moving?Math.abs(Math.sin(t*7*P.pace+role.x*.05))*P.bobA
+                   :Math.sin(t*2+role.x*.03)*(kind==='drone'?2.4:.6);
+  const step=moving?Math.sin(t*11*P.pace+role.x)*3:0;
+  const yy=y-bob;
+  // ground shadow: wider while walking, faint and tight under the drone
+  const shW=kind==='drone'?9:(moving?13:11);
+  ctx.fillStyle=kind==='drone'?'rgba(0,0,0,.32)':'rgba(0,0,0,.5)';ctx.beginPath();
+  ctx.ellipse(x,yy+21,shW,3.2,0,0,Math.PI*2);ctx.fill();
   // selection / activity footprint
   if(active){
     ctx.strokeStyle=hue;ctx.lineWidth=1;ctx.globalAlpha=.45;
-    ctx.beginPath();ctx.arc(x,y+16,20,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
+    ctx.beginPath();ctx.arc(x,yy+17,21,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
   }
-  // schematic figure: head + shoulders, drawn as flat geometry
-  circle(x,y-6,6.5,'#1b2430');
-  ctx.strokeStyle=hue;ctx.lineWidth=1.4;ctx.beginPath();ctx.arc(x,y-6,6.5,0,Math.PI*2);ctx.stroke();
-  ctx.fillStyle=hue;ctx.beginPath();
-  ctx.moveTo(x-11,y+16);ctx.quadraticCurveTo(x,y+1,x+11,y+16);ctx.closePath();ctx.fill();
-  if(active)circle(x,y-6,2,hue);
+  const torsoGrad=(w)=>{
+    const g=ctx.createLinearGradient(x-w,0,x+w,0);
+    g.addColorStop(0,shade(hue,1.3));g.addColorStop(.55,hue);g.addColorStop(1,shade(hue,.42));
+    return g;
+  };
+  if(kind==='drone'){
+    // OVERWATCH hovers: rotor disc, dome cockpit, no legs
+    ctx.save();ctx.globalAlpha=.28+Math.sin(t*9)*.08;
+    ctx.strokeStyle='#8fa3b8';ctx.lineWidth=3;
+    ctx.beginPath();ctx.ellipse(x,yy-30,17,3.4,t*.9,0,Math.PI*2);ctx.stroke();ctx.restore();
+    ctx.strokeStyle='#3a4450';ctx.lineWidth=1.2;
+    ctx.beginPath();ctx.moveTo(x,yy-28);ctx.lineTo(x,yy-20);ctx.stroke();
+    const dg=ctx.createLinearGradient(x-12,0,x+12,0);
+    dg.addColorStop(0,shade(hue,1.25));dg.addColorStop(.5,'#2a3340');dg.addColorStop(1,shade(hue,.5));
+    ctx.fillStyle=dg;ctx.beginPath();ctx.ellipse(x,yy-12,12,8.5,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#0a0e13';ctx.beginPath();ctx.ellipse(x,yy-14,6.5,4.5,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=hue;ctx.fillRect(x-4+((Math.sin(t*4)+1)*2.4),yy-15.2,3.2,2.4);
+    if(active){ctx.fillStyle='#eafff3';ctx.beginPath();ctx.roundRect(x-3,yy-9.4,6,2.2,1);ctx.fill();}
+  }else{
+    const wide=kind==='aegis'?13:(kind==='dart'?8:10);
+    // legs with a walking stride; AEGIS stomps, kicking a dust puff
+    ctx.fillStyle='#202834';
+    ctx.fillRect(x-6.5+step*.6,yy+10,4.6,9.5);
+    ctx.fillRect(x+1.9-step*.6,yy+10,4.6,9.5);
+    ctx.fillStyle=shade(hue,.8);
+    ctx.fillRect(x-6.5+step*.6,yy+17.5,4.6,2);ctx.fillRect(x+1.9-step*.6,yy+17.5,4.6,2);
+    if(kind==='aegis'&&moving&&Math.sin(t*11*P.pace+role.x)>.86){
+      ctx.fillStyle='rgba(140,150,160,.18)';ctx.beginPath();
+      ctx.ellipse(x-step,yy+19,7,2.4,0,0,Math.PI*2);ctx.fill();
+    }
+    // torso: lit face on the left, dark far side on the right
+    ctx.fillStyle=torsoGrad(wide);ctx.beginPath();ctx.roundRect(x-wide,yy-9,wide*2,20,5);ctx.fill();
+    ctx.strokeStyle=shade(hue,1.6);ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(x-wide+3,yy-6);ctx.lineTo(x-wide+3,yy+6);ctx.stroke();
+  // chest charge-bar glows while the station holds a fresh report
+  if(active){ctx.fillStyle='#eafff3';ctx.beginPath();ctx.roundRect(x-4,yy-0.2,8,2.6,1);ctx.fill();}
+    if(kind==='aegis'){
+      // shield plate on the leading arm
+      ctx.fillStyle='#2c3540';ctx.beginPath();ctx.roundRect(x-19,yy-6,9,17,3);ctx.fill();
+      ctx.strokeStyle=shade(hue,1.4);ctx.lineWidth=1.2;
+      ctx.beginPath();ctx.roundRect(x-19,yy-6,9,17,3);ctx.stroke();
+      ctx.strokeStyle=shade(hue,.9);ctx.lineWidth=3;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(x+wide,yy-5);ctx.lineTo(x+wide+4,yy+4+step*.8);ctx.stroke();
+      ctx.lineCap='butt';
+    }else if(kind==='dart'){
+      // back fin + thruster flame flickering while moving
+      ctx.fillStyle=shade(hue,.7);ctx.beginPath();
+      ctx.moveTo(x+wide-1,yy-8);ctx.lineTo(x+wide+7,yy-2);ctx.lineTo(x+wide-1,yy+3);
+      ctx.closePath();ctx.fill();
+      if(moving){
+        const fl=5+Math.sin(t*31)*2.5;
+        ctx.fillStyle='rgba(255,170,80,.9)';ctx.beginPath();
+        ctx.moveTo(x-2,yy+6);ctx.lineTo(x-8-fl*.6,yy+11);ctx.lineTo(x-2,yy+12);ctx.closePath();ctx.fill();
+        ctx.fillStyle='rgba(255,230,160,.9)';ctx.beginPath();
+        ctx.moveTo(x-2,yy+7.5);ctx.lineTo(x-6-fl*.3,yy+11);ctx.lineTo(x-2,yy+11);ctx.closePath();ctx.fill();
+      }
+      ctx.strokeStyle=shade(hue,.9);ctx.lineWidth=2.6;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(x-wide,yy-5);ctx.lineTo(x-wide-4,yy+4-step*.8);ctx.stroke();
+      ctx.lineCap='butt';
+    }else if(kind==='carrier'){
+      // cargo backpack; the data packet docks here instead of a free hand
+      ctx.fillStyle='#232c37';ctx.beginPath();ctx.roundRect(x+wide-1,yy-8,11,18,3);ctx.fill();
+      ctx.strokeStyle=shade(hue,.8);ctx.lineWidth=1;
+      ctx.beginPath();ctx.roundRect(x+wide-1,yy-8,11,18,3);ctx.stroke();
+      ctx.strokeStyle=shade(hue,.9);ctx.lineWidth=3;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(x-wide,yy-5);ctx.lineTo(x-wide-4,yy+4-step*.8);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(x+wide,yy-5);ctx.lineTo(x+wide+4,yy+4+step*.8);ctx.stroke();
+      ctx.lineCap='butt';
+    }else{
+      // arms swing against the stride
+      ctx.strokeStyle=shade(hue,.9);ctx.lineWidth=3;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(x-wide,yy-5);ctx.lineTo(x-wide-4,yy+4-step*.8);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(x+wide,yy-5);ctx.lineTo(x+wide+4,yy+4+step*.8);ctx.stroke();
+      ctx.lineCap='butt';
+    }
+  }
+  if(kind==='drone'){
+    // the drone's "face" is its sensor ring; nothing more to draw
+    circle(x+14,yy-14,2.6,st.c);
+    if(carrying){
+      const px2=x,py2=yy+6+Math.sin(t*5)*1.2;
+      ctx.save();ctx.shadowColor=hue;ctx.shadowBlur=10;
+      ctx.fillStyle=hue;ctx.fillRect(px2-6,py2-2.5,12,5);ctx.restore();
+      ctx.strokeStyle='#eafff3';ctx.lineWidth=1;ctx.strokeRect(px2-6,py2-2.5,12,5);
+    }
+    return;
+  }
+  // heads: tall seer for ORACLE, standard shell for the rest
+  const tall=kind==='oracle';
+  const hy=tall?yy-27:yy-23,hh=tall?17:13,hw=tall?8.5:7.5;
+  // hexagonal helm: chamfered plates read as machined hardware, never a face
+  const helm=(cx,cy,w,h,ch)=>{
+    ctx.beginPath();ctx.moveTo(cx-w/2+ch,cy-h/2);ctx.lineTo(cx+w/2-ch,cy-h/2);
+    ctx.lineTo(cx+w/2,cy);ctx.lineTo(cx+w/2-ch,cy+h/2);
+    ctx.lineTo(cx-w/2+ch,cy+h/2);ctx.lineTo(cx-w/2,cy);ctx.closePath();
+  };
+  ctx.fillStyle='#141a23';helm(x,hy+hh/2,hw*2,hh,4);ctx.fill();
+  ctx.strokeStyle=shade(hue,1.2);ctx.lineWidth=1;
+  helm(x,hy+hh/2,hw*2,hh,4);ctx.stroke();
+  // visor slit with a sweeping scan wedge — optics, never pupils
+  const scan=moving?Math.sin(t*6)*3:Math.sin(t*1.5)*1.5;
+  ctx.fillStyle='#05080c';
+  ctx.beginPath();ctx.moveTo(x-hw+2,hy+4);ctx.lineTo(x+hw-2,hy+4);
+  ctx.lineTo(x+hw-4,hy+10);ctx.lineTo(x-hw+4,hy+10);ctx.closePath();ctx.fill();
+  ctx.fillStyle=hue;ctx.globalAlpha=.92;ctx.beginPath();
+  ctx.moveTo(x-2+scan*.8,hy+4.5);ctx.lineTo(x+2+scan*.8,hy+4.5);
+  ctx.lineTo(x+scan*.8,hy+9.5);ctx.closePath();ctx.fill();ctx.globalAlpha=1;
+  if(kind==='oracle'){
+    // rangefinder diamond under the visor + triple antenna array (gear, not eyes)
+    ctx.strokeStyle=shade(hue,1.5);ctx.lineWidth=1.2;
+    ctx.beginPath();ctx.moveTo(x,hy+11.5);ctx.lineTo(x+2.6,hy+14);ctx.lineTo(x,hy+16.5);
+    ctx.lineTo(x-2.6,hy+14);ctx.closePath();ctx.stroke();
+    if(Math.sin(t*1.7)>.4){ctx.fillStyle='#eafff3';ctx.beginPath();ctx.arc(x,hy+14,1,0,Math.PI*2);ctx.fill();}
+    // triple antenna array
+    ctx.strokeStyle='#3a4450';ctx.lineWidth=1.1;
+    [[-4,-5],[0,-8],[4,-5]].forEach(([ax,ah])=>{
+      ctx.beginPath();ctx.moveTo(x+ax,hy);ctx.lineTo(x+ax,hy+ah);ctx.stroke();
+      if(Math.sin(t*2.2+ax)>.3){ctx.fillStyle=st.c;ctx.beginPath();ctx.arc(x+ax,hy+ah-1,1.5,0,Math.PI*2);ctx.fill();}
+    });
+  }else{
+    if(kind==='scout'){
+      // rotating radar dish with a sweep line
+      const ra=t*2.4;
+      ctx.strokeStyle='#3a4450';ctx.lineWidth=1.2;
+      ctx.beginPath();ctx.moveTo(x-4,hy);ctx.lineTo(x-4,hy-6);ctx.stroke();
+      ctx.strokeStyle=shade(hue,1.3);ctx.lineWidth=1.4;
+      ctx.beginPath();ctx.arc(x-4,hy-6,4.5,Math.PI*.9,Math.PI*2.1);ctx.stroke();
+      ctx.strokeStyle=hue;ctx.globalAlpha=.85;ctx.lineWidth=1.2;
+      ctx.beginPath();ctx.moveTo(x-4,hy-6);
+      ctx.lineTo(x-4+Math.cos(ra)*4.5,hy-6+Math.sin(ra)*4.5);ctx.stroke();
+      ctx.globalAlpha=1;
+      // expanding ping ring while its station holds a fresh report
+      if(active){
+        const ph=(t*.7)%1;
+        ctx.strokeStyle=hue;ctx.globalAlpha=(1-ph)*.5;ctx.lineWidth=1;
+        ctx.beginPath();ctx.arc(x,yy-6,8+ph*16,0,Math.PI*2);ctx.stroke();
+        ctx.globalAlpha=1;
+      }
+    }else{
+      // single antenna with a slow blink
+      ctx.strokeStyle='#3a4450';ctx.lineWidth=1.2;
+      ctx.beginPath();ctx.moveTo(x+4,hy);ctx.lineTo(x+6,hy-5);ctx.stroke();
+      if(Math.sin(t*3+role.x)>.2){ctx.fillStyle=st.c;ctx.beginPath();ctx.arc(x+6,hy-6,1.7,0,Math.PI*2);ctx.fill();}
+    }
+  }
   // status lamp
-  circle(x+13,y-13,2.6,st.c);
+  circle(x+14,yy-14,2.6,st.c);
+  // data packet: only while carrying a report from the newest recorded cycle.
+  // The carrier docks it in the backpack instead of a free hand.
+  if(carrying){
+    if(kind==='carrier'){
+      const px2=x+13.5,py2=yy-1+Math.sin(t*5)*1;
+      ctx.save();ctx.shadowColor=hue;ctx.shadowBlur=8;
+      ctx.fillStyle=hue;ctx.fillRect(px2-3,py2-3,6,6);ctx.restore();
+      ctx.strokeStyle='#eafff3';ctx.lineWidth=1;ctx.strokeRect(px2-3,py2-3,6,6);
+    }else{
+      const px2=x+15,py2=yy-8+Math.sin(t*5)*1.5;
+      ctx.save();ctx.shadowColor=hue;ctx.shadowBlur=10;
+      ctx.fillStyle=hue;ctx.fillRect(px2-3.5,py2-3.5,7,7);ctx.restore();
+      ctx.strokeStyle='#eafff3';ctx.lineWidth=1;ctx.strokeRect(px2-3.5,py2-3.5,7,7);
+    }
+  }
   if(moving){
     ctx.strokeStyle=st.c;ctx.lineWidth=1;ctx.globalAlpha=.5;
-    ctx.beginPath();ctx.ellipse(x,y+17,10,3,0,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
+    ctx.beginPath();ctx.ellipse(x,yy+18,10,3,0,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
   }
 }
 
 /* ── floor plan ────────────────────────────────────────── */
 function paint(){
-  const now=(performance.now()-t0)/1000;
+  // frozen while paused so reduced-motion and the Pause control truly stop time
+  const now=paused?0:(performance.now()-t0)/1000;
   ctx.clearRect(0,0,W,H);
-  rect(0,0,W,H,'#0a0e13');
+  // deep-space backdrop with two slow-drifting light pools
+  const bg=ctx.createRadialGradient(W/2,H*.42,60,W/2,H*.42,620);
+  bg.addColorStop(0,'#0d1420');bg.addColorStop(1,'#05070b');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  for(let n=0;n<2;n++){
+    const gx=W*(.28+.44*n)+Math.sin(now*.23+n*2.4)*60;
+    const gy=H*.5+Math.cos(now*.19+n*1.7)*70;
+    const pool=ctx.createRadialGradient(gx,gy,4,gx,gy,230);
+    pool.addColorStop(0,n?'rgba(0,217,126,.05)':'rgba(70,120,180,.07)');
+    pool.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=pool;ctx.fillRect(gx-230,gy-230,460,460);
+  }
 
   // grid
   ctx.strokeStyle='#12181f';ctx.lineWidth=1;
   for(let x=0;x<=W;x+=40){ctx.beginPath();ctx.moveTo(x+.5,0);ctx.lineTo(x+.5,H);ctx.stroke()}
   for(let y=0;y<=H;y+=40){ctx.beginPath();ctx.moveTo(0,y+.5);ctx.lineTo(W,y+.5);ctx.stroke()}
 
-  // header band
+  // header band with the capital wall screen: live account equity, exposure
+  // and gate state, drawn from the same account snapshot as the rest of the UI
   rect(0,0,W,52,'#0d1218');line(0,52.5,W,52.5,'#1d242e');
-  txt('FLOOR PLAN',18,32,'#e4ebf2',13);
+  txt('FLOOR PLAN',18,32,'#e9ecef',13);
   txt('AGENT STATION SCHEMATIC',18,45,'#4d565f',9);
   if(live){
-    txt('CASH  $'+Number(live.equity||0).toFixed(2),W-190,26,'#e4ebf2',12,'right');
-    txt(live.open+' OPEN  ·  '+(live.halted?'HALTED':'ARMED'),W-190,42,
-      live.halted?'#e2555f':'#2fbf87',9,'right');
+    const sw=300,sx=W-16-sw;
+    box(sx,7,sw,38,'#070b10',6);
+    ctx.strokeStyle=live.halted?'#ff4d4f':'#1e2a36';ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(sx,7,sw,38,6);ctx.stroke();
+    txt('ACCOUNT EQUITY · PAPER',sx+12,20,'#545b64',8);
+    txt('$'+Number(live.equity||0).toFixed(2),sx+12,40,'#e9ecef',17);
+    const gate=live.halted?'HALTED':'ARMED';
+    txt('EXPO $'+Number(live.exposure||0).toFixed(2),sx+sw-12,21,'#7b828c',9,'right');
+    txt(live.open+' OPEN · '+gate,sx+sw-12,39,
+      live.halted?'#ff4d4f':'#00d97e',9,'right');
   }
 
-  // three zone bands
-  const zones=[[16,'ZONE A · FEEDS'],[336,'ZONE B · ANALYSIS'],[656,'ZONE C · EXECUTION']];
-  zones.forEach(([x,label])=>{
-    box(x,62,288,404,'#0d1218',6);
-    ctx.strokeStyle='#1a212a';ctx.lineWidth=1;ctx.beginPath();ctx.roundRect(x,62,288,404,6);ctx.stroke();
-    txt(label,x+12,82,'#4d565f',9);
+  // three zone bands; a zone edge brightens while its stations hold a report
+  // from the newest recorded deterministic cycle — real activity, not decor
+  const detEv=(live.events||[]).filter(e=>e.agent&&!/\(AI\)/i.test(String(e.agent||'')));
+  const newestCycle=detEv.length?detEv[0].cycle_id:null;
+  const zoneHot=[false,false,false];
+  if(newestCycle)ROLES.forEach(r=>{
+    if(detEv.some(e=>e.cycle_id===newestCycle&&agentKey(e.agent)===agentKey(r.name))){
+      const z=r.x<328?0:(r.x<648?1:2);
+      zoneHot[z]=true;
+    }
+  });
+  const zones=[[16,'ZONE A · FEEDS','rgba(120,170,230,0.05)'],[336,'ZONE B · ANALYSIS','rgba(150,110,255,0.05)'],[656,'ZONE C · EXECUTION','rgba(0,217,126,0.045)']];
+  zones.forEach(([x,label,wash],zi)=>{
+    box(x,62,288,404,'#101722',6);
+    // faint zone-tinted floor wash so each room reads as a distinct space
+    ctx.fillStyle=wash;ctx.fillRect(x+1,63,286,402);
+    // floor inlay: a recessed inner panel so the zone reads as a room
+    ctx.strokeStyle='#1c232e';ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(x+8,96,272,362,4);ctx.stroke();
+    ctx.strokeStyle=zoneHot[zi]?'#3a4552':'#202833';ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(x,62,288,404,6);ctx.stroke();
+    txt(label,x+12,82,zoneHot[zi]?'#8b98a8':'#5b6675',9);
   });
 
-  // desk for each station
+  // ceiling fixtures with soft light cones falling over each zone
+  [160,480,800].forEach((cx,zi)=>{
+    box(cx-14,88,28,7,'#1a212a',2);
+    rect(cx-10,95,20,1.5,zoneHot[zi]?'#3a4550':'#232c37');
+    const cone=ctx.createLinearGradient(0,96,0,310);
+    cone.addColorStop(0,'rgba(150,190,220,'+(zoneHot[zi]?0.055:0.032)+')');
+    cone.addColorStop(1,'rgba(150,190,220,0)');
+    ctx.fillStyle=cone;ctx.beginPath();
+    ctx.moveTo(cx-14,97);ctx.lineTo(cx+14,97);
+    ctx.lineTo(cx+78,310);ctx.lineTo(cx-78,310);ctx.closePath();ctx.fill();
+  });
+
+  // edge server rack along the right wall; LEDs blink on their own clock.
+  // Decorative hardware, not a status readout.
+  (function rack(){
+    const rx=900,ry=120,rw=42,rh=118;
+    box(rx,ry,rw,rh,'#10151c',5);
+    ctx.strokeStyle='#232c37';ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(rx,ry,rw,rh,5);ctx.stroke();
+    txt('EDGE',rx+rw/2,ry+11,'#3d4650',7,'center');
+    for(let s=0;s<7;s++){
+      const sy=ry+20+s*13;
+      rect(rx+6,sy,rw-12,9,'#0a0e13');
+      const on=Math.sin(now*2.1+s*1.9)>.1;
+      circle(rx+11,sy+4.5,1.6,on?'#00d97e':'#1e2a24');
+      const on2=Math.sin(now*3.3+s*2.7)>.45;
+      circle(rx+17,sy+4.5,1.6,on2?'#f0a92b':'#2a2415');
+      rect(rx+23,sy+3,rw-29,3,'#1a212a');
+    }
+  })();
+
+  // newest deterministic cycle (computed with the zone glow above) also drives
+  // the packets: a bot carries one only while its station reported in it
+  const hasFresh=r=>newestCycle&&detEv.some(e=>e.cycle_id===newestCycle&&
+    String(e.agent||'').split(' ')[0].toLowerCase()===r.name.split(' ')[0].toLowerCase());
+
+  // patrol lanes: dotted loops each bot walks while in transit, plus giant
+  // zone numerals set into the floor. Lanes explain the motion; they are
+  // routes, not status.
+  ROLES.forEach(r=>{
+    ctx.save();ctx.setLineDash([3,5]);ctx.globalAlpha=.4;
+    ctx.strokeStyle=shade(r.hue,.55);ctx.lineWidth=1;
+    ctx.beginPath();ctx.ellipse(r.x,r.y+48,34,15,0,0,Math.PI*2);ctx.stroke();
+    ctx.restore();ctx.globalAlpha=1;
+  });
+  ['A','B','C'].forEach((L,zi)=>{
+    ctx.fillStyle='rgba(140,170,200,.045)';
+    ctx.font='700 64px ui-monospace,Menlo,monospace';ctx.textAlign='right';
+    ctx.fillText(L,[16,336,656][zi]+278,452);
+  });
+
+  // desk for each station; gait follows the station's personality
   ROLES.forEach((r,i)=>{
     const hit=match(r);
     const active=Boolean(hit);
-    const moving=!active&&!paused&&((now*0.14+i*0.31)%1)<0.34;
+    const P=PERSONA[r.ix]||PERSONA['01'];
+    const moving=!active&&!paused&&((now*0.14*P.pace+i*0.31)%1)<P.roam;
     const st=active?STATE.REPORT:moving?STATE.MOVE:STATE.IDLE;
-    const bob=moving?Math.sin(now*7+i)*1.6:0;
-    const dx=moving?Math.sin(now*0.8+i)*10:0;
+    const carrying=Boolean(hasFresh(r));
+    // elliptical patrol around the station anchor; idle bots sway near home,
+    // roamers walk the full lane. Anchor stays fixed so clicks keep working.
+    const pa=now*0.5*P.pace+i*2.1,k=moving?1:0.12;
+    const dx=Math.cos(pa)*34*k,dy=Math.sin(pa)*15*k;
     const deskY=r.y-40;
 
-    // desk slab
-    box(r.x-62,deskY,124,52,'#141a22',5);
-    ctx.strokeStyle=active?r.hue:'#232c37';ctx.lineWidth=1;
-    ctx.beginPath();ctx.roundRect(r.x-62,deskY,124,52,5);ctx.stroke();
-    rect(r.x-62,deskY,124,1,active?r.hue:'#232c37');
-    // monitor
-    box(r.x-46,deskY+8,42,26,'#080c11',3);
-    ctx.strokeStyle='#212a34';ctx.beginPath();ctx.roundRect(r.x-46,deskY+8,42,26,3);ctx.stroke();
+    // workstation in 2.5D: drop shadow, lit top surface receding upward,
+    // dark front fascia, glowing trim while the station holds a report.
+    // Footprint matches the flat slab it replaces, so clicks keep working.
+    ctx.fillStyle='rgba(0,0,0,.5)';ctx.beginPath();
+    ctx.ellipse(r.x,deskY+54,58,5,0,0,Math.PI*2);ctx.fill();
     if(active){
-      rect(r.x-42,deskY+14,34,1,r.hue);rect(r.x-42,deskY+19,24,1,r.hue);
+      ctx.save();ctx.shadowColor=r.hue;ctx.shadowBlur=16;
+      ctx.strokeStyle=r.hue;ctx.globalAlpha=.55;ctx.lineWidth=1.4;
+      ctx.beginPath();ctx.ellipse(r.x,deskY+52,52,4.5,0,0,Math.PI*2);ctx.stroke();
+      ctx.restore();ctx.globalAlpha=1;
     }
-    // terminal block
-    box(r.x+6,deskY+16,26,14,'#0b1017',3);
-    txt(r.ix,r.x+19,deskY+27,'#3d4650',9,'center');
+    // top surface (parallelogram) catches the ceiling light
+    const ds=ctx.createLinearGradient(0,deskY-6,0,deskY+10);
+    ds.addColorStop(0,active?shade(r.hue,.34):'#222b36');
+    ds.addColorStop(.35,'#1a212b');ds.addColorStop(1,'#12171f');
+    ctx.fillStyle=ds;ctx.beginPath();
+    ctx.moveTo(r.x-62,deskY+8);ctx.lineTo(r.x+62,deskY+8);
+    ctx.lineTo(r.x+50,deskY-6);ctx.lineTo(r.x-50,deskY-6);ctx.closePath();ctx.fill();
+    ctx.strokeStyle=active?r.hue:'#39424e';ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(r.x-62,deskY+8);ctx.lineTo(r.x+62,deskY+8);
+    ctx.lineTo(r.x+50,deskY-6);ctx.lineTo(r.x-50,deskY-6);ctx.closePath();ctx.stroke();
+    // front face with fascia seam + trim light
+    const df=ctx.createLinearGradient(0,deskY+8,0,deskY+52);
+    df.addColorStop(0,'#161c25');df.addColorStop(1,'#0a0d12');
+    ctx.fillStyle=df;
+    ctx.beginPath();ctx.roundRect(r.x-62,deskY+8,124,44,[0,0,5,5]);ctx.fill();
+    ctx.strokeStyle=active?r.hue:'#262e39';ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(r.x-62,deskY+8,124,44,[0,0,5,5]);ctx.stroke();
+    line(r.x-58,deskY+40,r.x+58,deskY+40,'#070a0e',1);
+    if(active){
+      ctx.save();ctx.shadowColor=r.hue;ctx.shadowBlur=8;
+      ctx.strokeStyle=r.hue;ctx.globalAlpha=.85;ctx.lineWidth=1.6;
+      ctx.beginPath();ctx.moveTo(r.x-58,deskY+9.5);ctx.lineTo(r.x+58,deskY+9.5);ctx.stroke();
+      ctx.restore();ctx.globalAlpha=1;
+    }else{
+      rect(r.x-58,deskY+9,116,1,'#202834');
+    }
+    // monitor standing on the top surface, screen shows an abstract activity
+    // shimmer. Decorative only: equalizer bars, never price-like candles.
+    rect(r.x-11,deskY-8,8,4,'#1a212a');
+    box(r.x-46,deskY-30,46,24,'#080c11',3);
+    ctx.strokeStyle=active?shade(r.hue,.75):'#212a34';ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(r.x-46,deskY-30,46,24,3);ctx.stroke();
+    ctx.fillStyle=active?r.hue:'#2b333e';
+    ctx.fillRect(r.x-43,deskY-27,2,2);ctx.fillRect(r.x-39,deskY-27,2,2);
+    for(let b=0;b<9;b++){
+      const bh=active?2+Math.abs(Math.sin(now*2.6+b*1.3+i))*(14):3+(b%2);
+      const by=deskY-10-bh;
+      ctx.fillStyle=active?shade(r.hue,.55+(b%3)*.2):'#222b35';
+      ctx.fillRect(r.x-42+b*4,by,2.6,bh);
+    }
+    rect(r.x-42,deskY-10,34,1,active?r.hue:'#1c232c');
+    // keyboard slab lying on the top surface with key ticks
+    ctx.fillStyle='#10151c';ctx.beginPath();
+    ctx.moveTo(r.x+2,deskY+4);ctx.lineTo(r.x+44,deskY+4);
+    ctx.lineTo(r.x+40,deskY-3);ctx.lineTo(r.x-2,deskY-3);ctx.closePath();ctx.fill();
+    ctx.fillStyle=active?'#2b333e':'#1c232c';
+    for(let k=0;k<7;k++)ctx.fillRect(r.x+5+k*5.4,deskY-1.4,3,2.4);
+    // mug with a wisp of steam
+    box(r.x+50,deskY-2,9,11,'#232c37',2);
+    ctx.strokeStyle='#313b47';ctx.lineWidth=1;
+    ctx.beginPath();ctx.arc(r.x+60.5,deskY+3,3,-1.2,1.2);ctx.stroke();
+    const steam=(now*22+i*37)%14;
+    ctx.fillStyle='rgba(150,180,200,'+(0.22*(1-steam/14))+')';
+    ctx.fillRect(r.x+53.5,deskY-4-steam,2,2);
+    // station tag riveted to the front fascia
+    box(r.x-13,deskY+42,26,8,'#0b1017',2);
+    txt(r.ix,r.x,deskY+48.5,'#6d7683',7,'center');
 
     // figure stands clear in front of the desk, never overlapping it
-    marker(r,r.x+dx,deskY+88+bob,st,active,moving);
-    txt(r.name.toUpperCase(),r.x,deskY+124,active?'#aeb9c6':'#5b6570',9,'center');
+    // (all vertical motion lives inside the bot; the anchor never drifts)
+    marker(r,r.x+dx,deskY+88+dy,st,active,moving,carrying,now);
+    txt('· '+(PERSONA[r.ix]?.call||'')+' ·',r.x,deskY+117,shade(r.hue,1.15),7,'center');
+    txt(r.name.toUpperCase(),r.x,deskY+124,active?'#a8b0ba':'#7b828c',9,'center');
     txt(st.t,r.x,deskY+138,st.c,8,'center');
 
     if(sel===i){
@@ -300,16 +805,40 @@ function paint(){
   txt('LEGEND',28,502,'#4d565f',9);
   let lx=110;
   [[STATE.REPORT,'REPORTING'],[STATE.MOVE,'IN TRANSIT'],[STATE.IDLE,'STANDBY']].forEach(([s,l])=>{
-    circle(lx,498,3,s.c);txt(l,lx+9,502,'#5b6570',9);lx+=96;
+    circle(lx,498,3,s.c);txt(l,lx+9,502,'#7b828c',9);lx+=96;
   });
   txt('PLAN VIEW IS ILLUSTRATIVE · RECORDED REPORTS ARE THE SOURCE OF TRUTH',
-      W-18,502,'#3d4650',9,'right');
-  txt('T+'+String(Math.floor(now)).padStart(3,'0')+'s',W-18,522,'#3d4650',9,'right');
+      W-18,502,'#545b64',9,'right');
+  txt('T+'+String(Math.floor(now)).padStart(3,'0')+'s',W-18,522,'#545b64',9,'right');
+
+  // drifting dust motes catch the light
+  for(let m=0;m<30;m++){
+    const mx=(m*173+now*(5+(m%4)*2))%W;
+    const my=70+((m*97+now*3.5)%400);
+    ctx.fillStyle='rgba(150,190,215,'+(0.04+(m%5)*0.016)+')';
+    ctx.fillRect(mx,my,(m%3===0)?2:1,(m%3===0)?2:1);
+  }
+  // faint scan sweep across the floor
+  if(!paused){
+    const sy=70+((now*36)%400);
+    const sg=ctx.createLinearGradient(0,sy-14,0,sy+14);
+    sg.addColorStop(0,'rgba(0,217,126,0)');sg.addColorStop(.5,'rgba(0,217,126,.05)');
+    sg.addColorStop(1,'rgba(0,217,126,0)');
+    ctx.fillStyle=sg;ctx.fillRect(16,sy-14,928,28);
+  }
+  // vignette pulls the eye to the floor
+  const vg=ctx.createRadialGradient(W/2,H/2,220,W/2,H/2,640);
+  vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.44)');
+  ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
 }
 
 /* ── readouts ──────────────────────────────────────────── */
 function paintInspector(){
   const r=ROLES[sel],hit=match(r);
+  const key=agentKey(r.name);
+  const mine=(live.events||[]).filter(e=>e.agent&&agentKey(e.agent)===key);
+  const approvals=mine.reduce((t,e)=>t+(Array.isArray(e.approve)?e.approve.length:0),0);
+  const lastTs=mine.reduce((t,e)=>Math.max(t,Number(e.timestamp)||0),0);
   $('selIx').textContent=r.ix;
   $('selName').textContent=r.name;
   $('selRole').textContent=r.role;
@@ -318,17 +847,108 @@ function paintInspector(){
   $('selState').className='st '+(hit?'live':'off');
   $('selText').textContent=hit?.summary||'No report recorded for this station yet.';
   $('selAct').textContent=hit?'REPORTING':'STANDBY';
-  $('selCount').textContent=String(counted[sel]||0);
+  $('selCount').textContent=String(mine.length)+' reports · '+approvals+
+    ' approvals · last '+relTime(lastTs);
 }
 
+/* Toggleable deterministic stations. Mirrors TOGGLEABLE_AGENTS in
+   forex_agents.py: risk is the locked-on safety interlock, macro has no
+   deterministic execution path. */
+const TOGGLEABLE=['market','strategy','portfolio'];
+const MAX_QUOTE_AGE=300;
+function agentKey(name){
+  return String(name||'').replace(/\s*\(AI\)\s*/i,'').trim().split(' ')[0].toLowerCase();
+}
+function relTime(ts){
+  if(!ts||ts<=0)return '—';
+  const s=Math.max(0,Date.now()/1000-ts);
+  if(s<60)return Math.floor(s)+'s ago';
+  if(s<3600)return Math.floor(s/60)+'m ago';
+  if(s<86400)return Math.floor(s/3600)+'h ago';
+  return Math.floor(s/86400)+'d ago';
+}
+function utcTime(ts){
+  if(!ts||ts<=0)return '—';
+  const d=new Date(ts*1000),p=n=>String(n).padStart(2,'0');
+  return p(d.getUTCHours())+':'+p(d.getUTCMinutes())+':'+p(d.getUTCSeconds());
+}
+async function toggleStation(key,on,box){
+  box.disabled=true;
+  try{
+    const r=await fetch('/api/forex/agents/config',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({agent:key,enabled:on})});
+    const d=await r.json();
+    if(!r.ok)throw Error(d.error||'Station update failed');
+    await poll();
+  }catch(e){
+    $('notice').textContent='Station update failed: '+e.message;
+    await poll();
+  }finally{box.disabled=false}
+}
 function paintRoster(){
+  const events=(live.events||[]).filter(e=>e.agent);
+  const cfg=live.cfg||{};
+  const total=events.length;
+  const cycles=[];
+  for(const e of events){
+    if(e.cycle_id&&!cycles.includes(e.cycle_id)){
+      cycles.push(e.cycle_id);
+      if(cycles.length>=10)break;
+    }
+  }
+  let reporting=0;
   $('roster').innerHTML=ROLES.map((r,i)=>{
-    const hit=match(r);
-    return '<button aria-pressed="'+(i===sel)+'" onclick="pick('+i+')">'+
-      '<span class="r">'+r.ix+' · '+r.name+'</span>'+
-      '<span class="s" style="color:'+(hit?'#2fbf87':'#4d565f')+'">'+
-      (hit?'REPORT RECEIVED':'NO REPORT')+'</span></button>';
+    const key=agentKey(r.name);
+    const mine=events.filter(e=>agentKey(e.agent)===key);
+    const det=mine.filter(e=>!/\(AI\)/i.test(String(e.agent||'')));
+    const aiOk=mine.filter(e=>/\(AI\)/i.test(String(e.agent||''))&&
+      !/unavailable|error|fail/i.test(String(e.status||'')));
+    if(det.length)reporting++;
+    const approvals=mine.reduce((t,e)=>t+(Array.isArray(e.approve)?e.approve.length:0),0);
+    const lastTs=mine.reduce((t,e)=>Math.max(t,Number(e.timestamp)||0),0);
+    const share=total?Math.round(mine.length/total*100):0;
+    const label=det.length?'REPORT RECEIVED':aiOk.length?'AI ADVISORY ONLY'
+      :(mine.length?'AI CALL FAILED':'NO REPORT');
+    const lamp=det.length?'on':(aiOk.length?'warn':'');
+    const hb=cycles.map(c=>{
+      const hit=mine.find(e=>e.cycle_id===c);
+      if(!hit)return '<i class="miss" title="no report this cycle"></i>';
+      return '<i class="'+(/\(AI\)/i.test(String(hit.agent||''))?'ai':'hit')+'"'+
+        ' title="'+String(hit.status||'').replace(/"/g,'&quot;')+'"></i>';
+    }).join('');
+    let ctl;
+    if(TOGGLEABLE.includes(key)){
+      const on=cfg[key]!==false;
+      ctl='<label class="switch" title="Enable or disable this station" onclick="event.stopPropagation()">'+
+        '<input type="checkbox"'+(on?' checked':'')+
+        ' onchange="toggleStation(\''+key+'\',this.checked,this)">'+
+        '<span class="tr"></span></label>'+
+        '<span class="lk">'+(on?'ENABLED':'DISABLED')+'</span>';
+    }else if(key==='risk'){
+      ctl='<span class="lk">LOCKED · SAFETY INTERLOCK ALWAYS ON</span>';
+    }else{
+      ctl='<span class="lk">ADVISORY ROLE · NO EXECUTION PATH</span>';
+    }
+    return '<div class="station" role="button" tabindex="0" aria-pressed="'+(i===sel)+
+      '" onclick="pick('+i+')" onkeydown="if(event.key===\'Enter\')pick('+i+')"'+
+      ' style="--d:'+(i*60)+'ms">'+
+      '<div class="ahead"><div class="ava" title="'+share+'% of recorded reports">'+
+      '<svg viewBox="0 0 36 36"><circle class="ring-bg" cx="18" cy="18" r="15.9155"/>'+
+      '<circle class="ring-fg" cx="18" cy="18" r="15.9155" stroke-dasharray="'+share+' 100"/></svg>'+
+      '<span class="mo">'+r.name[0]+'</span><span class="lm '+lamp+'"></span></div>'+
+      '<div><div class="nm">'+r.name+'</div>'+
+      '<div class="rl">'+r.ix+' · '+r.role.toUpperCase()+'</div></div></div>'+
+      '<div class="meta"><span>REPORTS <b>'+mine.length+'</b></span>'+
+      '<span>APPROVALS <b>'+approvals+'</b></span>'+
+      '<span>LAST <b>'+relTime(lastTs)+'</b></span></div>'+
+      '<div class="hb" title="Report presence across the last '+cycles.length+
+      ' cycles, newest first">'+hb+'</div>'+
+      '<div class="ctl">'+ctl+'</div></div>';
   }).join('');
+  const disabled=TOGGLEABLE.filter(k=>cfg[k]===false).length;
+  $('rosterMeta').textContent=reporting+' / '+ROLES.length+' REPORTING'+
+    (disabled?' · '+disabled+' DISABLED':'');
 }
 
 function paintLog(){
@@ -352,7 +972,7 @@ function paintShell(){
     (live.stale?'feed stale':'feed current');
   $('stageMeta').textContent=live.prices+' price rows  ·  '+live.date;
   $('acctState').textContent=live.halted?'HALTED':'ARMED';
-  $('acctState').style.color=live.halted?'#e2555f':'#2fbf87';
+  $('acctState').style.color=live.halted?'#ff4d4f':'#00d97e';
   const r=live.risk||{};
   const row=(k,v)=>'<div><b>'+k+'</b><span>'+v+'</span></div>';
   $('acct').innerHTML=
@@ -371,9 +991,64 @@ function paintShell(){
   $('notice').textContent=live.prices
     ? ''
     : 'No price rows returned by the provider. The plan still renders, but no report can be produced.';
+  renderCapital();
+}
+
+function renderCapital(){
+  // The capital board mirrors the account snapshot already held in `live` —
+  // the same numbers as the canvas wall screen, the inspector and the
+  // overview dashboard. Nothing here is projected or simulated.
+  const box=$('capstrip');
+  if(!box)return;
+  if(!live){
+    box.innerHTML='<div class="cell"><div class="k">EQUITY</div>'+
+      '<div class="v">—</div><div class="s">AWAITING FIRST POLL</div></div>';
+    return;
+  }
+  const eq=Number(live.equity||0),rl=Number(live.realized??0);
+  const cell=(k,v,c,s)=>'<div class="cell"><div class="k">'+k+'</div>'+
+    '<div class="v '+c+'">'+v+'</div><div class="s">'+s+'</div></div>';
+  box.innerHTML=
+    cell('EQUITY','$'+eq.toFixed(2),'','PAPER ACCOUNT · MARK-TO-MARKET')+
+    cell('EXPOSURE','$'+Number(live.exposure||0).toFixed(2),'',
+      live.open+' OPEN · MAX '+(live.risk?.max_positions??'—'))+
+    cell('REALISED P/L','$'+rl.toFixed(2),rl>0?'up':rl<0?'down':'','SESSION')+
+    cell('RISK GATE',live.halted?'HALTED':'ARMED',live.halted?'warn':'up',
+      live.halted?'NEW ENTRIES BLOCKED':'DETERMINISTIC LIMITS');
+  $('capMeta').textContent=live.stale?'FEED STALE':'LIVE ACCOUNT';
 }
 
 /* ── data ──────────────────────────────────────────────── */
+let lastQuotes={},prevQuotes={};
+const PAIR_ORDER=['EUR/USD','GBP/USD','USD/JPY','AUD/USD','USD/CHF','XAU/USD',
+  'AAPL/USD','MSFT/USD','NVDA/USD','TSLA/USD','AMZN/USD','META/USD'];
+const STOCK_TICKERS=['AAPL','MSFT','NVDA','TSLA','AMZN','META'];
+const cdecimals=p=>(p==='USD/JPY'?3:(STOCK_TICKERS.includes(String(p).split('/')[0])?2:5));
+function renderTicker(){
+  const el=$('ticker');
+  if(!el)return;
+  const now=Date.now()/1000;
+  const items=PAIR_ORDER.map(p=>{
+    const q=lastQuotes[p];
+    if(!q||!Number.isFinite(q.price)||q.price<=0)
+      return '<span class="tk"><span class="s">'+p+'</span><span class="p">—</span></span>';
+    const prev=prevQuotes[p];
+    const ch=(prev&&prev>0)?(q.price-prev)/prev*10000:0;
+    const c=Math.abs(ch)<0.01?'fl':ch>0?'up':'dn';
+    const age=Math.max(0,now-Number(q.observed||0));
+    const stale=age>MAX_QUOTE_AGE;
+    return '<span class="tk"><span class="s">'+p+'</span>'+
+      '<span class="p">'+Number(q.price).toFixed(cdecimals(p))+'</span>'+
+      '<span class="d '+c+'">'+(c==='fl'?'·':ch>0?'▲':'▼')+' '+Math.abs(ch).toFixed(1)+'</span>'+
+      '<span class="age'+(stale?' stale':'')+'">'+
+      (stale?Math.round(age/60)+'m stale':Math.round(age)+'s')+'</span></span>';
+  });
+  el.innerHTML=items.join('')+items.join('');
+}
+function tickClock(){
+  const d=new Date(),p=n=>String(n).padStart(2,'0');
+  $('clock').textContent=p(d.getUTCHours())+':'+p(d.getUTCMinutes())+':'+p(d.getUTCSeconds())+' UTC';
+}
 async function poll(){
   if(window.parent!==window)return;
   try{
@@ -387,18 +1062,28 @@ async function poll(){
 
     if(events.length!==logRows.length){
       const seen=new Set(logRows.map(l=>l.k));
+      // The API returns newest first. Prepending each one in that order would
+      // leave the oldest entry on top, so stamp every row and sort explicitly.
       events.filter(e=>e.agent).forEach(e=>{
         const k=e.agent+e.timestamp+e.step;
         if(seen.has(k))return;
-        logRows.unshift({k,a:e.agent,s:e.summary||'Recorded event.',ok:true});
+        logRows.push({k,t:Number(e.timestamp)||0,a:e.agent,
+          s:e.summary||'Recorded event.',ok:true});
         const i=ROLES.findIndex(r=>r.name.split(' ')[0].toLowerCase()===String(e.agent).split(' ')[0].toLowerCase());
         if(i>=0)counted[i]++;
       });
+      logRows.sort((x,y)=>y.t-x.t);
       paintLog();
     }
 
+    prevQuotes=lastQuotes;
+    lastQuotes=pairs;
+    renderTicker();
+    $('sysDot').className='dot ok';
+    $('sysTxt').textContent='LIVE';
     live={
       events,
+      cfg:ag.agent_config||{},
       equity:acc.equity??0,
       exposure:acc.exposure??0,
       realized:acc.realized_pnl??0,
@@ -417,6 +1102,8 @@ async function poll(){
     if(live)live.stale=true;
     $('modeTag').textContent='DISCONNECTED';
     $('modeTag').className='tag bad';
+    $('sysDot').className='dot bad';
+    $('sysTxt').textContent='DOWN';
     $('notice').textContent='Server unreachable: '+e.message;
   }
 }
@@ -442,12 +1129,6 @@ $('pauseBtn').addEventListener('click',()=>{
   $('pauseBtn').textContent=paused?'Resume':'Pause';
 });
 
-ROLES.forEach((_,i)=>{
-  const b=document.createElement('button');
-  b.textContent=ROLES[i].name;b.onclick=()=>pick(i);
-  $('roster').appendChild(b);
-});
-
 canvas.addEventListener('click',ev=>{
   const b=canvas.getBoundingClientRect();
   const x=(ev.clientX-b.left)*W/b.width,y=(ev.clientY-b.top)*H/b.height;
@@ -457,6 +1138,8 @@ canvas.addEventListener('click',ev=>{
 });
 
 seed();
+tickClock();
+setInterval(tickClock,1000);
 poll();
 setInterval(poll,10000);
 (function loop(){paint();requestAnimationFrame(loop)})();

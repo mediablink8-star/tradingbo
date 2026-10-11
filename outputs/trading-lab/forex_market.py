@@ -16,7 +16,11 @@ DEFAULT_PAIRS = ("EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CHF")
 # Metals are quoted per troy ounce against USD and are not currencies. They are
 # exposed as their own contract family rather than forced through the FX paths.
 METALS = ("XAU/USD",)
-ALL_PAIRS = DEFAULT_PAIRS + METALS
+# US large-cap equities, represented as SYM/USD ("shares priced in USD") so
+# they flow through the existing pair-shaped quote, ledger and risk paths.
+# Yahoo serves these symbols directly with intraday bars and no key.
+STOCKS = ("AAPL/USD", "MSFT/USD", "NVDA/USD", "TSLA/USD", "AMZN/USD", "META/USD")
+ALL_PAIRS = DEFAULT_PAIRS + METALS + STOCKS
 DEFAULT_SPREAD_BPS = {
     "EUR/USD": 1.0,
     "GBP/USD": 1.2,
@@ -27,6 +31,15 @@ DEFAULT_SPREAD_BPS = {
     # is used, and it remains a modelled figure rather than an observed one.
     "XAU/USD": 0.12,
     "XAG/USD": 0.15,
+    # Liquid large caps typically print ~1bp or tighter, but the feed carries
+    # no bid/ask, so a conservative modelled 2bp spread is assumed instead of
+    # pretending the mid is executable.
+    "AAPL/USD": 2.0,
+    "MSFT/USD": 2.0,
+    "NVDA/USD": 2.0,
+    "TSLA/USD": 2.0,
+    "AMZN/USD": 2.0,
+    "META/USD": 2.0,
 }
 
 # Interval -> (Yahoo interval, max lookback range). These are empirically
@@ -45,10 +58,19 @@ YAHOO_INTERVALS = {
 # Yahoo does not serve a spot gold symbol (XAUUSD=X returns 404). GC=F is the
 # COMEX gold futures front contract, so a quote sourced from it is a futures
 # price, not spot XAU/USD, and carries a basis against the physical market.
+# US equities need no suffix: the bare ticker (AAPL, not AAPL=X) is the symbol.
 YAHOO_SYMBOLS = {
     "XAU/USD": "GC=F",
     "XAG/USD": "SI=F",
+    "AAPL/USD": "AAPL",
+    "MSFT/USD": "MSFT",
+    "NVDA/USD": "NVDA",
+    "TSLA/USD": "TSLA",
+    "AMZN/USD": "AMZN",
+    "META/USD": "META",
 }
+
+STOCK_TICKERS = frozenset(s.split("/")[0] for s in STOCKS)
 
 
 def _yahoo_symbol(pair):
@@ -60,6 +82,10 @@ def _yahoo_symbol(pair):
 
 def is_metal(pair):
     return str(pair or "").upper().split("/")[0] in ("XAU", "XAG")
+
+
+def is_stock(pair):
+    return str(pair or "").upper().split("/")[0] in STOCK_TICKERS
 
 
 def _fetch(url):
@@ -236,7 +262,8 @@ def _yahoo(pairs):
             "provider_date": datetime.datetime.fromtimestamp(
                 bar["t"], datetime.timezone.utc
             ).strftime("%Y-%m-%d %H:%M:%S"),
-            "instrument": "metal" if is_metal(pair) else "fx",
+            "instrument": ("metal" if is_metal(pair)
+                             else "stock" if is_stock(pair) else "fx"),
             "source": source,
         }
         latest = max(latest, float(bar["t"]))

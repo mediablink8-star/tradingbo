@@ -14,6 +14,13 @@ MIN_OBSERVATIONS = 3
 MOMENTUM_THRESHOLD = 0.0003
 PAPER_NOTIONAL = 250.0
 
+# Deterministic pipeline stages that an operator may enable or disable.
+# "risk" is deliberately absent from the toggleable set: the Risk critic is
+# the safety interlock and stays on. "macro" has no deterministic execution
+# path (it exists only as an AI advisory stage), so there is nothing to gate.
+AGENT_KEYS = ("market", "macro", "strategy", "risk", "portfolio")
+TOGGLEABLE_AGENTS = ("market", "strategy", "portfolio")
+
 
 class ForexAgentRuntime:
     def __init__(self, path, lab, auto_run=False, interval=60.0):
@@ -38,6 +45,53 @@ class ForexAgentRuntime:
                 agent TEXT NOT NULL, status TEXT NOT NULL, summary TEXT NOT NULL,
                 approve_json TEXT NOT NULL, concerns_json TEXT NOT NULL,
                 kind TEXT NOT NULL)""")
+            db.execute("""CREATE TABLE IF NOT EXISTS fx_agent_config(
+                agent_key TEXT PRIMARY KEY, enabled INTEGER NOT NULL,
+                updated REAL NOT NULL)""")
+
+    def get_config(self):
+        """Per-agent enable flags. Missing rows default to enabled."""
+        with self._db() as db:
+            rows = db.execute(
+                "SELECT agent_key,enabled FROM fx_agent_config"
+            ).fetchall()
+        config = {key: True for key in AGENT_KEYS}
+        for key, enabled in rows:
+            if key in config:
+                config[key] = bool(enabled)
+        config["risk"] = True
+        return config
+
+    def set_config(self, agent_key, enabled):
+        """Persist one agent's enable flag. Returns the full config.
+
+        The Risk critic is the safety interlock and cannot be disabled.
+        The Macro analyst has no deterministic execution path, so toggling
+        it would be a dead switch and is rejected with an explanation.
+        """
+        key = str(agent_key or "").strip().lower()
+        if isinstance(enabled, str):
+            enabled = enabled.strip().lower() not in ("", "0", "false", "no", "off")
+        if key not in AGENT_KEYS:
+            raise ValueError(
+                "Unknown agent '%s'. Expected one of: %s."
+                % (agent_key, ", ".join(AGENT_KEYS)))
+        if key == "risk":
+            raise ValueError(
+                "Risk critic is the safety interlock and stays enabled.")
+        if key == "macro":
+            raise ValueError(
+                "Macro analyst has no deterministic execution path; "
+                "it reports through AI advisory only, so there is nothing "
+                "to disable.")
+        with self._db() as db:
+            db.execute(
+                "INSERT INTO fx_agent_config(agent_key,enabled,updated)"
+                " VALUES(?,?,?) ON CONFLICT(agent_key) DO UPDATE SET"
+                " enabled=excluded.enabled, updated=excluded.updated",
+                (key, 1 if enabled else 0, time.time()),
+            )
+        return self.get_config()
 
     def _event(self, db, cycle_id, agent, status, summary, approve=None, concerns=None):
         event = {
@@ -93,14 +147,25 @@ class ForexAgentRuntime:
         now = time.time()
         events = []
         proposals = []
+        cfg = self.get_config()
         with self._db() as db:
-            fresh_rows = {p: q for p, q in pairs.items() if self._fresh(q, now)}
-            events.append(self._event(
-                db, cycle_id, "Market researcher",
-                "Evidence ready" if fresh_rows else "Blocked",
-                f"Observed {len(pairs)} FX rows; {len(fresh_rows)} passed timestamp, date and price freshness checks.",
-                concerns=[] if fresh_rows else ["No fresh executable FX quote; no entry can be considered."],
-            ))
+            if not cfg["market"]:
+                fresh_rows = {}
+                events.append(self._event(
+                    db, cycle_id, "Market researcher",
+                    "Skipped (disabled by operator)",
+                    "Market researcher is disabled, so no quotes were sampled this cycle. "
+                    "Enable the station to resume observation.",
+                    concerns=["Station disabled by operator."],
+                ))
+            else:
+                fresh_rows = {p: q for p, q in pairs.items() if self._fresh(q, now)}
+                events.append(self._event(
+                    db, cycle_id, "Market researcher",
+                    "Evidence ready" if fresh_rows else "Blocked",
+                    f"Observed {len(pairs)} instrument rows; {len(fresh_rows)} passed timestamp, date and price freshness checks.",
+                    concerns=[] if fresh_rows else ["No fresh executable quote; no entry can be considered."],
+                ))
 
             histories = {}
             for pair, row in fresh_rows.items():
@@ -114,13 +179,23 @@ class ForexAgentRuntime:
                     proposals.append({"pair": pair, "side": "buy", "momentum": momentum})
                 elif momentum <= -MOMENTUM_THRESHOLD:
                     proposals.append({"pair": pair, "side": "sell", "momentum": momentum})
-            events.append(self._event(
-                db, cycle_id, "Strategy analyst",
-                "Signal proposed" if proposals else "No trade",
-                ("Proposed " + ", ".join(f"{p['side']} {p['pair']} ({p['momentum']:+.3%} observed momentum)" for p in proposals[:5])
-                 if proposals else "No pair has enough distinct fresh observations with momentum beyond the conservative threshold."),
-                approve=[p["pair"] for p in proposals],
-            ))
+            if not cfg["strategy"]:
+                proposals = []
+                events.append(self._event(
+                    db, cycle_id, "Strategy analyst",
+                    "Skipped (disabled by operator)",
+                    "Strategy analyst is disabled, so no signals were evaluated this cycle. "
+                    "Observations already recorded are kept for future cycles.",
+                    concerns=["Station disabled by operator."],
+                ))
+            else:
+                events.append(self._event(
+                    db, cycle_id, "Strategy analyst",
+                    "Signal proposed" if proposals else "No trade",
+                    ("Proposed " + ", ".join(f"{p['side']} {p['pair']} ({p['momentum']:+.3%} observed momentum)" for p in proposals[:5])
+                     if proposals else "No pair has enough distinct fresh observations with momentum beyond the conservative threshold."),
+                    approve=[p["pair"] for p in proposals],
+                ))
 
             positions = account.get("positions", []) if isinstance(account, dict) else []
             held = {p.get("pair") for p in positions if isinstance(p, dict)}
@@ -157,7 +232,11 @@ class ForexAgentRuntime:
             ))
 
             executed = []
-            chosen = risk_approved[:1]
+            chosen = [] if not cfg["portfolio"] else risk_approved[:1]
+            if not cfg["portfolio"] and risk_approved:
+                concerns.append(
+                    "Portfolio coordinator is disabled by operator; "
+                    "approved entries were not submitted.")
             for proposal in chosen:
                 notional = min(PAPER_NOTIONAL, self.lab.broker.risk.config.max_trade_notional)
                 try:
@@ -168,9 +247,13 @@ class ForexAgentRuntime:
                     concerns.append(f"Paper broker rejected {proposal['pair']}: {str(exc)[:160]}")
             events.append(self._event(
                 db, cycle_id, "Portfolio coordinator",
-                "Paper order recorded" if executed else "No order",
+                "Paper order recorded" if executed
+                else ("Skipped (disabled by operator)" if not cfg["portfolio"] else "No order"),
                 (f"Submitted {len(executed)} paper entry; broker risk checks remained enabled."
-                 if executed else "No paper entry submitted. Abstention is a valid outcome."),
+                 if executed
+                 else ("Portfolio coordinator is disabled; approved entries were held, not submitted."
+                       if not cfg["portfolio"]
+                       else "No paper entry submitted. Abstention is a valid outcome.")),
                 approve=[p["pair"] for p in executed], concerns=concerns,
             ))
             latest_account = self.lab.status().get("account", {})
@@ -254,6 +337,7 @@ class ForexAgentRuntime:
         return {
             "available": True, "auto_run_enabled": self.auto_run,
             "interval_seconds": self.interval, "last_cycle": self.last_cycle,
+            "agent_config": self.get_config(),
             "events": events,
             "samples": [{"pair": r[0], "observations": r[1], "latest_observed": r[2]} for r in samples],
             "policy": {"mode": "paper_only", "notional_per_entry": PAPER_NOTIONAL,

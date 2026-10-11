@@ -139,7 +139,8 @@ class Handler(BaseHTTPRequestHandler):
             self._handle_connection(self.path)
             return
         if self.path not in (
-            "/api/forex/open", "/api/forex/close", "/api/forex/agents/run"
+            "/api/forex/open", "/api/forex/close", "/api/forex/agents/run",
+            "/api/forex/agents/config",
         ):
             self.send_json({"error": "not found"}, 404)
             return
@@ -155,6 +156,10 @@ class Handler(BaseHTTPRequestHandler):
                 result = LAB.open(data.get("pair"), data.get("side"), float(data.get("notional")))
             elif self.path == "/api/forex/close":
                 result = LAB.close(data.get("id"))
+            elif self.path == "/api/forex/agents/config":
+                result = {"ok": True,
+                          "agent_config": AGENTS.set_config(
+                              data.get("agent"), data.get("enabled"))}
             else:
                 result = AGENTS.run_cycle()
             self.send_json(result)

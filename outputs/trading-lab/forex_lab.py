@@ -102,8 +102,8 @@ class ForexLab:
             raise ValueError("No current price for that FX pair.")
         if not self._quote_is_current(row):
             raise ValueError(
-                "FX quote is stale or not dated today; paper order rejected. "
-                "ECB reference rates are for research, not executable quotes."
+                "Quote is stale or not dated today; paper order rejected. "
+                "Reference rates are for research, not executable quotes."
             )
         return row
 

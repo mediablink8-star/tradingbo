@@ -74,7 +74,9 @@ class ForexPaperBroker:
         if side not in ("buy","sell") or not isinstance(pair,str):raise ValueError("Invalid FX order.")
         pair=pair.strip().upper()
         parts=pair.split("/")
-        if len(parts)!=2 or any(len(currency)!=3 for currency in parts) or parts[0]==parts[1]:
+        if (len(parts)!=2 or parts[0]==parts[1]
+                or any(not (c.isalpha() and c.isupper() and 3 <= len(c) <= 5)
+                       for c in parts)):
             raise ValueError("Invalid FX pair.")
         price=float(price);notional=float(notional)
         if not math.isfinite(price) or price<=0:raise ValueError("Invalid FX price.")

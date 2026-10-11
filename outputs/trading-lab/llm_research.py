@@ -276,6 +276,72 @@ def _validate(payload, field):
     return {"text": text.strip()[:MAX_CHARS], "concerns": clean}
 
 
+def _first_object(value):
+    """Normalise a parsed value to the agreed object shape.
+
+    A model that wraps its single object in a list has made a formatting slip,
+    not returned a different kind of result, so the first object is used.
+    Anything else is returned untouched for _validate to reject.
+    """
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, list):
+        for item in value:
+            if isinstance(item, dict):
+                return item
+    return value
+
+
+def _parse_model_json(text):
+    """Accept a clean JSON object, or recover one wrapped in prose or fences.
+
+    Weaker models routinely add a sentence of preamble or a closing remark even
+    when told to emit only JSON. Rejecting the whole stage for that discards
+    usable analysis, so the first balanced object in the text is preferred.
+    A fenced block is unwrapped first.
+    """
+    cleaned = text.strip()
+    if cleaned.startswith("```"):
+        cleaned = cleaned.strip("`")
+        if "\n" in cleaned:
+            head = cleaned[:8].strip().lower()
+            cleaned = cleaned.split("\n", 1)[-1] if head.startswith(("json", "javascript")) else cleaned
+    try:
+        return _first_object(json.loads(cleaned))
+    except json.JSONDecodeError:
+        pass
+    # Fall back to the first balanced {...} block, ignoring braces in strings.
+    depth = 0
+    start = -1
+    in_string = False
+    escape = False
+    for i, ch in enumerate(cleaned):
+        if escape:
+            escape = False
+            continue
+        if ch == "\\":
+            escape = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if ch == "{":
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == "}":
+            if depth > 0:
+                depth -= 1
+                if depth == 0 and start >= 0:
+                    try:
+                        return _first_object(json.loads(cleaned[start:i + 1]))
+                    except json.JSONDecodeError:
+                        start = -1
+    raise ValueError("no JSON object found")
+
+
 class ResearchLayer:
     def __init__(self, store, opener=None):
         self.store = store
@@ -327,13 +393,9 @@ class ResearchLayer:
         text = _extract_text(spec["style"], raw)
         if not isinstance(text, str) or not text.strip():
             raise ModelError("Provider returned no usable text.")
-        cleaned = text.strip()
-        if cleaned.startswith("```"):
-            cleaned = cleaned.strip("`")
-            cleaned = cleaned.split("\n", 1)[-1] if "\n" in cleaned else cleaned
         try:
-            return json.loads(cleaned)
-        except json.JSONDecodeError as exc:
+            return _parse_model_json(text)
+        except (json.JSONDecodeError, ValueError) as exc:
             raise ModelError("Model output was not valid JSON.") from exc
 
     def run(self, market, account, risk, history, positions):

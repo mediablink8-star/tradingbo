@@ -104,7 +104,20 @@ nav a.on .ic{color:var(--accent)}
 .charttop .sym{font:600 14px/1 var(--mono);letter-spacing:.1em}
 .charttop .px{font:600 22px/1 var(--mono);color:var(--accent)}
 .charttop .mt{font:500 10px/1 var(--mono);color:var(--faint);letter-spacing:.08em}
-#spark{display:block;width:100%;height:230px;cursor:crosshair}
+#spark{display:block;width:100%;height:230px;cursor:crosshair;position:relative}
+.chartbox{position:relative}
+.chartempty{position:absolute;inset:56px 12px 12px 12px;display:grid;place-items:center;
+  font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:#aeb9c6;
+  background:rgba(10,14,19,.82);border:1px dashed var(--line);border-radius:6px;
+  pointer-events:none;text-align:center;padding:0 18px}
+.chartempty[hidden]{display:none}
+.qbtn{border:1px solid var(--line-2);border-radius:6px;padding:5px 13px;font:600 11px var(--mono);
+  letter-spacing:.06em;cursor:pointer;color:var(--ink);background:var(--surface-3)}
+.qbtn:disabled{opacity:.55;cursor:wait}
+.qbtn.buy{border-color:#2fbf8766;color:#7fe3b4}
+.qbtn.buy:hover:not(:disabled){background:#0d2b1f;border-color:#2fbf87}
+.qbtn.sell{border-color:#e2555f66;color:#f0939a}
+.qbtn.sell:hover:not(:disabled){background:#2b0f13;border-color:#e2555f}
 .ivsel{background:var(--bg);border:1px solid var(--line-2);border-radius:var(--r);
   padding:5px 8px;font:600 10px/1 var(--mono);letter-spacing:.08em;color:var(--ink-2);
   cursor:pointer}
@@ -129,6 +142,8 @@ nav a.on .ic{color:var(--accent)}
 .qt tbody tr.stale .n{color:#a3aeb9}
 .qt td:first-child{text-align:left;color:var(--ink);font-weight:600;letter-spacing:.08em}
 .qt td.dim{color:var(--dim)} .qt td.mut{color:var(--faint);font-size:10px}
+.qt .kind{font-size:8px;letter-spacing:.1em;color:var(--faint);border:1px solid var(--line);
+  border-radius:3px;padding:1px 4px;margin-left:5px;white-space:nowrap}
 
 /* ── pipeline ──────────────────────────────────────────── */
 .pipe{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:var(--line)}
@@ -205,7 +220,9 @@ nav a.on .ic{color:var(--accent)}
 .kv{display:grid;gap:1px;background:var(--line);margin-top:12px;
   border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
 .kv div{background:var(--surface);padding:8px 11px;display:flex;
-  justify-content:space-between;gap:12px;align-items:baseline}
+  justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}
+.kv div>*{min-width:0}
+.kv span{overflow-wrap:anywhere}
 .kv b{font:600 9.5px/1.4 var(--mono);letter-spacing:.12em;color:var(--faint)}
 .kv span{font:600 11.5px/1.4 var(--mono);color:var(--ink);text-align:right;
   font-variant-numeric:tabular-nums}
@@ -221,7 +238,44 @@ nav a.on .ic{color:var(--accent)}
 .stage ul{margin:8px 0 0;padding-left:16px}
 .stage li{font:400 11px/1.55 var(--mono);color:#e8c583;margin-bottom:3px}
 .stage.bad{border-color:#e2555f44}
-@media(max-width:1100px){.aigrid{grid-template-columns:1fr}}
+/* Responsive integrity.
+   Grid and flex children default to min-width:auto, so a wide non-wrapping
+   table inside one refuses to shrink and forces the entire page wider than the
+   viewport. Every content-bearing grid child is pinned to min-width:0, and
+   the tables get their own scroll containers. */
+.wrap>*,.split>*,.stack>*,.aigrid>*,.termgrid>*,.chartwrap>*{min-width:0}
+.qtscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.qtscroll .qt{min-width:430px}
+.dtscroll{overflow-x:auto}
+.dtscroll .dt{min-width:420px}
+.tape{overflow-x:auto}
+.pn{min-width:0}
+.pn .nm{min-width:0;overflow-wrap:anywhere;text-align:right}
+.pn .tx{overflow-wrap:anywhere}
+.stage p,.detail,.chartfoot,.notes,.fine{overflow-wrap:anywhere}
+.bar .btags{min-width:0}
+@media(max-width:1240px){.aigrid{grid-template-columns:1fr}}
+@media(max-width:860px){
+  .wrap{padding:12px}
+  .sechd{align-items:flex-start}
+  .sechd .sub{max-width:60%;overflow-wrap:anywhere;text-align:right}
+  .qt,.dt{font-size:10.5px}
+  .qt th,.qt td,.dt th,.dt td{padding:8px 7px}
+  #spark{height:210px}
+}
+@media(max-width:560px){
+  .kpi .v{font-size:21px}
+  .kpi{padding:11px 12px}
+  .charttop{gap:8px}
+  .charttop .px{font-size:18px}
+  .ivsel{flex:1 1 100%}
+  .bar{padding:10px 12px}
+  .bar .path{width:100%}
+  .btags{width:100%}
+  .tag{font-size:9px;padding:4px 7px}
+  .row-btns .btn{flex:1 1 44%}
+  .kv div{padding:7px 9px}
+}
 
 /* ── responsive ────────────────────────────────────────── */
 @media(max-width:1240px){
@@ -243,45 +297,486 @@ nav a.on .ic{color:var(--accent)}
   .wrap{padding:12px}
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
-</style>
+
+/* ═══════════════════════════════════════════════════════════════════
+   TERMINAL THEME — dense, near-black institutional console
+   Modelled on professional trading terminals: flat near-black surfaces,
+   green as the system/live accent, red reserved for loss, amber for
+   caution. Information density over decoration. No glow without meaning.
+   ═══════════════════════════════════════════════════════════════════ */
+:root{
+  --void:#08090a; --bg:#0a0b0d; --panel:#0f1013; --panel-2:#131519;
+  --edge:#1d1f24; --edge-2:#2a2d33;
+  --acc:#00d97e; --acc-dim:#00a862; --acc-soft:rgba(0,217,126,.12);
+  --gain:#00d97e; --loss:#ff4d4f; --warn:#f0a92b; --idle:#7b828c;
+  --ink:#e9ecef; --ink-2:#a8b0ba; --dim:#7b828c; --faint:#545b64;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+}
+
+html,body{background:var(--void)}
+body{background:var(--void);color:var(--ink)}
+
+/* Flat instrument grid, barely present. */
+body:before{opacity:1;background-image:
+  linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px);
+  background-size:56px 56px;mask-image:none}
+body:after{opacity:1;inset:0;filter:none;animation:none;
+  background:radial-gradient(60rem 30rem at 78% -8%,rgba(0,217,126,.05),transparent 62%)}
+
+/* ── surfaces ───────────────────────────────────────────── */
+.sec{background:var(--panel);border:1px solid var(--edge);border-radius:8px;
+  box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+.sec>.hud{position:absolute;width:11px;height:11px;pointer-events:none;z-index:3;
+  border:1.5px solid var(--acc);opacity:.9}
+.sec{position:relative}
+.sec>.hud.tl{top:0;left:0;border-right:0;border-bottom:0}
+.sec>.hud.tr{top:0;right:0;border-left:0;border-bottom:0}
+.sec>.hud.bl{bottom:0;left:0;border-right:0;border-top:0}
+.sec>.hud.br{bottom:0;right:0;border-left:0;border-top:0}
+
+.sechd{background:var(--panel-2);border-bottom:1px solid var(--edge);padding:7px 12px}
+.sechd:after{display:none}
+.sechd h2{color:var(--ink);font-size:10.5px;letter-spacing:.13em;text-shadow:none}
+.sechd .sub{color:var(--faint);font-size:9px}
+.secbd{padding:10px 12px}
+
+/* ── rail ───────────────────────────────────────────────── */
+.rail{background:#0c0d10;border-right:1px solid var(--edge)}
+.rail:after{display:none}
+.brandmark{background:var(--acc);color:#04150d;border:0;border-radius:5px;
+  box-shadow:none;font-weight:800}
+.brand b{color:var(--ink);text-shadow:none;font-size:13.5px}
+.brand small{color:var(--faint);font-size:8.5px;letter-spacing:.12em}
+.nav{gap:1px;padding:8px}
+.nav a{color:var(--ink-2);padding:7px 9px;font-size:12.5px;border-radius:5px}
+.nav a:hover{background:#15171b;color:var(--ink);border-color:transparent}
+.nav a.on{background:var(--acc-soft);color:var(--ink);border-color:rgba(0,217,126,.3);
+  box-shadow:inset 2px 0 var(--acc)}
+.nav a .ic{color:var(--faint);text-shadow:none;font-size:10px}
+.nav a.on .ic{color:var(--acc)}
+.sidefoot{background:#0f1013;border:1px solid var(--edge);border-radius:6px;padding:9px}
+.sidefoot .online{color:var(--acc);text-shadow:none;font-family:var(--mono);
+  font-size:9.5px;letter-spacing:.12em}
+.dot.ok{background:var(--acc);box-shadow:0 0 6px var(--acc);
+  animation:beacon 2.6s ease-in-out infinite}
+@keyframes beacon{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── header ─────────────────────────────────────────────── */
+.bar{background:#0c0d10;border-bottom:1px solid var(--edge);padding:9px 16px}
+.bar .path{color:var(--faint);font-size:11.5px}
+.bar .path b{color:var(--ink);font-weight:600}
+.pill{background:#0f1013;border:1px solid var(--edge);border-radius:4px;
+  color:var(--ink-2);padding:4px 8px;font-size:9.5px}
+.tag{background:#121418;border:1px solid var(--edge-2);border-radius:3px;
+  color:var(--ink-2);padding:3px 6px;font-size:8.5px;letter-spacing:.12em}
+.tag.ok{border-color:rgba(0,217,126,.35);color:var(--acc);background:rgba(0,217,126,.08)}
+.tag.bad{border-color:rgba(255,77,79,.4);color:#ff8080;background:rgba(255,77,79,.08)}
+.tag.warn{border-color:rgba(240,169,43,.4);color:#f5c46b;background:rgba(240,169,43,.08)}
+.tag.acc{border-color:rgba(0,217,126,.35);color:var(--acc);background:rgba(0,217,126,.08)}
+
+/* ── KPI: dense instrument strip ────────────────────────── */
+.kpis{background:var(--edge);gap:1px;border:1px solid var(--edge);border-radius:8px;
+  overflow:hidden;box-shadow:none}
+.kpi{background:var(--panel);padding:10px 13px;position:relative;overflow:hidden}
+.kpi:before{background:linear-gradient(90deg,transparent,var(--acc),transparent);opacity:.35}
+.kpi:after{display:none}
+.kpi:hover{background:var(--panel-2)}
+.kpi .k{color:var(--faint);font-size:9px;letter-spacing:.14em}
+.kpi .v{color:var(--ink);font-size:clamp(19px,1.9vw,26px);font-weight:650;
+  text-shadow:none;margin-top:6px;letter-spacing:-.01em}
+.kpi .v.up{color:var(--gain);text-shadow:none}
+.kpi .v.down{color:var(--loss);text-shadow:none}
+.kpi .v.warn{color:var(--warn);text-shadow:none}
+.kpi .s{color:var(--faint);font-size:9px;margin-top:5px}
+
+/* ── market terminal ────────────────────────────────────── */
+.tape{background:var(--edge);border:1px solid var(--edge);border-radius:0;
+  border-left:0;border-right:0}
+.tape .q{background:#0d0e11;padding:8px 13px;border-radius:0}
+.tape .q:hover{background:#111316}
+.tape .q .s{color:var(--faint);font-size:9px;letter-spacing:.12em}
+.tape .q .p{color:var(--ink);font-size:15px;font-weight:650;text-shadow:none;margin-top:5px}
+.tape .q .c{font-size:9.5px;margin-top:4px}
+.tape .q .c.up{color:var(--gain)} .tape .q .c.dn{color:var(--loss)}
+.tape .q .c.fl{color:var(--faint)}
+
+.chartbox,.termtable{background:#0b0c0e;padding:10px 12px}
+.termtable{padding:6px 8px}
+.charttop{gap:11px;margin-bottom:8px}
+.charttop .sym{color:var(--ink);letter-spacing:.12em;font-size:12.5px;text-shadow:none}
+.charttop .px{color:var(--acc);font-size:20px;text-shadow:none;font-weight:650}
+.charttop .mt{color:var(--faint);font-size:9.5px}
+.ivsel{background:#0b0c0e;border:1px solid var(--edge-2);border-radius:4px;
+  color:var(--ink-2);padding:4px 7px;font-size:9.5px}
+#spark{border-color:var(--edge);box-shadow:none;border-radius:4px}
+.notes{color:var(--faint);font-size:10px;padding:8px 12px;line-height:1.55}
+
+.qt{font-size:11px}
+.qt th{background:#101216;color:var(--faint);border-bottom-color:var(--edge);
+  padding:7px 9px;font-size:8.5px;letter-spacing:.12em}
+.qt td{padding:7px 9px;border-bottom-color:#17191d}
+.qt tbody tr:hover{background:#14161a}
+.qt tbody tr.sel{background:rgba(0,217,126,.09);box-shadow:inset 2px 0 var(--acc)}
+.qt td:first-child{color:var(--ink);font-weight:600}
+.qt tbody tr.stale td.p{color:var(--warn)}
+.qt tbody tr.stale td.p::after{content:" STALE";font-size:8px;color:var(--warn)}
+.qt tbody tr.stale .n{color:var(--dim)}
+
+/* ── agent pipeline ─────────────────────────────────────── */
+.pipe{background:var(--edge);gap:1px}
+.pn{background:var(--panel);padding:10px 12px}
+.pn:hover{background:var(--panel-2)}
+.pn .ix{color:var(--faint);font-size:9px}
+.pn .nm{font-size:12.5px;font-weight:600}
+.pn .st{font-size:8.5px;letter-spacing:.12em;margin-top:7px;text-shadow:none}
+.pn .st.live{color:var(--gain)}
+.pn .st.idle{color:var(--warn)}
+.pn .st.off{color:var(--faint)}
+.pn .tx{color:var(--ink-2);font-size:11.5px;line-height:1.5;margin-top:7px}
+.pn .bar2{background:#1e2126;margin-top:9px}
+.pn .bar2 i{background:var(--acc)}
+.pn[data-hue="#f0a92b"] .bar2 i{background:var(--warn)}
+.pn .nm{color:var(--ink);font-size:12.5px;font-weight:600}
+.pn .mt{color:var(--faint);font-size:9px;margin-top:8px;padding-top:8px;
+  border-top-color:#17191d}
+
+/* ── forms ──────────────────────────────────────────────── */
+.fld label,.field label{color:var(--faint);font-size:9px;letter-spacing:.13em}
+.fld select,.fld input,.field select,.field input{
+  background:#0b0c0e;border-color:var(--edge-2);color:var(--ink);
+  border-radius:4px;padding:7px 9px;font-size:12px}
+.fld select:focus,.fld input:focus,.field select:focus,.field input:focus{
+  border-color:var(--acc);box-shadow:0 0 0 2px rgba(0,217,126,.16)}
+.frm{padding:12px;gap:9px}
+.btn{background:#14161a;border:1px solid var(--edge-2);color:var(--ink);
+  border-radius:4px;padding:7px 12px;font-size:11.5px;font-weight:500}
+.btn:hover{background:#1a1d22;border-color:#3a3e45;color:#fff}
+.btn.go{background:var(--acc);border-color:var(--acc);color:#04150d;font-weight:650}
+.btn.go:hover{background:#1fe892;border-color:#1fe892}
+.msg{border-radius:4px;font-size:11px;padding:8px 10px;margin:0 12px 10px}
+.msg.ok{border-color:rgba(0,217,126,.35);color:#5fe3ab;background:rgba(0,217,126,.07)}
+.msg.bad{border-color:rgba(255,77,79,.4);color:#ff8f8f;background:rgba(255,77,79,.07)}
+.riskbox{border-top-color:var(--edge);color:var(--ink-2);padding:9px 12px;
+  font-size:10px;line-height:1.6}
+.riskbox.halt{border-top-color:rgba(255,77,79,.45);color:#ff8f8f;background:rgba(255,77,79,.06)}
+.fine{color:var(--faint);font-size:9.5px;line-height:1.5;margin-top:8px}
+.chk{margin-top:9px}
+.chk span{font-size:11px;color:var(--ink-2)}
+.chk em{font-size:9px;color:var(--faint)}
+
+/* ── AI desk ────────────────────────────────────────────── */
+.aigrid{grid-template-columns:minmax(0,320px) minmax(0,1fr);align-items:stretch}
+.aigrid>*{display:flex;flex-direction:column;min-height:0}
+.kv{background:var(--edge);border-color:var(--edge);border-radius:4px;margin-top:10px}
+.kv div{background:#0f1013;padding:6px 10px}
+.kv b{color:var(--faint);font-size:9px;letter-spacing:.12em}
+.kv span{color:var(--ink);font-size:11px}
+.stagerow{gap:7px;align-content:start;flex:1;min-height:0}
+.aigrid>div:last-child{min-height:0;display:flex}
+.stagerow>.empty{grid-column:1/-1;align-self:stretch;color:var(--faint);
+  border:1px dashed var(--edge-2);border-radius:6px;background:#0d0e11;
+  padding:28px 16px;display:grid;place-content:center;text-align:center;
+  min-height:200px;flex:1}
+.stage{background:#0d0e11;border-color:var(--edge);border-radius:5px;padding:9px 11px}
+.stage:hover{border-color:var(--edge-2)}
+.stage .sh b{color:var(--ink);font-size:12px}
+.stage p{color:var(--ink-2);font-size:11.5px;line-height:1.55}
+.stage li{color:var(--warn);font-size:10.5px}
+.stage.bad{border-color:rgba(255,77,79,.35)}
+
+/* ── tables and feed ────────────────────────────────────── */
+.dt{font-size:11.5px}
+.dt th{background:#101216;color:var(--faint);border-bottom-color:var(--edge);
+  padding:7px 12px;font-size:8.5px;letter-spacing:.12em}
+.dt td{padding:7px 12px;border-bottom-color:#17191d}
+.dt .sub2{color:var(--faint);font-size:9.5px}
+.empty{color:var(--faint);padding:18px 12px;font-size:11px}
+.pos{color:var(--gain)} .neg{color:var(--loss)}
+.xbtn{background:transparent;border:1px solid var(--edge-2);border-radius:3px;
+  color:var(--ink-2);padding:2px 7px;font-size:9.5px}
+.xbtn:hover{border-color:var(--loss);color:#ff8f8f;background:rgba(255,77,79,.07)}
+.pos-row:hover,.dt tbody tr:hover{background:#14161a}
+.feed{max-height:420px}
+.feed .row{gap:9px;padding:8px 12px;border-bottom-color:#17191d}
+.feed .tx{font-size:11.5px;color:var(--ink-2);line-height:1.5}
+.feed .tx b{color:var(--ink)}
+.feed .ts{color:var(--faint);font-size:9px;letter-spacing:.1em}
+.warn{border-color:rgba(240,169,43,.35);background:rgba(240,169,43,.07);
+  color:#f5c46b;border-radius:4px;font-size:10.5px;padding:7px 10px}
+
+.split{grid-template-columns:minmax(0,1fr) 330px;align-items:start}
+.stack{gap:14px}
+.wrap{gap:14px}
+.main{padding-bottom:36px}
+.topbar{margin-bottom:0}
+
+@media(max-width:1240px){.aigrid{grid-template-columns:1fr}}
+@media(max-width:860px){
+  .secbd{padding:9px 10px}
+  .kpi{padding:9px 11px}
+  .kpi .v{font-size:19px}
+  .qt,.dt{font-size:10.5px}
+  .qt th,.qt td,.dt th,.dt td{padding:7px 7px}
+  #spark{height:210px}
+  .feed{max-height:320px}
+}
+@media(prefers-reduced-motion:reduce){
+  .dot.ok{animation:none}
+  .stagerow>.empty:before{animation:none}
+}
+
+/* ═══ TOP BAR NAV + LIVE TICKER ═══
+   The left rail is gone; navigation lives in the sticky header. The ticker
+   strip is duplicated by renderTicker() and translated -50%, so the loop is
+   seamless. Stale quotes are labelled with their age, never scrolled past as
+   though current. */
+.shell{display:block}
+.main{padding-bottom:36px}
+
+.bar{position:sticky;top:0;z-index:30;display:flex;align-items:center;
+  gap:14px;flex-wrap:wrap;background:#0c0d10;border-bottom:1px solid var(--edge);
+  padding:8px 16px}
+.bar .path{font-size:11.5px;flex:none}
+.topnav{display:flex !important;gap:2px;flex-wrap:wrap;min-width:0;
+  padding:0 !important;flex:none}
+.topnav a{padding:5px 10px !important;border-radius:4px;font-size:12px;
+  color:var(--ink-2);text-decoration:none;border:1px solid transparent;
+  white-space:nowrap;transition:background .12s,color .12s}
+.topnav a:hover{background:#15171b;color:var(--ink)}
+.topnav a.on{background:var(--acc-soft);color:var(--ink);
+  border-color:rgba(0,217,126,.3)}
+.bar .btags{margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.tag.live{display:inline-flex;align-items:center;gap:6px}
+
+.tickerbar{border-bottom:1px solid var(--edge);background:#0b0c0e;
+  overflow:hidden;position:relative}
+.tickerbar:before{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;
+  background:linear-gradient(90deg,#0b0c0e 0,transparent 60px,
+             transparent calc(100% - 60px),#0b0c0e 100%)}
+.ticker{display:flex;width:max-content;animation:tickerRun 44s linear infinite}
+.ticker:hover{animation-play-state:paused}
+@keyframes tickerRun{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.tk{display:inline-flex;align-items:center;gap:7px;padding:7px 15px;
+  border-right:1px solid #141619;white-space:nowrap;font-family:var(--mono);
+  font-size:11px}
+.tk .s{color:var(--faint);font-size:9.5px;letter-spacing:.12em}
+.tk .p{color:var(--ink);font-weight:600}
+.tk .d{font-size:9.5px}
+.tk .d.up{color:var(--gain)} .tk .d.dn{color:var(--loss)}
+.tk .d.fl{color:var(--faint)}
+.tk .age{font-size:9px;color:#3f454c}
+.tk .age.stale{color:var(--warn)}
+
+@media(max-width:860px){
+  .bar{gap:8px;padding:8px 12px}
+  .bar .path{width:100%}
+  .bar .btags{margin-left:0;width:100%}
+  .topnav{width:100%;overflow-x:auto;flex-wrap:nowrap}
+  .topnav a{flex:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .ticker{animation:none;flex-wrap:wrap;width:100%}
+  .tickerbar{overflow:visible}
+}
+
+/* ═══ FLEET COMMAND LAYER ═══
+   Command-center fleet cards over the terminal base. Every number derives
+   from recorded events, account state or policy — shares, counts and
+   timestamps only. Anything uncomputable (e.g. per-agent win rates, which
+   have no attribution data) renders as an em dash, never a guess. */
+#clock{font-variant-numeric:tabular-nums;min-width:74px;text-align:center}
+
+.fleetbar{display:flex;align-items:center;gap:10px;padding:9px 14px;
+  border-bottom:1px solid var(--line);background:var(--surface-2)}
+.fleetbar .fl{font:600 9.5px/1 var(--mono);letter-spacing:.16em;color:var(--faint)}
+.fleetbar .fmeter{flex:1;height:5px;border-radius:3px;background:var(--line-2);
+  overflow:hidden}
+.fleetbar .fmeter i{display:block;height:100%;width:0;border-radius:3px;
+  background:linear-gradient(90deg,var(--acc-dim),var(--acc));
+  transition:width .5s ease}
+.fleetbar .fp{font:600 10.5px/1 var(--mono);color:var(--ink);
+  font-variant-numeric:tabular-nums}
+.fleetbar .fn{font:500 9.5px/1 var(--mono);color:var(--dim);letter-spacing:.06em}
+.sechd .sub.err{color:var(--loss)}
+
+.pn{animation:fleetIn .45s ease both;animation-delay:var(--d,0ms)}
+@keyframes fleetIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.pn{transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.pipe .pn:hover{transform:translateY(-3px);border-color:var(--acc);
+  box-shadow:0 14px 34px -12px #000,0 0 22px -8px var(--acc-soft)}
+.pipe .pn{box-shadow:inset 2px 0 var(--hue,transparent)}
+.ahead{display:flex;align-items:center;gap:10px}
+.ava{position:relative;width:40px;height:40px;flex:none}
+.ava svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.ava .ring-bg{fill:none;stroke:var(--line-2);stroke-width:3}
+.ava .ring-fg{fill:none;stroke:var(--acc);stroke-width:3;stroke-linecap:round;
+  transition:stroke-dasharray .5s ease}
+.ava .mo{position:absolute;inset:0;display:grid;place-items:center;
+  font:700 13px/1 var(--mono);color:var(--ink)}
+.ava .lm{position:absolute;right:-2px;bottom:-2px;width:9px;height:9px;
+  border-radius:50%;background:var(--faint);border:2px solid var(--surface)}
+.ava .lm.on{background:var(--acc);box-shadow:0 0 8px var(--acc)}
+.ava .lm.warn{background:var(--warn)}
+.anm{min-width:0}
+.anm .nm{font-size:13px;font-weight:650;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis}
+.anm .rl{font:500 8.5px/1.4 var(--mono);letter-spacing:.1em;color:var(--faint)}
+.pn .stats{display:flex;gap:12px;margin-top:10px;padding-top:9px;
+  border-top:1px solid var(--line)}
+.pn .stats div{display:grid;gap:3px}
+.pn .stats b{font:650 12.5px/1 var(--mono);color:var(--ink);
+  font-variant-numeric:tabular-nums}
+.pn .stats span{font:500 8px/1 var(--mono);letter-spacing:.12em;color:var(--faint)}
+.hb{display:flex;gap:2px;margin-top:9px}
+.hb i{flex:1;height:9px;border-radius:1px;background:var(--line-2)}
+.hb i.hit{background:var(--acc)}
+.hb i.ai{background:var(--acc-dim)}
+.hb i.miss{background:transparent;border:1px solid var(--line-2)}
+.pn details.rep{margin-top:9px;border-top:1px solid var(--line);padding-top:8px}
+.pn details.rep summary{cursor:pointer;font:600 9px/1.6 var(--mono);
+  letter-spacing:.12em;color:var(--dim);list-style:none}
+.pn details.rep summary::-webkit-details-marker{display:none}
+.pn details.rep summary:hover{color:var(--ink)}
+.pn details.rep .re{padding:7px 0;border-bottom:1px dashed var(--line)}
+.pn details.rep .re:last-child{border-bottom:0}
+.pn details.rep .rt{font:600 9px/1.6 var(--mono);color:var(--faint)}
+.pn details.rep .rs{font:600 9px/1.6 var(--mono)}
+.pn details.rep .rs.ok{color:var(--acc)} .pn details.rep .rs.bad{color:var(--warn)}
+.pn details.rep .rx{font-size:11px;line-height:1.5;color:var(--ink-2);margin-top:3px}
+.agctl{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:9px;
+  border-top:1px solid var(--line)}
+.switch{position:relative;display:inline-flex;flex:none;cursor:pointer}
+.switch input{position:absolute;opacity:0;inset:0;cursor:pointer}
+.switch .tr{width:32px;height:17px;border-radius:10px;background:var(--line-2);
+  border:1px solid var(--edge-2);transition:background .15s,border-color .15s;
+  position:relative}
+.switch .tr:after{content:"";position:absolute;top:2px;left:2px;width:11px;height:11px;
+  border-radius:50%;background:var(--dim);transition:left .15s,background .15s}
+.switch input:checked+.tr{background:rgba(0,217,126,.25);border-color:var(--acc)}
+.switch input:checked+.tr:after{left:16px;background:var(--acc)}
+.switch input:focus-visible+.tr{outline:2px solid var(--acc);outline-offset:2px}
+.switch input:disabled+.tr{opacity:.45;cursor:not-allowed}
+.agctl .lb{font:600 9px/1.5 var(--mono);letter-spacing:.1em;color:var(--dim)}
+.agctl .lk{font:500 9px/1.5 var(--mono);color:var(--faint)}
+@media(max-width:860px){
+  .fleetbar{flex-wrap:wrap}
+  .fleetbar .fmeter{flex:1 1 100%;order:3}
+}
+@media(prefers-reduced-motion:reduce){
+  .pn{animation:none}
+  .pipe .pn:hover{transform:none}
+  .ava .ring-fg,.fleetbar .fmeter i{transition:none}
+}
+
+/* ═══ NEON COMMAND THEME ═══
+   Purple/cyan command identity over the terminal base, modelled on pro
+   trading-desk references: a neon top edge, glowing panel rims, gradient
+   display numerals, and a bright ticker. All figures stay real data. */
+:root{
+  --neon:#b366ff; --neon-dim:#7c3aed; --cy:#22d3ee;
+  --neon-soft:rgba(150,80,255,.14); --cy-soft:rgba(34,211,238,.12);
+}
+body:before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:60;
+  background:linear-gradient(90deg,var(--neon),var(--cy),var(--gain),var(--neon));
+  box-shadow:0 0 18px rgba(150,80,255,.65)}
+.brandmark{background:linear-gradient(135deg,#3b1470,#0d1525)!important;
+  color:#d9b8ff!important;box-shadow:0 0 26px #a855ff44!important}
+.nav a.active{background:linear-gradient(90deg,#2a1650,#101827)!important;
+  box-shadow:inset 2px 0 var(--neon),0 0 18px #a855ff22!important}
+.nav .ico{color:#c4a4ff!important}
+.sec{border-color:#ffffff10!important;
+  box-shadow:0 24px 80px rgba(0,0,0,.42),0 0 0 1px #a855ff14,0 0 34px -18px #a855ff55!important}
+.floor,.hero{border-color:#a855ff26!important}
+.hero:after{background:#a855ff14!important}
+.eyebrow{color:#c4a4ff!important}
+.metric strong,.hero h1{
+  background:linear-gradient(180deg,#ffffff,#9be8c3)!important;
+  -webkit-background-clip:text!important;background-clip:text!important;
+  -webkit-text-fill-color:transparent!important}
+.metric .up{color:var(--gain)!important;text-shadow:0 0 12px #00ff8866}
+.floor-dot{background:var(--gain)!important;box-shadow:0 0 16px var(--gain)!important}
+.agent{border-color:#c5dcff22!important}
+.agent:hover{border-color:#a855ff66!important;
+  box-shadow:0 22px 50px #0009,0 0 30px -6px #a855ff55!important}
+.agent:after{background:linear-gradient(90deg,transparent,var(--neon),var(--cy),transparent)!important;
+  box-shadow:0 0 16px #a855ff88!important}
+.avatar{border-color:#a855ff66!important;box-shadow:0 0 22px #a855ff33!important}
+.screen{border-color:#a855ff1e!important}
+.tickerbar{border-bottom-color:#a855ff33!important}
+.tk{color:#e8f3ff!important}
+.tk .s{color:var(--cy)!important;text-shadow:0 0 10px #22d3ee55}
+.tk .d.up{color:var(--gain)!important;text-shadow:0 0 10px #00ff8866}
+.tk .d.dn{color:var(--loss)!important;text-shadow:0 0 10px #ff4d6a66}
+.tk .age.stale{color:var(--warn)!important}
+.event:hover{border-color:#a855ff33!important}
+.event[data-recorded="true"] .edot{background:var(--cy)!important;
+  box-shadow:0 0 10px var(--cy)!important}
+#floorStatus{border-color:#a855ff33!important;color:#d9b8ff!important}
+.btn.primary,.tradebtn{background:linear-gradient(135deg,#6d28d9,#3b1470)!important;
+  border-color:#a855ff66!important;box-shadow:0 0 22px -6px #a855ff88!important}
+.agent[data-observed="true"] .status{background:var(--gain)!important;
+  box-shadow:0 0 11px var(--gain)!important}
+.roster button[aria-pressed=true]{border-color:var(--neon)!important;
+  box-shadow:0 0 22px #a855ff33!important}
+
+/* ═══ NEON INTENSITY PASS ═══
+   Push separation, saturation and glow decisively: brighter panels, larger
+   luminous numerals, per-agent edge light, vivid ticker. Form follows the
+   same data; only the light changes. */
+.sec{background:linear-gradient(180deg,#11141a,#0b0d11)!important;
+  border-color:#ffffff1f!important;
+  box-shadow:0 24px 80px rgba(0,0,0,.5),0 0 0 1px #a855ff22,0 0 52px -10px #a855ff77!important}
+.sechd h2{color:#f1eaff!important;text-shadow:0 0 14px #a855ff55}
+.metric strong{font-size:clamp(27px,2.7vw,40px)!important;
+  text-shadow:0 0 30px rgba(0,255,136,.35)!important}
+.metric .up{text-shadow:0 0 18px #00ff8899!important}
+.tick,.tk{font-size:12px!important}
+.tk .p{color:#ffffff!important;text-shadow:0 0 14px rgba(255,255,255,.3)}
+.tk .d{font-weight:700!important}
+.pipe .pn{box-shadow:inset 3px 0 var(--hue,transparent),0 0 30px -12px var(--hue,transparent)!important}
+.pipe .pn:hover{box-shadow:inset 3px 0 var(--hue,transparent),0 18px 44px -12px #000,0 0 34px -8px var(--hue,transparent)!important}
+.pn .nm{font-size:13.5px!important;color:#ffffff!important}
+.ava{width:46px!important;height:46px!important}
+.ava .mo{font-size:15px!important;font-weight:800!important}
+.ava .ring-fg{stroke-width:3.5!important}
+.hb i.hit{filter:brightness(1.3) saturate(1.2)}
+.fleetbar .fmeter i{box-shadow:0 0 12px #00ff88aa}
+.event b{color:#fff!important}</style>
 </head>
 <body>
 <div class="shell">
 
-  <aside class="rail">
-    <div class="brand">
-      <div class="mk">TL</div>
-      <div><b>TradingLab</b><small>AUTONOMOUS PAPER</small></div>
-    </div>
-    <nav>
-      <a href="#overview" class="on"><span class="ic">01</span>Overview</a>
-      <a href="#markets"><span class="ic">02</span>Markets</a>
-      <a href="#pipeline"><span class="ic">03</span>Agent Pipeline</a>
-      <a href="#positions"><span class="ic">04</span>Positions</a>
-      <a href="#activity"><span class="ic">05</span>Event Log</a>
-      <a href="company.html"><span class="ic">06</span>Office View</a>
-    </nav>
-    <div class="railfoot">
-      <div class="sysline"><i class="dot ok" id="sysDot"></i><span class="t" id="sysTxt">CONNECTED</span></div>
-      <small>Paper only. No live broker execution is enabled.</small>
-    </div>
-  </aside>
-
   <main class="main">
     <div class="bar">
       <div class="path">TradingLab / <b>Overview</b></div>
+      <nav class="topnav" aria-label="Sections">
+        <a class="on" href="#overview">Overview</a>
+        <a href="#markets">Markets</a>
+        <a href="#pipeline">Agents</a>
+        <a href="#ai">AI Desk</a>
+        <a href="#positions">Positions</a>
+        <a href="#activity">Events</a>
+        <a href="company.html">Office</a>
+      </nav>
       <div class="btags">
+        <span class="tag" id="clock" title="Coordinated Universal Time">--:--:--</span>
         <span class="tag" id="tagFeed">ECB REFERENCE</span>
         <span class="tag" id="tagDate">DATE —</span>
         <span class="tag" id="tagGate">RISK ARMED</span>
+        <span class="tag live"><i class="dot ok" id="sysDot"></i><span class="t" id="sysTxt">LIVE</span></span>
       </div>
     </div>
 
-    <div class="wrap">
+    <div class="tickerbar" aria-live="off">
+      <div class="ticker" id="ticker"></div>
+    </div>
+
+<div class="wrap">
 
       <section class="kpis" id="kpis"></section>
 
-      <section class="sec" id="markets">
+      <section class="sec" id="markets"><i class="hud tl"></i><i class="hud tr"></i><i class="hud bl"></i><i class="hud br"></i>
         <div class="sechd">
           <h2>Market Terminal</h2>
           <span class="sub" id="feedSrc">—</span>
@@ -301,30 +796,40 @@ nav a.on .ic{color:var(--accent)}
                 <option value="1h">1 hour</option>
                 <option value="1d">1 day</option>
               </select>
+              <button id="qbuy" class="qbtn buy" title="One-click paper buy at the ticket notional">Buy</button>
+              <button id="qsell" class="qbtn sell" title="One-click paper sell at the ticket notional">Sell</button>
             </div>
-            <canvas id="spark" width="960" height="230"></canvas>
+            <div id="spark"></div>
+            <div id="chartEmpty" class="chartempty" hidden></div>
             <p class="warn" id="cWarn" hidden></p>
           </div>
           <div>
-            <table class="qt"><thead><tr>
+            <div class="qtscroll"><table class="qt"><thead><tr>
               <th>PAIR</th><th>LAST</th><th>BID</th><th>ASK</th><th>SPR</th><th>DATE</th>
-            </tr></thead><tbody id="quotes"></tbody></table>
+            </tr></thead><tbody id="quotes"></tbody></table></div>
             <div class="notes" id="quoteNote">Prices are reference mid rates. Click a row to load the pair.</div>
           </div>
         </div>
       </section>
 
-      <section class="sec" id="pipeline">
+      <section class="sec" id="pipeline"><i class="hud tl"></i><i class="hud tr"></i><i class="hud bl"></i><i class="hud br"></i>
         <div class="sechd">
-          <h2>Agent Pipeline</h2>
+          <h2>Trading Fleet</h2>
           <span class="sub" id="pipeMeta">—</span>
+          <span class="sub err" id="pipeErr" role="status"></span>
+        </div>
+        <div class="fleetbar" aria-label="Fleet reporting share">
+          <span class="fl">FLEET SIGNAL</span>
+          <div class="fmeter"><i id="fleetFill"></i></div>
+          <span class="fp" id="fleetPct">—</span>
+          <span class="fn" id="fleetNote">—</span>
         </div>
         <div class="pipe" id="pipe"></div>
       </section>
 
       <div class="split">
         <div class="stack">
-          <section class="sec" id="ai">
+          <section class="sec" id="ai"><i class="hud tl"></i><i class="hud tr"></i><i class="hud bl"></i><i class="hud br"></i>
         <div class="sechd">
           <h2>AI Research Desk</h2>
           <span class="sub" id="aiState">NOT CONFIGURED</span>
@@ -359,12 +864,12 @@ nav a.on .ic{color:var(--accent)}
               </div>
               <p class="msg" id="aiMsg" role="status"></p>
               <div class="kv" id="aiBudget"></div>
-              <p class="fine">The key is held in the server process only. It is never written
+              <p class="fine secondary">The key is held in the server process only. It is never written
                 to the database, a log, an export or browser storage, and restarting the
-                server forgets it.</p>
-              <p class="fine">The model reads observed prices and writes research, macro
-                views, strategy hypotheses and critique. It has no order tool: it cannot
-                size an entry, approve one, or alter a risk limit. Those stay deterministic.</p>
+                server forgets it. The model reads observed prices and writes research,
+                macro views, strategy hypotheses and critique. It has no order tool: it
+                cannot size an entry, approve one, or alter a risk limit. Those stay
+                deterministic.</p>
             </div>
             <div>
               <div class="stagerow" id="aiStages">
@@ -375,15 +880,16 @@ nav a.on .ic{color:var(--accent)}
         </div>
       </section>
 
-      <section class="sec" id="positions">
+      <section class="sec" id="positions"><i class="hud tl"></i><i class="hud tr"></i><i class="hud bl"></i><i class="hud br"></i>
             <div class="sechd">
               <h2>Open Positions</h2>
               <span class="sub" id="posMeta">0 OPEN</span>
             </div>
             <div id="posBody"></div>
           </section>
-
-          <section class="sec" id="activity">
+        </div>
+        <div class="stack">
+          <section class="sec" id="activity"><i class="hud tl"></i><i class="hud tr"></i><i class="hud bl"></i><i class="hud br"></i>
             <div class="sechd">
               <h2>Event Log</h2>
               <span class="sub">RECORDED REPORTS</span>
@@ -394,10 +900,8 @@ nav a.on .ic{color:var(--accent)}
               not evidence of agent activity.
             </div>
           </section>
-        </div>
 
-        <div class="stack">
-          <section class="sec">
+          <section class="sec" id="ticket"><i class="hud tl"></i><i class="hud tr"></i><i class="hud bl"></i><i class="hud br"></i>
             <div class="sechd"><h2>Order Ticket</h2><span class="sub">RISK GATED</span></div>
             <div class="frm">
               <div class="fld">
@@ -406,6 +910,8 @@ nav a.on .ic{color:var(--accent)}
                   <option>EUR/USD</option><option>GBP/USD</option><option>USD/JPY</option>
                   <option>AUD/USD</option><option>USD/CHF</option>
                   <option>XAU/USD</option>
+                  <option>AAPL/USD</option><option>MSFT/USD</option><option>NVDA/USD</option>
+                  <option>TSLA/USD</option><option>AMZN/USD</option><option>META/USD</option>
                 </select>
               </div>
               <div class="fld">
@@ -428,11 +934,15 @@ nav a.on .ic{color:var(--accent)}
   </main>
 </div>
 
+<script src="vendor-lightweight-charts.js"></script>
 <script>
-const PAIRS=['EUR/USD','GBP/USD','USD/JPY','AUD/USD','USD/CHF','XAU/USD'];
-/* Metals quote per troy ounce, so two decimals; JPY carries three; spot FX five. */
-const decimals=p=>(p==='USD/JPY'?3:(p==='XAU/USD'||p==='XAG/USD')?2:5);
+const PAIRS=['EUR/USD','GBP/USD','USD/JPY','AUD/USD','USD/CHF','XAU/USD',
+  'AAPL/USD','MSFT/USD','NVDA/USD','TSLA/USD','AMZN/USD','META/USD'];
+/* Metals quote per troy ounce, equities per share: two decimals. JPY carries
+   three; spot FX five. */
+const decimals=p=>(p==='USD/JPY'?3:(isMetal(p)||isStock(p))?2:5);
 const isMetal=p=>['XAU','XAG'].includes(String(p).split('/')[0]);
+const isStock=p=>['AAPL','MSFT','NVDA','TSLA','AMZN','META'].includes(String(p).split('/')[0]);
 const MAX_QUOTE_AGE=300;
 const px=(p,v)=>Number(v).toFixed(decimals(p));
 const money=v=>Number(v||0).toFixed(2);
@@ -448,19 +958,19 @@ const api=async(path,opts)=>{
 
 /* Five deterministic specialists plus a deterministic accounting reviewer. */
 const AGENTS=[
-  {key:'market',     ix:'01',name:'Market Researcher', hue:'#4c8dff',
+  {key:'market',     ix:'01',name:'Market Researcher', hue:'#22d3ee',
    role:'Feeds and data quality',
    task:'Reads observed quotes, checks timestamp and freshness of every price row.'},
-  {key:'macro',      ix:'02',name:'Macro Analyst',     hue:'#7c6cff',
+  {key:'macro',      ix:'02',name:'Macro Analyst',     hue:'#a78bfa',
    role:'Regime and context',
    task:'Frames the regime from supplied macro context without inventing inputs.'},
-  {key:'strategy',   ix:'03',name:'Strategy Analyst',  hue:'#00a3c4',
+  {key:'strategy',   ix:'03',name:'Strategy Analyst',  hue:'#00d97e',
    role:'Signal construction',
    task:'Requires distinct fresh observations beyond a conservative momentum threshold.'},
-  {key:'risk',       ix:'04',name:'Risk Critic',       hue:'#d9a441',
+  {key:'risk',       ix:'04',name:'Risk Critic',       hue:'#f0a92b',
    role:'Veto authority',
    task:'Independent gate over exposure, drawdown and concentration. Can veto only.'},
-  {key:'portfolio',  ix:'05',name:'Portfolio Coord.',  hue:'#2fbf87',
+  {key:'portfolio',  ix:'05',name:'Portfolio Coord.',  hue:'#f472b6',
    role:'Allocation',
    task:'Sizes entries within the deterministic limits set by the risk critic.'}
 ];
@@ -511,7 +1021,7 @@ async function refreshSeries(){
 
 function paintChartNote(){
   const st=barsState[chartPair]||{},q=quotes[chartPair];
-  const el=$('chartSrc');if(!el)return;
+  const el=$id('chartSrc');if(!el)return;
   if(st.err){el.textContent='bars unavailable — '+st.err;el.style.color='#f0939a';return}
   const n=(series[chartPair]||[]).length;
   el.textContent=n+' '+interval+' bars · '+(st.rebased
@@ -541,6 +1051,41 @@ function renderKpis(s){
 }
 
 /* ── tape + quotes ─────────────────────────────────────── */
+/* ── live scrolling ticker ────────────────────────────────
+   The strip is duplicated and translated -50%, so the loop is seamless. A
+   stale quote is labelled with its age instead of scrolling past as though it
+   were current. */
+function renderTicker(){
+  const el=$id('ticker');
+  if(!el)return;
+  const now=Date.now()/1000;
+  const items=PAIRS.map(p=>{
+    const q=quotes[p];
+    if(!q)return '<span class="tk"><span class="s">'+p+'</span>'+
+      '<span class="p">—</span></span>';
+    const h=series[p]||[];
+    const prev=h.length>1?h[h.length-2].c:q.price;
+    const ch=prev?(q.price-prev)/prev*10000:0;
+    let move;
+    if(isMetal(p)){
+      const b=typeof q.basis_vs_futures==='number'?q.basis_vs_futures:null;
+      move='<span class="d fl">'+(b===null?'spot':'basis '+(b>0?'+':'')+b.toFixed(1))+'</span>';
+    }else{
+      const c=Math.abs(ch)<0.01?'fl':ch>0?'up':'dn';
+      move='<span class="d '+c+'">'+(c==='fl'?'·':ch>0?'▲':'▼')+
+        ' '+Math.abs(ch).toFixed(1)+'</span>';
+    }
+    const age=Math.max(0,now-Number(q.observed||0));
+    const stale=age>MAX_QUOTE_AGE;
+    return '<span class="tk"><span class="s">'+p+'</span>'+
+      '<span class="p">'+px(p,q.price)+'</span>'+move+
+      '<span class="age'+(stale?' stale':'')+'">'+
+      (stale?Math.round(age/60)+'m stale':Math.round(age)+'s')+'</span></span>';
+  });
+  // Two identical halves make the -50% translate loop with no visible seam.
+  el.innerHTML=items.join('')+items.join('');
+}
+
 function renderTape(){
   $id('tape').innerHTML=PAIRS.map(p=>{
     const q=quotes[p];if(!q)return '';
@@ -567,8 +1112,10 @@ function renderQuotes(){
   body.innerHTML=PAIRS.filter(p=>quotes[p]).map(p=>{
     const q=quotes[p];
     const held=(state?.account?.positions||[]).some(x=>x.pair===p);
+    const kind=q.instrument==='stock'?'EQ':q.instrument==='metal'?'METAL':'FX';
     return '<tr data-p="'+p+'" class="'+(p===chartPair?'sel':'')+'">'+
-      '<td>'+p+(held?' <span style="color:#d9a441">●</span>':'')+'</td>'+
+      '<td>'+p+(held?' <span style="color:#d9a441">●</span>':'')+
+      ' <span class="kind">'+kind+'</span></td>'+
       '<td>'+px(p,q.price)+'</td>'+
       '<td class="dim">'+px(p,q.bid)+'</td>'+
       '<td class="dim">'+px(p,q.ask)+'</td>'+
@@ -588,77 +1135,57 @@ function renderQuotes(){
   });
 }
 
-/* ── session chart ─────────────────────────────────────── */
+/* ── session chart (TradingView Lightweight Charts, vendored locally) ──
+   The series fed in is the same real OHLC (metal bars still carry the
+   disclosed futures-to-spot shift from loadSeries). Gaps stay gaps: the
+   library spaces bars by index, so weekends draw no dead runs. */
+let lwChart=null,lwSeries=null,lwKey='';
 function drawChart(){
-  const cv=$id('spark'),ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
-  ctx.clearRect(0,0,W,H);
-  ctx.fillStyle='#0a0e13';ctx.fillRect(0,0,W,H);
+  const el=$id('spark'),empty=$id('chartEmpty');
   const h=series[chartPair]||[];
-  const padL=6,padR=70,padT=12,padB=22,gw=W-padL-padR,gh=H-padT-padB;
-
-  if(!h.length){
-    const st=barsState[chartPair]||{};
-    ctx.strokeStyle='#161c24';ctx.lineWidth=1;
-    for(let g=0;g<=4;g++){const y=padT+(gh/4)*g;
-      ctx.beginPath();ctx.moveTo(padL,y+.5);ctx.lineTo(padL+gw,y+.5);ctx.stroke();}
-    ctx.fillStyle=st.err?'#f0939a':'#aeb9c6';
-    ctx.font='600 11px ui-monospace,monospace';ctx.textAlign='center';
-    ctx.fillText(st.err?'BARS UNAVAILABLE':'LOADING '+interval+' BARS',W/2,padT+gh/2-8);
-    ctx.fillStyle='#4d565f';ctx.font='10px ui-monospace,monospace';
-    ctx.fillText(st.err?String(st.err).slice(0,64):'requesting intraday history',
-      W/2,padT+gh/2+12);
+  if(!window.LightweightCharts){
+    if(empty){empty.hidden=false;empty.textContent='Chart library unavailable (vendor file missing).';}
     return;
   }
-  // Candles need a real body range, not a close-to-close series.
-  const vs=h.flatMap(b=>[b.l,b.h]);
-  let lo=Math.min(...vs),hi=Math.max(...vs);
-  const pad=(hi-lo)*0.08||Math.abs(hi||1)*1e-4;lo-=pad;hi+=pad;
-  // Bar spacing is index-based, not time-based, so weekend gaps are not drawn
-  // as dead horizontal runs.
-  const step=gw/h.length;
-  const X=i=>padL+step*(i+.5);
-  const Y=v=>padT+gh-(v-lo)/(hi-lo)*gh;
-
-  ctx.strokeStyle='#161c24';ctx.fillStyle='#4d565f';
-  ctx.font='10px ui-monospace,monospace';ctx.lineWidth=1;
-  for(let g=0;g<=4;g++){
-    const y=padT+(gh/4)*g,v=hi-(hi-lo)/4*g;
-    ctx.beginPath();ctx.moveTo(padL,y+.5);ctx.lineTo(padL+gw,y+.5);ctx.stroke();
-    ctx.fillText(Number(v).toFixed(decimals(chartPair)),padL+gw+9,y+3.5);
+  if(!lwChart){
+    lwChart=LightweightCharts.createChart(el,{
+      width:Math.max(50,el.clientWidth||800),height:230,
+      layout:{background:{color:'#0a0e13'},textColor:'#4d565f',
+        fontFamily:'ui-monospace,monospace',fontSize:10},
+      grid:{vertLines:{color:'#161c24'},horzLines:{color:'#161c24'}},
+      crosshair:{vertLine:{color:'#3a4550',labelBackgroundColor:'#1c232c'},
+        horzLine:{color:'#3a4550',labelBackgroundColor:'#1c232c'}},
+      rightPriceScale:{borderColor:'#1c232c'},
+      timeScale:{borderColor:'#1c232c',timeVisible:true,secondsVisible:false},
+    });
+    lwSeries=lwChart.addSeries(LightweightCharts.CandlestickSeries,{
+      upColor:'#2fbf87',downColor:'#e2555f',
+      wickUpColor:'#2fbf87',wickDownColor:'#e2555f',borderVisible:false,
+    });
+  }else{
+    lwChart.resize(Math.max(50,el.clientWidth||800),230);
   }
-
-  const up='#2fbf87',down='#e2555f';
-  const bodyW=Math.max(1,Math.min(9,step*0.66));
-  h.forEach((b,i)=>{
-    const rising=b.c>=b.o,col=rising?up:down;
-    const x=X(i);
-    ctx.strokeStyle=col;ctx.lineWidth=1;
-    ctx.beginPath();ctx.moveTo(x,Y(b.h));ctx.lineTo(x,Y(b.l));ctx.stroke();
-    const y1=Y(Math.max(b.o,b.c)),y2=Y(Math.min(b.o,b.c));
-    const bh=Math.max(1,y2-y1);
-    ctx.fillStyle=col;
-    ctx.fillRect(x-bodyW/2,y1,bodyW,bh);
-  });
-
-  // last price marker + dotted level
-  const lastBar=h[h.length-1],ly=Y(lastBar.c);
-  ctx.save();ctx.setLineDash([3,3]);ctx.strokeStyle='rgba(76,141,255,.55)';
-  ctx.beginPath();ctx.moveTo(padL,ly);ctx.lineTo(padL+gw,ly);ctx.stroke();ctx.restore();
-  ctx.fillStyle='#e4ebf2';
-  ctx.fillRect(padL+gw+2,ly-7,padR-4,14);
-  ctx.fillStyle='#0a0e13';ctx.textAlign='left';ctx.font='600 9px ui-monospace,monospace';
-  ctx.fillText(lastBar.c.toFixed(decimals(chartPair)),padL+gw+6,ly+3.5);
-
-  // time axis
-  ctx.fillStyle='#4d565f';ctx.font='10px ui-monospace,monospace';ctx.textAlign='center';
-  const marks=Math.min(6,h.length);
-  for(let m=0;m<marks;m++){
-    const i=Math.floor((h.length-1)*(m/(marks-1||1)));
-    const d=new Date(h[i].t*1000);
-    const lbl=interval==='1d'?d.toISOString().slice(5,10)
-      :String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0');
-    ctx.fillText(lbl,Math.min(padL+gw-16,Math.max(padL+16,X(i))),H-6);
+  if(!h.length){
+    const st=barsState[chartPair]||{};
+    if(empty){empty.hidden=false;
+      empty.textContent=st.err?('BARS UNAVAILABLE — '+String(st.err).slice(0,64))
+        :('LOADING '+interval+' BARS');}
+    try{lwSeries.setData([])}catch(_){}
+    return;
   }
+  if(empty)empty.hidden=true;
+  const seen=new Set(),rows=[];
+  for(const b of h){
+    const t=Math.floor(Number(b.t));
+    if(!Number.isFinite(t)||seen.has(t))continue;
+    seen.add(t);
+    const o=+b.o,hh=+b.h,l=+b.l,c=+b.c;
+    if(![o,hh,l,c].every(Number.isFinite)||o<=0||hh<=0||l<=0||c<=0)continue;
+    rows.push({time:t,open:o,high:hh,low:l,close:c});
+  }
+  lwSeries.setData(rows);
+  const key=chartPair+'|'+interval;
+  if(key!==lwKey){lwKey=key;try{lwChart.timeScale().fitContent()}catch(_){}}
 }
 
 function loadPair(p){
@@ -689,26 +1216,120 @@ document.addEventListener('click',e=>{
 });
 
 /* ── agent pipeline ────────────────────────────────────── */
+/* Toggleable deterministic stations. Mirrors TOGGLEABLE_AGENTS in
+   forex_agents.py: risk is the locked-on safety interlock, macro has no
+   deterministic execution path. */
+const TOGGLEABLE=['market','strategy','portfolio'];
+function agentKey(name){
+  return String(name||'').replace(/\s*\(AI\)\s*/i,'').trim().split(' ')[0].toLowerCase();
+}
+function relTime(ts){
+  if(!ts||ts<=0)return '—';
+  const s=Math.max(0,Date.now()/1000-ts);
+  if(s<60)return Math.floor(s)+'s ago';
+  if(s<3600)return Math.floor(s/60)+'m ago';
+  if(s<86400)return Math.floor(s/3600)+'h ago';
+  return Math.floor(s/86400)+'d ago';
+}
+function utcTime(ts){
+  if(!ts||ts<=0)return '—';
+  const d=new Date(ts*1000);
+  const p=n=>String(n).padStart(2,'0');
+  return p(d.getUTCHours())+':'+p(d.getUTCMinutes())+':'+p(d.getUTCSeconds());
+}
+async function toggleAgent(key,on,box){
+  box.disabled=true;
+  $id('pipeErr').textContent='';
+  try{
+    await api('/api/forex/agents/config',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({agent:key,enabled:on})});
+    await refresh();
+  }catch(e){
+    $id('pipeErr').textContent='Station update failed: '+e.message;
+    await refresh();
+  }finally{box.disabled=false}
+}
 function renderPipeline(s){
   const events=(s.events||[]).filter(e=>e.agent);
-  $id('pipe').innerHTML=AGENTS.map(a=>{
-    const hit=events.find(e=>String(e.agent||'').toLowerCase().includes(a.key));
-    // An advisory AI stage that failed still appears in the log, so presence
-    // alone must not be reported as a successful report.
-    const failed=Boolean(hit)&&/unavailable|error|fail/i.test(String(hit.status||''));
-    const live=Boolean(hit)&&!failed;
-    const pct=Math.min(100,8+Math.round((String(hit?.summary||'').length)/2.2));
-    const label=live?'REPORT RECEIVED':failed?'AI CALL FAILED':'NO REPORT';
-    return '<div class="pn">'+
-      '<div class="top"><span class="ix">'+a.ix+'</span>'+
-      '<span class="nm" style="color:'+a.hue+'">'+a.name+'</span></div>'+
-      '<div class="st '+(live?'live':failed?'idle':'idle')+'">'+label+'</div>'+
-      '<div class="tx">'+esc(hit?.summary||a.task)+'</div>'+
-      '<div class="bar2"><i style="width:'+(live?pct:0)+'%;background:'+(live?a.hue:'#6b4048')+'"></i></div>'+
-      '<div class="mt">'+a.role+'</div></div>';
+  const cfg=(s.agentState&&s.agentState.agent_config)||{};
+  const total=events.length;
+  const cycles=[];
+  for(const e of events){
+    if(e.cycle_id&&!cycles.includes(e.cycle_id)){
+      cycles.push(e.cycle_id);
+      if(cycles.length>=12)break;
+    }
+  }
+  const reporting=new Set();
+  const entries=events.filter(e=>e.status==='Paper order recorded').length;
+  $id('pipe').innerHTML=AGENTS.map((a,i)=>{
+    const mine=events.filter(e=>agentKey(e.agent)===a.key);
+    const det=mine.filter(e=>!/\(AI\)/i.test(String(e.agent||'')));
+    const ai=mine.filter(e=>/\(AI\)/i.test(String(e.agent||'')));
+    const aiOk=ai.filter(e=>!/unavailable|error|fail/i.test(String(e.status||'')));
+    const detLive=det.length>0;
+    if(detLive)reporting.add(a.key);
+    const approvals=mine.reduce((t,e)=>t+(Array.isArray(e.approve)?e.approve.length:0),0);
+    const lastTs=mine.reduce((t,e)=>Math.max(t,Number(e.timestamp)||0),0);
+    const share=total?Math.round(mine.length/total*100):0;
+    const label=detLive?'REPORT RECEIVED':aiOk.length?'AI ADVISORY ONLY'
+      :(ai.length?'AI CALL FAILED':'AWAITING REPORT');
+    const tone=detLive?'live':(aiOk.length?'idle':'off');
+    const lamp=detLive?'on':(aiOk.length?'warn':'');
+    const detail=(det[0]||aiOk[0]||ai[0]||{}).summary||a.task;
+    const hb=cycles.map(c=>{
+      const hit=mine.find(e=>e.cycle_id===c);
+      if(!hit)return '<i class="miss" title="no report this cycle"></i>';
+      const isDet=!/\(AI\)/i.test(String(hit.agent||''));
+      return '<i class="'+(isDet?'hit':'ai')+'"'+(isDet?' style="background:'+a.hue+'"':'')+
+        ' title="'+esc(hit.status||'')+'"></i>';
+    }).join('');
+    const reps=mine.slice(0,8).map(e=>{
+      const bad=/unavailable|error|fail|skipped|veto|blocked/i.test(String(e.status||''));
+      return '<div class="re"><div class="rt">'+utcTime(e.timestamp)+' UTC</div>'+
+        '<div class="rs '+(bad?'bad':'ok')+'">'+esc(e.status||'—')+'</div>'+
+        '<div class="rx">'+esc(String(e.summary||'').slice(0,240))+'</div></div>';
+    }).join('')||'<div class="empty">No recorded reports for this station yet.</div>';
+    let ctl;
+    if(TOGGLEABLE.includes(a.key)){
+      const on=cfg[a.key]!==false;
+      ctl='<label class="switch" title="Enable or disable this station"><input type="checkbox" data-agent="'+a.key+'"'+
+        (on?' checked':'')+' onchange="toggleAgent(\''+a.key+'\',this.checked,this)">'+
+        '<span class="tr"></span></label><span class="lb">'+(on?'ENABLED':'DISABLED')+'</span>';
+    }else if(a.key==='risk'){
+      ctl='<span class="lk">LOCKED · SAFETY INTERLOCK ALWAYS ON</span>';
+    }else{
+      ctl='<span class="lk">ADVISORY ROLE · NO EXECUTION PATH</span>';
+    }
+    return '<div class="pn" style="--d:'+(i*70)+'ms;--hue:'+a.hue+'">'+
+      '<div class="ahead"><div class="ava" title="'+share+'% of recorded reports">'+
+      '<svg viewBox="0 0 36 36"><circle class="ring-bg" cx="18" cy="18" r="15.9155"/>'+
+      '<circle class="ring-fg" cx="18" cy="18" r="15.9155" style="stroke:'+a.hue+'" stroke-dasharray="'+share+' 100"/></svg>'+
+      '<span class="mo" style="color:'+a.hue+'">'+esc(a.name[0])+'</span>'+
+      '<span class="lm '+lamp+'"></span></div>'+
+      '<div class="anm"><div class="nm">'+a.name+'</div>'+
+      '<div class="rl">'+a.ix+' · '+a.role.toUpperCase()+'</div></div></div>'+
+      '<div class="st '+tone+'">'+label+'</div>'+
+      '<div class="tx">'+esc(detail)+'</div>'+
+      '<div class="stats"><div><b>'+mine.length+'</b><span>REPORTS</span></div>'+
+      '<div><b>'+approvals+'</b><span>APPROVALS</span></div>'+
+      '<div><b>'+esc(relTime(lastTs))+'</b><span>LAST ACTIVE</span></div></div>'+
+      '<div class="hb" title="Report presence across the last '+cycles.length+' cycles, newest first">'+hb+'</div>'+
+      '<details class="rep"><summary>RECORDED REPORTS ('+mine.length+')</summary>'+reps+'</details>'+
+      '<div class="agctl">'+ctl+'</div></div>';
   }).join('');
-  const n=AGENTS.filter(a=>events.some(e=>String(e.agent||'').toLowerCase().includes(a.key))).length;
-  $id('pipeMeta').textContent=n+' / '+AGENTS.length+' REPORTING · CYCLE '+(s.agentState?.last_cycle?'#'+s.agentState.last_cycle:'—');
+  const disabled=TOGGLEABLE.filter(k=>cfg[k]===false).length;
+  const share=reporting.size?Math.round(reporting.size/AGENTS.length*100):0;
+  $id('fleetFill').style.width=share+'%';
+  $id('fleetPct').textContent=share+'%';
+  $id('fleetNote').textContent=reporting.size+' / '+AGENTS.length+' REPORTING · '+
+    entries+' RECORDED ENTRIES'+(disabled?' · '+disabled+' DISABLED':'');
+  // last_cycle is in-memory only and resets on restart, so derive the cycle
+  // time from the newest recorded event instead.
+  const lc=events.reduce((t,e)=>Math.max(t,Number(e.timestamp)||0),0);
+  $id('pipeMeta').textContent=reporting.size+' / '+AGENTS.length+' REPORTING'+
+    (disabled?' · '+disabled+' DISABLED':'')+' · CYCLE '+(lc>0?relTime(lc):'—');
 }
 
 /* ── positions ─────────────────────────────────────────── */
@@ -719,7 +1340,7 @@ function renderPositions(s){
     $id('posBody').innerHTML='<div class="empty">No open paper positions.<br>Entries require fresh quotes and a passing risk review.</div>';
     return;
   }
-  $id('posBody').innerHTML='<table class="dt"><thead><tr>'+
+  $id('posBody').innerHTML='<div class="dtscroll"><table class="dt"><thead><tr>'+
     '<th>INSTRUMENT</th><th class="r">NOTIONAL</th><th class="r">UNREALISED</th><th class="r">ACTION</th>'+
     '</tr></thead><tbody>'+pos.map(p=>{
       const u=Number(p.unrealized_pnl)||0;
@@ -728,7 +1349,7 @@ function renderPositions(s){
         '<td class="r mono">$'+money(p.notional)+'</td>'+
         '<td class="r mono '+cls(u)+'">'+(u>=0?'+':'')+money(u)+'</td>'+
         '<td class="r"><button class="xbtn" onclick="closePosition(\''+p.id+'\')">Close</button></td></tr>';
-    }).join('')+'</tbody></table>';
+    }).join('')+'</tbody></table></div>';
 }
 
 /* ── event log ─────────────────────────────────────────── */
@@ -792,7 +1413,9 @@ function renderStages(result){
     box.innerHTML='<div class="empty">No research run yet. Connect a key, then press Run research.</div>';
     return;
   }
-  box.innerHTML=stages.map(s=>
+  const hist=result&&result.historical
+    ?'<div class="fine" style="margin:0 0 4px">Latest recorded AI reports — press Run research for a fresh pass.</div>':'';
+  box.innerHTML=hist+stages.map(s=>
     '<div class="stage'+(s.ok?'':' bad')+'"><div class="sh"><b>'+s.agent+'</b>'+
     '<span class="tag '+(s.ok?'ok':'bad')+'">'+(s.ok?'REPORT':'UNAVAILABLE')+'</span>'+
     '<span class="tag">ADVISORY</span></div>'+
@@ -806,6 +1429,30 @@ function renderStages(result){
    a background status poll must never overwrite a choice that has not yet
    been saved with Connect, or picking a provider silently reverts. */
 let providerCache={},providerTouched=false;
+
+async function aiRestore(){
+  // The last research run is recorded server-side, so a reload or a new tab
+  // should show it instead of claiming no run has ever happened. With no run
+  // on record, fall back to the latest recorded AI reports from the event
+  // feed — real persisted output, never placeholder text.
+  try{
+    const r=await api('/api/connections/research');
+    if(r&&r.last&&((r.last.stages||[]).length)){renderStages(r.last);renderBudget(r.budget);return}
+    if(r&&r.budget)renderBudget(r.budget);
+    const evs=((state&&state.events)||[]).filter(e=>e.kind==='ai_research_report'&&e.agent);
+    if(!evs.length)return;
+    const seen={},stages=[];
+    for(const e of evs){
+      const key=String(e.agent).toLowerCase();
+      if(seen[key])continue;
+      seen[key]=1;
+      const bad=/unavailable|error|fail/i.test(String(e.status||''));
+      stages.push({agent:e.agent,ok:!bad,text:e.summary||'',concerns:e.concerns||[]});
+      if(stages.length>=4)break;
+    }
+    if(stages.length)renderStages({stages:stages,historical:true});
+  }catch(_){/* panel simply stays in its empty state */}
+}
 
 async function aiStatus(){
   try{
@@ -948,7 +1595,7 @@ function applyState(s){
   state=s;
   renderKpis(s);renderPipeline(s);renderPositions(s);renderFeed(s);renderTags(s);
   quotes=s.market?.pairs||{};
-  renderTape();loadPair(chartPair);
+  renderTicker();renderTape();loadPair(chartPair);
   // The metal basis arrives with the quote, so metal bars must be re-based
   // before they can be drawn against it.
   if(PAIRS.some(isMetal))refreshSeries();
@@ -1015,6 +1662,22 @@ async function closePosition(id){
 
 $id('submit').addEventListener('click',submitOrder);
 window.closePosition=closePosition;
+async function quickTrade(side){
+  // One-click paper order on the charted pair at the ticket notional.
+  // Server-side gates still apply: stale quotes are rejected with 400 and
+  // the message surfaces below. Nothing bypasses the risk controller.
+  const b=side==='buy'?$id('qbuy'):$id('qsell'),label=b.textContent;
+  b.disabled=true;b.textContent='…';
+  try{
+    await api('/api/forex/open',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({pair:chartPair,side,notional:Number($id('notional').value)})});
+    await refresh();
+    say('Paper '+side+' '+chartPair+' accepted by the simulator. No live broker order was sent.','ok');
+  }catch(e){await refresh();say(e.message,'bad')}
+  finally{b.disabled=false;b.textContent=label}
+}
+$id('qbuy').addEventListener('click',()=>quickTrade('buy'));
+$id('qsell').addEventListener('click',()=>quickTrade('sell'));
 $id('interval').addEventListener('change',async e=>{
   interval=e.target.value;
   await refreshSeries();
@@ -1022,8 +1685,16 @@ $id('interval').addEventListener('change',async e=>{
 });
 
 addEventListener('resize',drawChart);
+function tickClock(){
+  const d=new Date(),p=n=>String(n).padStart(2,'0');
+  const el=$id('clock');
+  if(el)el.textContent=p(d.getUTCHours())+':'+p(d.getUTCMinutes())+':'+p(d.getUTCSeconds())+' UTC';
+}
+tickClock();
+setInterval(tickClock,1000);
 refreshSeries();
 aiStatus();
+aiRestore();
 refresh();
 setInterval(refresh,15000);
 setInterval(aiStatus,30000);
