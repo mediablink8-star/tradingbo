@@ -239,6 +239,14 @@ class MemePaperTrader:
                                 }
                             except (TypeError, ValueError, OverflowError):
                                 details = {}
+                        elif reason == "score_below_entry_threshold":
+                            try:
+                                details = {
+                                    "score": float(candidate.get("score")),
+                                    "min_score": self.min_score,
+                                }
+                            except (TypeError, ValueError, OverflowError):
+                                details = {}
                         decisions.append(self._rejection(db, candidate, reason, **details))
                     continue
                 address = str(candidate.get("token_address") or "").strip()
