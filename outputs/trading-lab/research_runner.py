@@ -6,6 +6,7 @@ isolated final holdout. No broker or live execution is used.
 import argparse
 import json
 import os
+import statistics
 
 from backtest import FXBacktester
 from historical import load_json
@@ -15,7 +16,7 @@ from portfolio_selection import select_portfolio_strategies
 from portfolio_walkforward import portfolio_true_walk_forward
 from research_report import build_research_report
 from strategies import default_strategy_candidates
-from true_walkforward import optimize_window, true_walk_forward
+from true_walkforward import optimize_window, run_with_warmup, true_walk_forward
 
 
 DEFAULT_PAIRS = ("EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CHF")
@@ -66,14 +67,17 @@ def run_pair(
         pre_holdout, backtester_factory, candidates,
         train_size=train_size, test_size=test_size, gap=gap, metric=metric,
         min_trades=min_trades, max_drawdown=max_drawdown,
-        min_return_pct=min_return_pct,
+        min_return_pct=min_return_pct, warmup_size=100,
     )
     selected, ranking = optimize_window(
         pre_holdout, backtester_factory(), candidates, metric=metric,
         min_trades=min_trades, max_drawdown=max_drawdown,
         min_return_pct=min_return_pct,
     )
-    holdout_result = backtester_factory().run(holdout, dict(candidates)[selected["name"]]())
+    holdout_result = run_with_warmup(
+        backtester_factory(), dict(candidates)[selected["name"]](),
+        pre_holdout[-100:], holdout,
+    )
     holdout_report = {
         "selected_strategy": selected["name"],
         "selection_score": selected["score"],
@@ -90,7 +94,7 @@ def run_pair(
     return build_research_report(pair, wf, holdout_report)
 
 
-def run_shared_holdout_portfolio(datasets, holdout_size=100, starting_cash=10000.0):
+def run_shared_holdout_portfolio(datasets, holdout_size=100, starting_cash=10000.0, warmup_size=100):
     if not datasets:
         raise ValueError("datasets must not be empty")
     if any(holdout_size >= len(candles) for candles in datasets.values()):
@@ -99,6 +103,7 @@ def run_shared_holdout_portfolio(datasets, holdout_size=100, starting_cash=10000
     candidates = default_strategy_candidates()
     pre_holdout = {pair: candles[:-holdout_size] for pair, candles in datasets.items()}
     holdout = {pair: candles[-holdout_size:] for pair, candles in datasets.items()}
+    warmup = {pair: candles[max(0, len(candles) - holdout_size - warmup_size):len(candles) - holdout_size] for pair, candles in datasets.items()}
     candidate_map = {pair: candidates for pair in datasets}
 
     selection = select_portfolio_strategies(
@@ -109,7 +114,28 @@ def run_shared_holdout_portfolio(datasets, holdout_size=100, starting_cash=10000
         pair: dict(candidate_map[pair])[name]()
         for pair, name in selection["selected"].items()
     }
-    result = _portfolio_factory(starting_cash).run(holdout, signals)
+    combined = {pair: warmup[pair] + holdout[pair] for pair in datasets}
+    guarded_signals = {
+        pair: (lambda signal=signals[pair], count=len(warmup[pair]):
+               (lambda history: None if len(history) <= count else signal(history)))()
+        for pair in datasets
+    }
+    result = _portfolio_factory(starting_cash).run(combined, guarded_signals)
+    warmup_count = min((len(v) for v in warmup.values()), default=0)
+    result["history"] = result["history"][warmup_count:]
+    equity_values = [float(row["equity"]) for row in result["history"]]
+    returns = []
+    previous_equity = starting_cash
+    for equity in equity_values:
+        returns.append(equity / previous_equity - 1.0 if previous_equity > 0 else 0.0)
+        previous_equity = equity
+    deviation = statistics.stdev(returns) if len(returns) > 1 else 0.0
+    periods = 252.0
+    if len(result["history"]) > 1:
+        gaps = [b["timestamp"] - a["timestamp"] for a, b in zip(result["history"], result["history"][1:]) if b["timestamp"] > a["timestamp"]]
+        if gaps:
+            periods = max(1.0, 31536000.0 / statistics.median(gaps))
+    result["sharpe"] = statistics.mean(returns) / deviation * periods ** 0.5 if deviation > 0 else 0.0
     return {
         "selection": selection["selected"],
         "selection_training": selection["training_result"],
@@ -154,14 +180,14 @@ def run_dataset(
         gap=gap,
         starting_cash=10000.0,
         portfolio_backtester_factory=_portfolio_factory,
-        max_iterations=2,
+        max_iterations=2, warmup_size=100,
     )
     # The final holdout is a fresh, isolated evaluation. Never seed it with
     # the walk-forward ending balance: that couples evaluation periods and
     # makes reported returns depend on the preceding run's P&L.
     portfolio_holdout = run_shared_holdout_portfolio(
         datasets, holdout_size=holdout_size,
-        starting_cash=10000.0,
+        starting_cash=10000.0, warmup_size=100,
     )
     return {
         "pairs": reports,
