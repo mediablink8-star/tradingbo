@@ -1,8 +1,8 @@
 # Forex research + paper-trading lab
 
-TradingLab is now a broker-neutral FX research and paper-trading system. It has
-no wallet connection, blockchain integration, token discovery, or live broker
-execution.
+TradingLab is a broker-neutral FX research and paper-trading system. It has no
+wallet connection, on-chain execution, or live broker execution. A separate,
+read-only Solana meme-coin candidate scanner is documented below.
 
 ## Run the paper dashboard
 
@@ -130,11 +130,41 @@ Do not judge the system from a single backtest return. The useful evidence is
 consistency across unseen windows, drawdown, Sharpe, costs, stability of
 strategy selection, and performance on the untouched final holdout.
 
+## Solana meme-coin research (read-only)
+
+The initial meme-coin research engine uses the public DexScreener API to combine
+latest token-profile and boost lists, deduplicate Solana token addresses, inspect
+each token's available pools, and score the highest-liquidity matching Solana
+pair. Paid profiles/boosts are discovery sources only and do not add score.
+See the [official DexScreener API reference](https://docs.dexscreener.com/api/reference).
+
+Start the local server, then request a scan:
+
+```bash
+curl -s http://127.0.0.1:8765/api/meme/research
+curl -s -X POST http://127.0.0.1:8765/api/meme/research/run \
+  -H 'Content-Type: application/json' -d '{"limit":20}'
+```
+
+The scan returns a ranked candidate list, market-data rejection reasons, source
+metadata, and provider errors. Defaults require at least $10,000 liquidity,
+$20,000 24-hour volume, 100 transactions, a pair age between 5 minutes and
+72 hours, and reject a one-hour price spike above 80%. The bounded score uses
+liquidity, turnover, activity, buy/sell balance and modest positive momentum.
+These are starting engineering filters, not a validated profitable strategy.
+
+**Important limitations:** DexScreener market data does not establish contract
+safety. The scanner does not check holder concentration, mint/freeze authority,
+honeypot/sellability, or other on-chain security properties. A `WATCH` label
+means only that market-data filters passed; it is not a buy signal. The engine
+is read-only: it cannot connect a wallet, prepare a swap, or submit a transaction.
+Do not enable real-money execution on the strength of this scanner alone.
+
 ## Tests
 
 ```
 cd outputs/trading-lab
-python -m unittest -v test_forex.py test_forex_lab.py test_forex_agents.py test_forex_market.py test_backtest.py test_strategies.py test_robustness.py test_historical.py test_dataset.py test_intraday.py test_intraday_dataset.py test_true_walkforward.py test_research_selection.py test_research_report.py test_research_runner.py test_portfolio_report.py test_portfolio_backtest.py test_portfolio_selection.py test_portfolio_walkforward.py
+python -m unittest -v test_forex.py test_forex_lab.py test_forex_agents.py test_forex_market.py test_meme_research.py test_backtest.py test_strategies.py test_robustness.py test_historical.py test_dataset.py test_intraday.py test_intraday_dataset.py test_true_walkforward.py test_research_selection.py test_research_report.py test_research_runner.py test_portfolio_report.py test_portfolio_backtest.py test_portfolio_selection.py test_portfolio_walkforward.py
 ```
 
 Live broker execution remains intentionally out of scope.
