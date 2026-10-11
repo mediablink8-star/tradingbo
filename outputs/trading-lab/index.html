@@ -1903,8 +1903,6 @@ function applyState(s){
 
 async function refresh(){
   try{
-    $id('sysDot').className='dot ok';
-    $id('sysTxt').textContent='CONNECTED';
     const s=await api('/api/forex');
     s.account=s.account||{};
     // agent positions expose realised pnl; the account endpoint does not
@@ -1914,6 +1912,22 @@ async function refresh(){
     try{s.agentState=await api('/api/forex/agents');s.events=s.agentState.events||[]}
     catch(_){s.events=state?.events||[]}
     applyState(s);
+    const quotePairs=Object.keys(s.market?.pairs||{});
+    const feedErrors=s.market?.errors||{};
+    if(!quotePairs.length){
+      $id('sysDot').className='dot bad';
+      $id('sysTxt').textContent='NO MARKET DATA';
+      say('No usable market quotes — '+(s.error||'all configured providers returned no quotes')+'. Check provider availability; orders remain blocked without fresh quotes.','bad');
+    }else if(Object.keys(feedErrors).length){
+      $id('sysDot').className='dot warn';
+      $id('sysTxt').textContent='PARTIAL DATA';
+      const missing=Object.keys(feedErrors);
+      say('Showing '+quotePairs.length+' instrument(s); '+missing.length+' feed(s) unavailable: '+missing.slice(0,4).join(', ')+(missing.length>4?'…':'')+'. Missing prices are not substituted.','bad');
+    }else{
+      $id('sysDot').className='dot ok';
+      $id('sysTxt').textContent='CONNECTED';
+      say('');
+    }
   }catch(e){
     $id('sysDot').className='dot bad';
     $id('sysTxt').textContent='DISCONNECTED';
