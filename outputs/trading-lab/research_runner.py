@@ -93,7 +93,7 @@ def run_pair(
     return build_research_report(pair, wf, holdout_report)
 
 
-def run_shared_holdout_portfolio(datasets, holdout_size=100, starting_cash=10000.0):
+def run_shared_holdout_portfolio(datasets, holdout_size=100, starting_cash=10000.0, warmup_size=100):
     if not datasets:
         raise ValueError("datasets must not be empty")
     if any(holdout_size >= len(candles) for candles in datasets.values()):
@@ -102,6 +102,7 @@ def run_shared_holdout_portfolio(datasets, holdout_size=100, starting_cash=10000
     candidates = default_strategy_candidates()
     pre_holdout = {pair: candles[:-holdout_size] for pair, candles in datasets.items()}
     holdout = {pair: candles[-holdout_size:] for pair, candles in datasets.items()}
+    warmup = {pair: candles[max(0, len(candles) - holdout_size - warmup_size):len(candles) - holdout_size] for pair, candles in datasets.items()}
     candidate_map = {pair: candidates for pair in datasets}
 
     selection = select_portfolio_strategies(
@@ -112,7 +113,15 @@ def run_shared_holdout_portfolio(datasets, holdout_size=100, starting_cash=10000
         pair: dict(candidate_map[pair])[name]()
         for pair, name in selection["selected"].items()
     }
-    result = _portfolio_factory(starting_cash).run(holdout, signals)
+    combined = {pair: warmup[pair] + holdout[pair] for pair in datasets}
+    guarded_signals = {
+        pair: (lambda signal=signals[pair], count=len(warmup[pair]):
+               (lambda history: None if len(history) <= count else signal(history)))()
+        for pair in datasets
+    }
+    result = _portfolio_factory(starting_cash).run(combined, guarded_signals)
+    warmup_count = min((len(v) for v in warmup.values()), default=0)
+    result["history"] = result["history"][warmup_count:]
     return {
         "selection": selection["selected"],
         "selection_training": selection["training_result"],
@@ -157,14 +166,14 @@ def run_dataset(
         gap=gap,
         starting_cash=10000.0,
         portfolio_backtester_factory=_portfolio_factory,
-        max_iterations=2,
+        max_iterations=2, warmup_size=100,
     )
     # The final holdout is a fresh, isolated evaluation. Never seed it with
     # the walk-forward ending balance: that couples evaluation periods and
     # makes reported returns depend on the preceding run's P&L.
     portfolio_holdout = run_shared_holdout_portfolio(
         datasets, holdout_size=holdout_size,
-        starting_cash=10000.0,
+        starting_cash=10000.0, warmup_size=100,
     )
     return {
         "pairs": reports,
