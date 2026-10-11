@@ -260,3 +260,28 @@ Hosted mode enables HTTP Basic Authentication for the dashboard, API routes, and
 
 This Blueprint uses Render's Free web-service plan and does not create a persistent disk. It should cost $0 for compute within Render's free usage limits, but the service may sleep after inactivity and SQLite files/local changes can be lost when the instance restarts, spins down, or redeploys. Treat hosted paper-trading history as disposable; do not use this free deployment as a durable ledger. To preserve data, use a durable external database or a paid service with a persistent disk. After the first deploy, test the root dashboard and `/company.html` while signed in. The service remains research/paper-only.
 
+
+
+## Autonomous Solana meme-coin paper trading
+
+The dashboard's **Autonomous Paper Trader** is a separate simulated portfolio; it is not the forward-outcome tracker above. A paper cycle scans candidates, applies deterministic entry gates, requires a complete read-only mint check, and records simulated positions in `meme-trader.sqlite`. It does not connect a wallet, sign, prepare, or submit swaps.
+
+Default controls are intentionally conservative and configurable via environment variables:
+
+- `MEME_PAPER_POSITION_USD=50` — maximum simulated entry notional.
+- `MEME_PAPER_MAX_POSITIONS=3` — concurrent position cap.
+- `MEME_PAPER_DAILY_LOSS_LIMIT_USD=50` — realized-loss halt threshold.
+- `MEME_PAPER_FEE_BPS=30` and `MEME_PAPER_SLIPPAGE_BPS=50` — modeled costs per side.
+- `MEME_PAPER_AUTORUN=1` opts into an in-process scan/management loop; it is **off by default**.
+- `MEME_PAPER_INTERVAL_SECONDS=300` changes the loop interval (minimum 60 seconds).
+
+Each position uses a 12% stop loss, 20% take-profit target, and four-hour maximum holding time. Entry gates also require score >=75, at least $25k liquidity, $50k 24-hour volume, 150 transactions, a bounded buy ratio, and no excessive one-hour pump. These are experimental engineering defaults, not a profitable or validated strategy. Stop/target decisions use sampled provider quotes, so gaps and slippage can make real execution materially different.
+
+API:
+- `GET /api/meme/trader` — portfolio, positions, and audit events.
+- `POST /api/meme/trader/run` with `{"limit":20}` — run discovery, risk/safety checks, and paper decisions.
+- `POST /api/meme/trader/tick` with `{}` — refresh positions and evaluate exits only.
+
+The trader fails closed when safety data is incomplete, when mint/freeze authorities remain active, or when high-severity concentration findings are present. A completed check is still not a token audit or proof of sellability. Paper orders are not executable fills.
+
+**Hosted storage requirement:** SQLite persists across process restarts only when its directory persists. The current Render service uses the free plan and has no configured persistent disk; its local database files can be lost on replacement/deploy. Before relying on history or enabling unattended hosted runs, attach durable storage or move the state to a managed database, set `TRADINGLAB_DATA_DIR` to that persistent location, and verify the database survives a redeploy.
