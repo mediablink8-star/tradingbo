@@ -19,6 +19,7 @@ from llm_research import ResearchLayer, ModelError, verify_connection
 from meme_research import MemeCoinResearchEngine
 from meme_safety import SolanaMintSafetyChecker
 from meme_paper import MemePaperTracker
+from meme_paper_trader import MemePaperTrader
 
 ROOT = Path(__file__).resolve().parent
 DATA_DIR = Path(os.environ.get("TRADINGLAB_DATA_DIR", str(ROOT))).expanduser().resolve()
@@ -48,6 +49,74 @@ MEME_PAPER = MemePaperTracker(
     slippage_bps=float(os.environ.get("MEME_PAPER_SLIPPAGE_BPS", "50")),
     fee_bps=float(os.environ.get("MEME_PAPER_FEE_BPS", "30")),
 )
+MEME_TRADER = MemePaperTrader(
+    DATA_DIR / "meme-trader.sqlite",
+    position_usd=float(os.environ.get("MEME_PAPER_POSITION_USD", "50")),
+    max_positions=int(os.environ.get("MEME_PAPER_MAX_POSITIONS", "3")),
+    daily_loss_limit=float(os.environ.get("MEME_PAPER_DAILY_LOSS_LIMIT_USD", "50")),
+    fee_bps=float(os.environ.get("MEME_PAPER_FEE_BPS", "30")),
+    slippage_bps=float(os.environ.get("MEME_PAPER_SLIPPAGE_BPS", "50")),
+)
+
+
+def meme_current_price(token_address):
+    """Fetch a fresh public DEX quote; never treat missing data as zero."""
+    safe = urllib.parse.quote(str(token_address or ""), safe="")
+    if not safe:
+        return None
+    pairs = MEME_RESEARCH.fetch_json(
+        f"https://api.dexscreener.com/token-pairs/v1/solana/{safe}"
+    )
+    if not isinstance(pairs, list):
+        return None
+    matching = [
+        pair for pair in pairs
+        if isinstance(pair, dict)
+        and str(pair.get("chainId") or "").lower() == "solana"
+        and str((pair.get("baseToken") or {}).get("address") or "").lower()
+        == str(token_address).lower()
+    ]
+    if not matching:
+        return None
+    def liquidity(pair):
+        try:
+            value = float((pair.get("liquidity") or {}).get("usd") or 0)
+            return value if value > 0 and value < float("inf") else 0
+        except (TypeError, ValueError, OverflowError):
+            return 0
+    best = max(matching, key=liquidity)
+    try:
+        price = float(best.get("priceUsd"))
+        return price if price > 0 and price < float("inf") else None
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
+def run_meme_paper_cycle(limit=20):
+    """Discover, safety-screen, paper-trade and persist one complete cycle."""
+    scan = MEME_RESEARCH.run(limit)
+    candidates = sorted(
+        (candidate for candidate in scan.get("candidates", [])
+         if candidate.get("decision") == "WATCH"),
+        key=lambda candidate: float(candidate.get("score") or 0),
+        reverse=True,
+    )[:3]
+    decisions = MEME_TRADER.run_cycle(
+        candidates, MEME_SAFETY.check, meme_current_price
+    )
+    return {
+        "scan": {
+            "generated_at": scan.get("generated_at"),
+            "discovered_tokens": scan.get("discovered_tokens", 0),
+            "scored_candidates": scan.get("scored_candidates", 0),
+            "watchlist_count": scan.get("watchlist_count", 0),
+            "errors": scan.get("errors", []),
+        },
+        "cycle": decisions,
+        "status": MEME_TRADER.status(),
+        "paper_outcome_update": MEME_PAPER.update_due(),
+        "execution_enabled": False,
+    }
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -108,6 +177,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/meme/paper":
             self.send_json(MEME_PAPER.status())
+            return
+        if path == "/api/meme/trader":
+            self.send_json(MEME_TRADER.status())
             return
         if path == "/api/connections/model":
             self.send_json({**KEYS.status(),
@@ -201,7 +273,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/forex/open", "/api/forex/close", "/api/forex/agents/run",
             "/api/forex/agents/config",
             "/api/meme/research/run", "/api/meme/security/check",
-            "/api/meme/paper/update",
+            "/api/meme/paper/update", "/api/meme/trader/run", "/api/meme/trader/tick",
         ):
             self.send_json({"error": "not found"}, 404)
             return
@@ -231,6 +303,11 @@ class Handler(BaseHTTPRequestHandler):
             elif self.path == "/api/meme/paper/update":
                 result = MEME_PAPER.update_due()
                 result["status"] = MEME_PAPER.status()
+            elif self.path == "/api/meme/trader/run":
+                result = run_meme_paper_cycle(data.get("limit", 20))
+            elif self.path == "/api/meme/trader/tick":
+                result = MEME_TRADER.tick(meme_current_price)
+                result["status"] = MEME_TRADER.status()
             elif self.path == "/api/meme/security/check":
                 result = MEME_SAFETY.check(data.get("mint_address"))
             else:
@@ -239,7 +316,7 @@ class Handler(BaseHTTPRequestHandler):
         except ValueError as exc:
             self.send_json({"error": str(exc)}, 400)
         except Exception as exc:
-            self.send_json({"error": str(exc)}, 502 if self.path in ("/api/meme/research/run", "/api/meme/security/check", "/api/meme/paper/update") else 400)
+            self.send_json({"error": str(exc)}, 502 if self.path in ("/api/meme/research/run", "/api/meme/security/check", "/api/meme/paper/update", "/api/meme/trader/run", "/api/meme/trader/tick") else 400)
 
     def _read_json(self):
         n = int(self.headers.get("Content-Length", "0"))
@@ -301,5 +378,23 @@ if __name__ == "__main__":
         print(f"Forex paper-agent auto-run enabled (every {AGENTS.interval:.0f}s)", flush=True)
     else:
         print("Forex paper-agent auto-run disabled; use the office Run agent cycle control.", flush=True)
+    if os.environ.get("MEME_PAPER_AUTORUN", "").strip() == "1":
+        def meme_paper_loop():
+            while True:
+                try:
+                    result = run_meme_paper_cycle()
+                    print(
+                        "Meme paper cycle: "
+                        f"{result['scan']['scored_candidates']} scored, "
+                        f"{len(result['cycle'].get('decisions', []))} decisions",
+                        flush=True,
+                    )
+                except Exception as exc:
+                    print(f"Meme paper cycle failed: {type(exc).__name__}: {exc}", flush=True)
+                time.sleep(max(60, int(os.environ.get("MEME_PAPER_INTERVAL_SECONDS", "300"))))
+        threading.Thread(target=meme_paper_loop, name="meme-paper-trader", daemon=True).start()
+        print("Solana meme paper-trading auto-run enabled (default 300s interval)", flush=True)
+    else:
+        print("Solana meme paper-trading auto-run disabled; use Run paper cycle in dashboard.", flush=True)
     print(f"Ember Forex Trading Lab listening on {args.host}:{args.port}", flush=True)
     ThreadingHTTPServer((args.host, args.port), Handler).serve_forever()

@@ -899,6 +899,14 @@ body:before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:60
             <button class="btn" id="memePaperUpdate">Update outcomes</button>
           </div>
           <div id="memePaperStatus"><div class="empty">Loading stored paper outcomes…</div></div>
+          <div class="sechd" style="margin-top:18px">
+            <h3>Autonomous Paper Trader</h3>
+            <span class="sub" id="memeTraderMeta">PAPER ONLY · LOADING</span>
+            <button class="btn go" id="memeTraderRun">Run paper cycle</button>
+            <button class="btn" id="memeTraderRefresh">Refresh</button>
+          </div>
+          <div class="msg" id="memeTraderMsg">No wallet or live orders. A cycle scans candidates, applies deterministic entry rules and independent safety gates, then records simulated positions.</div>
+          <div id="memeTraderStatus"><div class="empty">Loading paper portfolio…</div></div>
         </div>
       </section>
 
@@ -1728,6 +1736,75 @@ async function loadMemePaper(){
   try{renderMemePaper(await api('/api/meme/paper'));}
   catch(e){$id('memePaperStatus').innerHTML='<div class="notes">Paper evaluation unavailable: '+esc(e.message)+'</div>';}
 }
+
+/* ── persistent autonomous paper portfolio; never live execution ── */
+function renderMemeTrader(status){
+  const positions=Array.isArray(status.positions)?status.positions:[];
+  const open=positions.filter(p=>p.status==='OPEN');
+  const events=Array.isArray(status.events)?status.events:[];
+  $id('memeTraderMeta').textContent=(status.risk_halted?'RISK HALT':'PAPER ONLY')+' · '+open.length+'/'+(status.max_open_positions||3)+' OPEN';
+  const cash=Number(status.cash_usd)||0,equity=Number(status.equity_usd)||0;
+  const pnl=Number(status.realized_pnl_usd)||0,unreal=Number(status.unrealized_pnl_usd)||0;
+  const fmt=v=>(v>0?'+':'')+v.toFixed(2);
+  let html='<div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">'+
+    '<div class="kpi"><div class="k">EQUITY</div><div class="v">$'+money(equity)+'</div></div>'+
+    '<div class="kpi"><div class="k">CASH</div><div class="v">$'+money(cash)+'</div></div>'+
+    '<div class="kpi"><div class="k">REALIZED P&L</div><div class="v '+cls(pnl)+'">$'+fmt(pnl)+'</div></div>'+
+    '<div class="kpi"><div class="k">UNREALIZED P&L</div><div class="v '+cls(unreal)+'">$'+fmt(unreal)+'</div></div>'+
+    '<div class="kpi"><div class="k">DAILY LOSS</div><div class="v">$'+money(status.daily_realized_loss_usd)+'</div></div></div>'+
+    '<div class="notes">Initial cash $'+money(status.initial_cash_usd)+' · position size $'+money(status.config?.position_usd)+
+    ' · stop '+(100*Number(status.config?.stop_loss_pct||0)).toFixed(1)+'% · target '+
+    (100*Number(status.config?.take_profit_pct||0)).toFixed(1)+'% · modeled fees/slippage only · no live execution</div>'+
+    '<h3 style="margin:14px 0 8px">Open and recent positions</h3>';
+  if(!positions.length){html+='<div class="empty">No simulated positions yet. Run a paper cycle to start recording decisions.</div>';}
+  else{
+    html+='<div style="overflow-x:auto"><table class="dt"><thead><tr><th>TOKEN</th><th>STATUS</th><th class="r">ENTRY</th><th class="r">LAST</th><th class="r">NOTIONAL</th><th class="r">P&L</th><th>EXIT / AGE</th></tr></thead><tbody>';
+    html+=positions.slice(0,30).map(p=>{
+      const ret=p.status==='CLOSED'?Number(p.realized_pnl||0):(Number(p.current_price)-Number(p.entry_price))*Number(p.quantity)-Number(p.entry_cost||0);
+      const exit=p.status==='CLOSED'?(p.exit_reason||'CLOSED'):'OPEN';
+      return '<tr><td>'+esc(p.symbol||'?')+'<span class="sub2">'+esc((p.token_address||'').slice(0,16))+'</span></td>'+
+        '<td><span class="tag '+(p.status==='OPEN'?'ok':'')+'">'+esc(p.status)+'</span></td>'+
+        '<td class="r mono">$'+money(p.entry_price)+'</td><td class="r mono">$'+money(p.current_price)+'</td>'+
+        '<td class="r mono">$'+money(p.notional)+'</td><td class="r mono '+cls(ret)+'">$'+fmt(ret)+'</td><td>'+esc(exit)+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+  }
+  html+='<h3 style="margin:14px 0 8px">Latest decisions and audit trail</h3>';
+  if(!events.length)html+='<div class="empty">No decisions recorded yet.</div>';
+  else html+='<div class="log">'+events.slice(0,15).map(e=>{
+    const d=e.details||{};const reason=d.reason||d.exit_reason||d.action||'Recorded';
+    return '<div class="row"><i class="dot '+(e.event_type==='POSITION_OPENED'?'ok':e.event_type==='REJECTED'?'warn':'')+'"></i><div class="tx"><b>'+esc(e.event_type)+'</b> · '+esc(e.symbol||e.token_address||'portfolio')+' — '+esc(reason)+
+      '<div class="notes">'+esc(new Date(Number(e.created_at)*1000).toLocaleString())+'</div></div></div>';
+  }).join('')+'</div>';
+  html+='<div class="notes">Paper simulation only. Public market prices may be stale or non-executable; safety checks are not an audit. Incomplete checks block entries.</div>';
+  $id('memeTraderStatus').innerHTML=html;
+}
+async function loadMemeTrader(){
+  try{renderMemeTrader(await api('/api/meme/trader'));}
+  catch(e){$id('memeTraderStatus').innerHTML='<div class="notes">Paper trader unavailable: '+esc(e.message)+'</div>';}
+}
+async function runMemeTrader(){
+  const b=$id('memeTraderRun'),label=b.textContent;
+  b.disabled=true;b.textContent='Running…';
+  $id('memeTraderMsg').textContent='Scanning public data, refreshing open positions, checking candidate safety and recording paper decisions. This can take a little while.';
+  $id('memeTraderMsg').className='msg';
+  try{
+    const result=await api('/api/meme/trader/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({limit:20})});
+    renderMemeTrader(result.status||{});
+    const decisions=result.cycle?.decisions||[];
+    const opened=decisions.filter(d=>d.action==='OPEN').length;
+    const closed=decisions.filter(d=>d.action==='CLOSE').length;
+    const rejected=decisions.filter(d=>d.action==='REJECT').length;
+    $id('memeTraderMsg').textContent='Cycle complete: '+(result.scan?.scored_candidates||0)+' candidates scored · '+opened+' opened · '+closed+' closed · '+rejected+' rejected. No live orders.';
+    $id('memeTraderMsg').className='msg ok';
+    await loadMemePaper();
+  }catch(e){
+    $id('memeTraderMsg').textContent='Paper cycle failed: '+e.message;
+    $id('memeTraderMsg').className='msg bad';
+  }finally{b.disabled=false;b.textContent=label}
+}
+$id('memeTraderRun').addEventListener('click',runMemeTrader);
+$id('memeTraderRefresh').addEventListener('click',loadMemeTrader);
+
 async function loadMemeResearch(){
   try{
     const result=await api('/api/meme/research');
@@ -1874,9 +1951,11 @@ refreshSeries();
 aiStatus();
 aiRestore();
 loadMemeResearch();
+loadMemeTrader();
 refresh();
 setInterval(refresh,15000);
 setInterval(aiStatus,30000);
+setInterval(loadMemeTrader,60000);
 setInterval(()=>{loadSeries(chartPair)},60000);
 </script>
 </body>
