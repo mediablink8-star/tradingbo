@@ -71,6 +71,22 @@ class MemePaperTrackerTests(unittest.TestCase):
         self.assertEqual(result["outcomes_updated"], 0)
         self.assertEqual(self.tracker.status()["pending_horizon_observations"], 5)
 
+    def test_late_samples_are_marked_missed_not_counted_as_returns(self):
+        self.tracker.record_scan([
+            {"decision": "WATCH", "token_address": "TOKEN1", "price_usd": 0.001, "score": 80},
+        ])
+        # Twenty minutes is too late for both the 5m and 15m sampling windows.
+        self.now[0] += 20 * 60
+        self.prices["TOKEN1"] = 0.0011
+        result = self.tracker.update_due()
+        self.assertEqual(result["outcomes_updated"], 0)
+        self.assertEqual(result["missed_sampling_windows"], 2)
+        status = self.tracker.status()
+        self.assertEqual(status["horizons"]["5m"]["samples"], 0)
+        self.assertEqual(status["horizons"]["5m"]["missed_sampling_windows"], 1)
+        self.assertEqual(status["horizons"]["15m"]["missed_sampling_windows"], 1)
+        self.assertEqual(status["pending_horizon_observations"], 3)
+
     def test_invalid_cost_assumptions_are_rejected(self):
         with self.assertRaises(ValueError):
             MemePaperTracker(os.path.join(self.temp.name, "bad.sqlite"), slippage_bps=-1)
