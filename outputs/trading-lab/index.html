@@ -1838,7 +1838,9 @@ async function runMemeTrader(){
         if(blockers.length)explanation+=' Main market filters: '+blockers.map(([k,v])=>k.replaceAll('_',' ')+' ('+v+')').join(', ')+'.';
         const examples=(scan.market_rejection_examples||[]).slice(0,3);
         if(examples.length){
-          const money=v=>Number.isFinite(Number(v))?'
+          const money=v=>Number.isFinite(Number(v))?'$'+Number(v).toLocaleString(undefined,{maximumFractionDigits:0}):'—';
+          explanation+=' Examples: '+examples.map(e=>(e.name||e.symbol||'Unknown')+' ('+(e.symbol||'?')+') — liquidity '+money(e.liquidity_usd)+', 24h volume '+money(e.volume_24h_usd)+', 1h '+(Number.isFinite(Number(e.price_change_1h_pct))?Number(e.price_change_1h_pct).toFixed(1)+'%':'—')).join('; ')+'.';
+        }
       }else if(reasons.length){
         explanation=' No entries: '+reasons.map(([k,v])=>k.replaceAll('_',' ')+' ('+v+')').join(', ')+'.';
       }else{
