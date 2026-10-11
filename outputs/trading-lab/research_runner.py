@@ -6,6 +6,7 @@ isolated final holdout. No broker or live execution is used.
 import argparse
 import json
 import os
+import statistics
 
 from backtest import FXBacktester
 from historical import load_json
@@ -128,13 +129,13 @@ def run_shared_holdout_portfolio(datasets, holdout_size=100, starting_cash=10000
     for equity in equity_values:
         returns.append(equity / previous_equity - 1.0 if previous_equity > 0 else 0.0)
         previous_equity = equity
-    deviation = __import__("statistics").stdev(returns) if len(returns) > 1 else 0.0
+    deviation = statistics.stdev(returns) if len(returns) > 1 else 0.0
     periods = 252.0
     if len(result["history"]) > 1:
         gaps = [b["timestamp"] - a["timestamp"] for a, b in zip(result["history"], result["history"][1:]) if b["timestamp"] > a["timestamp"]]
         if gaps:
-            periods = max(1.0, 31536000.0 / __import__("statistics").median(gaps))
-    result["sharpe"] = __import__("statistics").mean(returns) / deviation * periods ** 0.5 if deviation > 0 else 0.0
+            periods = max(1.0, 31536000.0 / statistics.median(gaps))
+    result["sharpe"] = statistics.mean(returns) / deviation * periods ** 0.5 if deviation > 0 else 0.0
     return {
         "selection": selection["selected"],
         "selection_training": selection["training_result"],
