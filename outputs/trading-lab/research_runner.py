@@ -15,7 +15,7 @@ from portfolio_selection import select_portfolio_strategies
 from portfolio_walkforward import portfolio_true_walk_forward
 from research_report import build_research_report
 from strategies import default_strategy_candidates
-from true_walkforward import optimize_window, true_walk_forward
+from true_walkforward import optimize_window, run_with_warmup, true_walk_forward
 
 
 DEFAULT_PAIRS = ("EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CHF")
@@ -66,14 +66,17 @@ def run_pair(
         pre_holdout, backtester_factory, candidates,
         train_size=train_size, test_size=test_size, gap=gap, metric=metric,
         min_trades=min_trades, max_drawdown=max_drawdown,
-        min_return_pct=min_return_pct,
+        min_return_pct=min_return_pct, warmup_size=100,
     )
     selected, ranking = optimize_window(
         pre_holdout, backtester_factory(), candidates, metric=metric,
         min_trades=min_trades, max_drawdown=max_drawdown,
         min_return_pct=min_return_pct,
     )
-    holdout_result = backtester_factory().run(holdout, dict(candidates)[selected["name"]]())
+    holdout_result = run_with_warmup(
+        backtester_factory(), dict(candidates)[selected["name"]](),
+        pre_holdout[-100:], holdout,
+    )
     holdout_report = {
         "selected_strategy": selected["name"],
         "selection_score": selected["score"],
