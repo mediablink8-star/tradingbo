@@ -15,6 +15,7 @@ from forex_agents import ForexAgentRuntime
 from key_store import KeyStore, PROVIDER_SPECS
 from llm_research import ResearchLayer, ModelError, verify_connection
 from meme_research import MemeCoinResearchEngine
+from meme_safety import SolanaMintSafetyChecker
 
 ROOT = Path(__file__).resolve().parent
 LAB = ForexLab(ROOT / "lab.sqlite")
@@ -33,6 +34,7 @@ KEYS = KeyStore(
 RESEARCH = ResearchLayer(KEYS)
 AGENTS.attach_research(RESEARCH)
 MEME_RESEARCH = MemeCoinResearchEngine()
+MEME_SAFETY = SolanaMintSafetyChecker()
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -151,7 +153,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         if self.path not in (
             "/api/forex/open", "/api/forex/close", "/api/forex/agents/run",
-            "/api/meme/research/run",
+            "/api/meme/research/run", "/api/meme/security/check",
         ):
             self.send_json({"error": "not found"}, 404)
             return
@@ -171,13 +173,15 @@ class Handler(BaseHTTPRequestHandler):
                 result = LAB.close(data.get("id"))
             elif self.path == "/api/meme/research/run":
                 result = MEME_RESEARCH.run(data.get("limit", 20))
+            elif self.path == "/api/meme/security/check":
+                result = MEME_SAFETY.check(data.get("mint_address"))
             else:
                 result = AGENTS.run_cycle()
             self.send_json(result)
         except ValueError as exc:
             self.send_json({"error": str(exc)}, 400)
         except Exception as exc:
-            self.send_json({"error": str(exc)}, 502 if self.path == "/api/meme/research/run" else 400)
+            self.send_json({"error": str(exc)}, 502 if self.path in ("/api/meme/research/run", "/api/meme/security/check") else 400)
 
     def _read_json(self):
         n = int(self.headers.get("Content-Length", "0"))
