@@ -5,7 +5,9 @@ transactions. Passing market filters is not a contract-security assessment.
 """
 import json
 import math
+import threading
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
@@ -15,12 +17,52 @@ BASE_URL = "https://api.dexscreener.com"
 USER_AGENT = "TradingBo-MemeResearch/0.1"
 
 
+# Public market-data endpoints are shared by research scans and price ticks.
+# Cache successful GETs briefly and serialize cache updates across request threads.
+_RESPONSE_CACHE = {}
+_RESPONSE_CACHE_LOCK = threading.Lock()
+_CACHE_TTL_SECONDS = 15
+_MAX_CACHE_ENTRIES = 256
+_MAX_429_RETRIES = 3
+
+
 def _fetch_json(url, timeout=10):
+    now = time.monotonic()
+    with _RESPONSE_CACHE_LOCK:
+        cached = _RESPONSE_CACHE.get(url)
+        if cached and cached[0] > now:
+            return cached[1]
+
     request = urllib.request.Request(
         url, headers={"Accept": "application/json", "User-Agent": USER_AGENT}
     )
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        return json.loads(response.read(2_000_000))
+    for attempt in range(_MAX_429_RETRIES + 1):
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                payload = json.loads(response.read(2_000_000))
+            with _RESPONSE_CACHE_LOCK:
+                # Keep memory bounded; expired entries are removed first.
+                current = time.monotonic()
+                expired = [key for key, value in _RESPONSE_CACHE.items()
+                           if value[0] <= current]
+                for key in expired:
+                    _RESPONSE_CACHE.pop(key, None)
+                if len(_RESPONSE_CACHE) >= _MAX_CACHE_ENTRIES:
+                    _RESPONSE_CACHE.pop(next(iter(_RESPONSE_CACHE)), None)
+                _RESPONSE_CACHE[url] = (current + _CACHE_TTL_SECONDS, payload)
+            return payload
+        except urllib.error.HTTPError as exc:
+            if exc.code != 429 or attempt >= _MAX_429_RETRIES:
+                raise
+            # Honour the provider's requested wait when supplied, but cap it so
+            # a web request cannot be held indefinitely by a bad header.
+            try:
+                retry_after = float(exc.headers.get("Retry-After", ""))
+            except (TypeError, ValueError, AttributeError):
+                retry_after = 0.0
+            delay = min(20.0, max(retry_after, 1.0 * (2 ** attempt)))
+            time.sleep(delay)
+    raise RuntimeError("DexScreener rate-limit retries exhausted")
 
 
 def _number(value, default=0.0):
