@@ -192,10 +192,11 @@ curl -s -X POST http://127.0.0.1:8765/api/meme/paper/update \
 Default assumptions are 50 bps slippage per side and 30 bps fees per side
 (1.6% modeled round-trip cost). Set `MEME_PAPER_SLIPPAGE_BPS` and
 `MEME_PAPER_FEE_BPS` in the environment before starting the server to change
-them. These are assumptions, not measured fills. Outcome prices are sampled
-when the tracker next runs after a horizon, so the recorded timestamp includes
-sampling delay; they are not exact candle-close returns. Missed provider prices
-remain pending rather than being counted as losses or zeros. Each scan is a
+them. These are assumptions, not measured fills. Outcome prices are sampled near each target horizon, within a grace window
+(maximum of 60 seconds or 25% of the horizon). Late samples are marked missed
+and excluded from return statistics instead of being misreported as target-time
+returns. Missed provider prices remain pending rather than being counted as
+losses or zeros. Each scan is a
 separate sample, so repeated scans can create overlapping observations. The
 tracker is paper-only and never submits trades.
 
