@@ -58,7 +58,7 @@ class MemePaperTraderTests(unittest.TestCase):
     def test_active_authority_and_high_concentration_are_rejected(self):
         for safety, reason in [
             (safe_result(mint_authority_active=True), "active_or_unknown_token_authority"),
-            (safe_result(top_20_token_accounts_supply_pct=90), "high_severity_security_finding"),
+            (safe_result(top_20_token_accounts_supply_pct=90, highest_finding_severity="high"), "high_severity_security_finding"),
         ]:
             with self.subTest(reason=reason):
                 t = MemePaperTrader(os.path.join(self.temp.name, reason + ".sqlite"),
@@ -71,7 +71,8 @@ class MemePaperTraderTests(unittest.TestCase):
         result = self.trader.run_cycle(
             [candidate("LOW", score=60), candidate("PUMP", price_change_1h_pct=50)],
             lambda _: safe_result(), self.price)
-        self.assertEqual(result["decisions"], [])
+        self.assertEqual(len(result["decisions"]), 2)
+        self.assertTrue(all(d["action"] == "REJECT" for d in result["decisions"]))
         self.assertEqual(self.trader.status()["open_positions_count"], 0)
 
     def test_stop_loss_closes_position_and_records_cost_adjusted_pnl(self):
@@ -92,6 +93,7 @@ class MemePaperTraderTests(unittest.TestCase):
         self.assertEqual(result["decisions"][0]["reason"], "TAKE_PROFIT")
 
     def test_position_limit_and_duplicate_guard(self):
+        self.trader.max_positions = 1
         self.trader.run_cycle([candidate()], lambda _: safe_result(), self.price)
         result = self.trader.run_cycle(
             [candidate(), candidate("MINT2")], lambda _: safe_result(), self.price)
