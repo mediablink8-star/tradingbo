@@ -1,5 +1,7 @@
 """Ember Forex Trading Lab HTTP application."""
 import argparse
+import base64
+import hmac
 import json
 import mimetypes
 import os
@@ -14,9 +16,17 @@ from forex_lab import ForexLab
 from forex_agents import ForexAgentRuntime
 from key_store import KeyStore, PROVIDER_SPECS
 from llm_research import ResearchLayer, ModelError, verify_connection
+from meme_research import MemeCoinResearchEngine
+from meme_safety import SolanaMintSafetyChecker
+from meme_paper import MemePaperTracker
 
 ROOT = Path(__file__).resolve().parent
-LAB = ForexLab(ROOT / "lab.sqlite")
+DATA_DIR = Path(os.environ.get("TRADINGLAB_DATA_DIR", str(ROOT))).expanduser().resolve()
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+AUTH_REQUIRED = os.environ.get("TRADINGLAB_AUTH_REQUIRED", "").strip() == "1"
+AUTH_USERNAME = os.environ.get("TRADINGLAB_USERNAME", "")
+AUTH_PASSWORD = os.environ.get("TRADINGLAB_PASSWORD", "")
+LAB = ForexLab(DATA_DIR / "lab.sqlite")
 AGENTS = ForexAgentRuntime(
     ROOT / "lab.sqlite", LAB,
     auto_run=os.environ.get("EMBER_FOREX_AUTORUN", "").strip() == "1",
@@ -31,9 +41,37 @@ KEYS = KeyStore(
 )
 RESEARCH = ResearchLayer(KEYS)
 AGENTS.attach_research(RESEARCH)
+MEME_RESEARCH = MemeCoinResearchEngine()
+MEME_SAFETY = SolanaMintSafetyChecker()
+MEME_PAPER = MemePaperTracker(
+    DATA_DIR / "meme-paper.sqlite",
+    slippage_bps=float(os.environ.get("MEME_PAPER_SLIPPAGE_BPS", "50")),
+    fee_bps=float(os.environ.get("MEME_PAPER_FEE_BPS", "30")),
+)
 
 
 class Handler(BaseHTTPRequestHandler):
+    def _require_auth(self):
+        if not AUTH_REQUIRED:
+            return True
+        header = self.headers.get("Authorization", "")
+        supplied = ""
+        if header.startswith("Basic "):
+            try:
+                supplied = base64.b64decode(header[6:], validate=True).decode("utf-8")
+            except (ValueError, UnicodeDecodeError):
+                supplied = ""
+        expected = f"{AUTH_USERNAME}:{AUTH_PASSWORD}"
+        if AUTH_USERNAME and AUTH_PASSWORD and hmac.compare_digest(supplied, expected):
+            return True
+        self.send_response(401)
+        self.send_header("WWW-Authenticate", 'Basic realm="Tradingbo", charset="UTF-8"')
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(b'{"error":"authentication required"}')
+        return False
+
     def send_json(self, data, status=200):
         raw = json.dumps(data, allow_nan=False).encode()
         self.send_response(status)
@@ -44,6 +82,11 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = urllib.parse.urlsplit(self.path).path
+        if path == "/healthz":
+            self.send_json({"status": "ok"})
+            return
+        if not self._require_auth():
+            return
         if path == "/api/forex":
             self.send_json(LAB.tick())
             return
@@ -52,6 +95,19 @@ class Handler(BaseHTTPRequestHandler):
             state["account"] = LAB.status().get("account", {})
             state["runtime_available"] = True
             self.send_json(state)
+            return
+        if path == "/api/meme/research":
+            self.send_json(MEME_RESEARCH.last_result or {
+                "available": True,
+                "mode": "research_only",
+                "chain": "solana",
+                "last_run": None,
+                "execution_enabled": False,
+                "note": "POST /api/meme/research/run to discover and screen candidates.",
+            })
+            return
+        if path == "/api/meme/paper":
+            self.send_json(MEME_PAPER.status())
             return
         if path == "/api/connections/model":
             self.send_json({**KEYS.status(),
@@ -63,7 +119,6 @@ class Handler(BaseHTTPRequestHandler):
                                 for name, spec in PROVIDER_SPECS.items()}})
             return
         if path == "/api/connections/research":
-            state = AGENTS.status()
             self.send_json({
                 "available": RESEARCH.available(),
                 "model": KEYS.model,
@@ -120,7 +175,9 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(target.read_bytes())
 
     def _local_request(self):
-        """Credential routes require a loopback peer and a matching Host."""
+        """Local-only in desktop mode; hosted mode is protected by HTTP Basic Auth."""
+        if AUTH_REQUIRED:
+            return None
         host = self.headers.get("Host", "")
         peer = self.client_address[0] if self.client_address else ""
         if peer not in ("127.0.0.1", "::1"):
@@ -131,6 +188,8 @@ class Handler(BaseHTTPRequestHandler):
         return None
 
     def do_POST(self):
+        if not self._require_auth():
+            return
         if self.path.startswith("/api/connections/"):
             bad = self._local_request()
             if bad:
@@ -141,6 +200,8 @@ class Handler(BaseHTTPRequestHandler):
         if self.path not in (
             "/api/forex/open", "/api/forex/close", "/api/forex/agents/run",
             "/api/forex/agents/config",
+            "/api/meme/research/run", "/api/meme/security/check",
+            "/api/meme/paper/update",
         ):
             self.send_json({"error": "not found"}, 404)
             return
@@ -152,6 +213,8 @@ class Handler(BaseHTTPRequestHandler):
             if not 1 <= n <= 10000:
                 raise ValueError("Invalid request size")
             data = json.loads(self.rfile.read(n))
+            if not isinstance(data, dict):
+                raise ValueError("JSON object required")
             if self.path == "/api/forex/open":
                 result = LAB.open(data.get("pair"), data.get("side"), float(data.get("notional")))
             elif self.path == "/api/forex/close":
@@ -160,11 +223,23 @@ class Handler(BaseHTTPRequestHandler):
                 result = {"ok": True,
                           "agent_config": AGENTS.set_config(
                               data.get("agent"), data.get("enabled"))}
+            elif self.path == "/api/meme/research/run":
+                result = MEME_RESEARCH.run(data.get("limit", 20))
+                result["paper_tracking"] = MEME_PAPER.record_scan(result.get("candidates", []))
+                result["paper_outcome_update"] = MEME_PAPER.update_due()
+                result["paper_status"] = MEME_PAPER.status()
+            elif self.path == "/api/meme/paper/update":
+                result = MEME_PAPER.update_due()
+                result["status"] = MEME_PAPER.status()
+            elif self.path == "/api/meme/security/check":
+                result = MEME_SAFETY.check(data.get("mint_address"))
             else:
                 result = AGENTS.run_cycle()
             self.send_json(result)
-        except Exception as exc:
+        except ValueError as exc:
             self.send_json({"error": str(exc)}, 400)
+        except Exception as exc:
+            self.send_json({"error": str(exc)}, 502 if self.path in ("/api/meme/research/run", "/api/meme/security/check", "/api/meme/paper/update") else 400)
 
     def _read_json(self):
         n = int(self.headers.get("Content-Length", "0"))
@@ -207,8 +282,13 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--host", default=os.environ.get("HOST", "127.0.0.1"))
+    parser.add_argument("--port", type=int, default=int(os.environ.get("PORT", "8765")))
     args = parser.parse_args()
+    if AUTH_REQUIRED and (not AUTH_USERNAME or not AUTH_PASSWORD):
+        raise SystemExit("Hosted mode requires TRADINGLAB_USERNAME and TRADINGLAB_PASSWORD.")
+    if AUTH_REQUIRED and len(AUTH_PASSWORD) < 16:
+        raise SystemExit("TRADINGLAB_PASSWORD must be at least 16 characters.")
     if AGENTS.auto_run:
         def agent_loop():
             while True:
@@ -221,5 +301,5 @@ if __name__ == "__main__":
         print(f"Forex paper-agent auto-run enabled (every {AGENTS.interval:.0f}s)", flush=True)
     else:
         print("Forex paper-agent auto-run disabled; use the office Run agent cycle control.", flush=True)
-    print(f"Ember Forex Trading Lab: http://127.0.0.1:{args.port}", flush=True)
-    ThreadingHTTPServer(("127.0.0.1", args.port), Handler).serve_forever()
+    print(f"Ember Forex Trading Lab listening on {args.host}:{args.port}", flush=True)
+    ThreadingHTTPServer((args.host, args.port), Handler).serve_forever()

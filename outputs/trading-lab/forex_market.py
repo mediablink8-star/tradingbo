@@ -226,7 +226,7 @@ def _yahoo(pairs):
     The bar close is a mid reference, not an executable broker quote. Bid/ask
     remain simulated from the configured spread, exactly as with ECB.
     """
-    interval = os.environ.get("FX_YAHOO_INTERVAL", "15m")
+    interval = os.environ.get("FX_YAHOO_INTERVAL", "1m")
     out = {}
     latest = 0.0
     for pair in pairs:

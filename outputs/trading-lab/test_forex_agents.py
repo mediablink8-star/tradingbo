@@ -102,6 +102,13 @@ class ForexAgentRuntimeTests(unittest.TestCase):
         self.assertEqual(result["executed"], [])
         self.assertEqual(result["events"][0]["status"], "Blocked")
 
+    def test_fresh_quote_age_boundary(self):
+        now = time.time()
+        today = datetime.fromtimestamp(now, timezone.utc).date().isoformat()
+        base = {"price": 1.1, "provider_date": today}
+        self.assertTrue(self.runtime._fresh({**base, "observed": now - 299}, now))
+        self.assertFalse(self.runtime._fresh({**base, "observed": now - 301}, now))
+
     def test_events_and_samples_persist(self):
         self.runtime.run_cycle()
         second = ForexAgentRuntime(self.path, self.lab)

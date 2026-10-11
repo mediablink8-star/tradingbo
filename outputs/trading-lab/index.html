@@ -754,6 +754,7 @@ body:before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:60
         <a class="on" href="#overview">Overview</a>
         <a href="#markets">Markets</a>
         <a href="#pipeline">Agents</a>
+        <a href="#meme-research">Meme</a>
         <a href="#ai">AI Desk</a>
         <a href="#positions">Positions</a>
         <a href="#activity">Events</a>
@@ -825,6 +826,25 @@ body:before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:60
           <span class="fn" id="fleetNote">—</span>
         </div>
         <div class="pipe" id="pipe"></div>
+      </section>
+
+      <section class="sec" id="meme-research">
+        <div class="sechd">
+          <h2>Solana Meme-Coin Research</h2>
+          <span class="sub" id="memeMeta">READ-ONLY · NOT A BUY SIGNAL</span>
+          <button class="btn go" id="memeScan">Scan candidates</button>
+        </div>
+        <div class="secbd">
+          <p class="fine" style="margin-top:0">Screens public DEX market data for liquidity, turnover, activity and short-term momentum. This does not check contract safety, holder concentration or sellability. No wallet or transaction execution is connected.</p>
+          <div class="msg" id="memeMsg"></div>
+          <div id="memeResults"><div class="empty">No scan yet. Press “Scan candidates” to run the read-only Solana research pass.</div></div>
+          <div class="sechd" style="margin-top:18px">
+            <h3>Paper Outcome Tracking</h3>
+            <span class="sub" id="memePaperMeta">LOADING</span>
+            <button class="btn" id="memePaperUpdate">Update outcomes</button>
+          </div>
+          <div id="memePaperStatus"><div class="empty">Loading stored paper outcomes…</div></div>
+        </div>
       </section>
 
       <div class="split">
@@ -1590,6 +1610,109 @@ $id('aiProvider').addEventListener('change',()=>{
   applyProviderHints();
 });
 
+
+/* ── Solana meme-coin research: discovery only, no trading action ── */
+function renderMemeResearch(result){
+  const candidates=Array.isArray(result.candidates)?result.candidates:[];
+  $id('memeMeta').textContent=(result.watchlist_count||0)+' WATCH · '+
+    (result.scored_candidates||0)+' SCORED · '+(result.discovered_tokens||0)+' DISCOVERED';
+  const msg=$id('memeMsg');
+  msg.textContent='Research-only scan from '+(result.provider||'market data')+
+    '. Security checks are not performed; WATCH is not a buy signal.';
+  msg.className='msg'+(result.errors&&result.errors.length?'':' ok');
+  if(!candidates.length){
+    $id('memeResults').innerHTML='<div class="empty">No candidates scored in this pass. Check provider errors below, then try another scan later.</div>'+
+      ((result.errors||[]).length?'<div class="notes">'+result.errors.map(e=>esc(e.token_address||'provider')+': '+esc(e.error)).join('<br>')+'</div>':'');
+    return;
+  }
+  $id('memeResults').innerHTML='<div style="overflow-x:auto"><table class="dt"><thead><tr>'+
+    '<th>TOKEN</th><th class="r">SCORE</th><th class="r">LIQUIDITY</th><th class="r">24H VOL</th>'+
+    '<th class="r">24H TXNS</th><th class="r">1H CHANGE</th><th>DECISION</th></tr></thead><tbody>'+
+    candidates.map(c=>{
+      const url=String(c.pair_url||'');
+      const safeUrl=/^https:\/\/dexscreener\.com\//i.test(url)?url:'';
+      const name=esc(c.name||'Unknown')+' ('+esc(c.symbol||'?')+')';
+      const token=safeUrl?'<a href="'+esc(safeUrl)+'" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">'+name+'</a>':name;
+      const change=Number(c.price_change_1h_pct)||0;
+      const reasons=(c.rejection_reasons||[]).map(esc).join(', ');
+      return '<tr><td>'+token+'<span class="sub2">'+esc(c.token_address||'')+
+        (reasons?' · '+reasons:'')+'</span></td>'+
+        '<td class="r mono">'+Number(c.score||0).toFixed(1)+'</td>'+
+        '<td class="r mono">$'+money(c.liquidity_usd)+'</td>'+
+        '<td class="r mono">$'+money(c.volume_24h_usd)+'</td>'+
+        '<td class="r mono">'+Number(c.transactions_24h||0).toLocaleString()+'</td>'+
+        '<td class="r mono '+cls(change)+'">'+(change>0?'+':'')+change.toFixed(1)+'%</td>'+
+        '<td><span class="tag '+(c.decision==='WATCH'?'ok':'bad')+'">'+esc(c.decision)+'</span></td></tr>';
+    }).join('')+'</tbody></table></div>'+
+    ((result.errors||[]).length?'<div class="notes">Provider issues: '+result.errors.map(e=>esc(e.token_address||'provider')+': '+esc(e.error)).join(' · ')+'</div>':'')+
+    '<div class="notes">Scanned '+esc(result.generated_at||'')+'. Holder concentration, contract permissions and sellability remain unchecked.</div>';
+}
+function renderMemePaper(status){
+  const horizons=status.horizons||{};
+  $id('memePaperMeta').textContent=(status.snapshots||0)+' SNAPSHOTS · '+
+    (status.pending_horizon_observations||0)+' PENDING';
+  const names=['5m','15m','1h','4h','24h'];
+  $id('memePaperStatus').innerHTML=
+    '<div class="notes">Paper-only · modeled round-trip cost '+
+    Number(status.cost_assumptions?.modeled_round_trip_cost_pct||0).toFixed(2)+
+    '% · no wallet or live orders</div>'+
+    '<div style="overflow-x:auto"><table class="dt"><thead><tr>'+
+    '<th>HORIZON</th><th class="r">SAMPLES</th><th class="r">AVG NET RETURN</th>'+
+    '<th class="r">WIN RATE</th><th class="r">MISSED</th></tr></thead><tbody>'+
+    names.map(name=>{
+      const h=horizons[name]||{};
+      const avg=typeof h.average_net_return_pct==='number'?((h.average_net_return_pct>0?'+':'')+h.average_net_return_pct.toFixed(2)+'%'):'—';
+      const win=typeof h.win_rate_pct==='number'?h.win_rate_pct.toFixed(1)+'%':'—';
+      return '<tr><td>'+name+'</td><td class="r mono">'+(h.samples||0)+'</td>'+
+        '<td class="r mono '+(typeof h.average_net_return_pct==='number'?cls(h.average_net_return_pct):'')+'">'+avg+'</td>'+
+        '<td class="r mono">'+win+'</td><td class="r mono">'+(h.missed_sampling_windows||0)+'</td></tr>';
+    }).join('')+'</tbody></table></div>'+
+    '<div class="notes">Returns are sampled near each target horizon and adjusted using assumed costs, not real fills. Missed sampling windows are excluded. Repeated scans may create overlapping samples.</div>';
+}
+async function loadMemePaper(){
+  try{renderMemePaper(await api('/api/meme/paper'));}
+  catch(e){$id('memePaperStatus').innerHTML='<div class="notes">Paper evaluation unavailable: '+esc(e.message)+'</div>';}
+}
+async function loadMemeResearch(){
+  try{
+    const result=await api('/api/meme/research');
+    if(Array.isArray(result.candidates))renderMemeResearch(result);
+  }catch(e){
+    $id('memeMsg').textContent='Research status unavailable: '+e.message;
+    $id('memeMsg').className='msg bad';
+  }
+  await loadMemePaper();
+}
+async function scanMemeResearch(){
+  const button=$id('memeScan'),label=button.textContent;
+  button.disabled=true;button.textContent='Scanning…';
+  $id('memeMsg').textContent='Fetching candidate lists and checking available Solana pools…';
+  $id('memeMsg').className='msg';
+  try{
+    const result=await api('/api/meme/research/run',{method:'POST',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({limit:20})});
+    renderMemeResearch(result);
+    if(result.paper_status)renderMemePaper(result.paper_status);
+    else await loadMemePaper();
+  }catch(e){
+    $id('memeMsg').textContent='Scan failed: '+e.message;
+    $id('memeMsg').className='msg bad';
+  }finally{button.disabled=false;button.textContent=label}
+}
+async function updateMemePaper(){
+  const button=$id('memePaperUpdate'),label=button.textContent;
+  button.disabled=true;button.textContent='Updating…';
+  try{
+    const result=await api('/api/meme/paper/update',{method:'POST',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({})});
+    renderMemePaper(result.status||{});
+  }catch(e){
+    $id('memePaperStatus').innerHTML='<div class="notes">Update failed: '+esc(e.message)+'</div>';
+  }finally{button.disabled=false;button.textContent=label}
+}
+$id('memeScan').addEventListener('click',scanMemeResearch);
+$id('memePaperUpdate').addEventListener('click',updateMemePaper);
+
 /* ── data flow ─────────────────────────────────────────── */
 function applyState(s){
   state=s;
@@ -1695,6 +1818,7 @@ setInterval(tickClock,1000);
 refreshSeries();
 aiStatus();
 aiRestore();
+loadMemeResearch();
 refresh();
 setInterval(refresh,15000);
 setInterval(aiStatus,30000);

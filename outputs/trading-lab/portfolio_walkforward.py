@@ -5,6 +5,9 @@ then evaluated on the next unseen OOS window with the same shared-capital
 constraints. The final holdout is excluded from every selection decision.
 """
 from portfolio_backtest import MultiPairPortfolioBacktester
+import math
+import statistics
+
 from portfolio_selection import select_portfolio_strategies
 
 
@@ -35,9 +38,10 @@ def portfolio_true_walk_forward(
     max_drawdown=None,
     min_return_pct=None,
     max_iterations=2,
+    warmup_size=0,
 ):
-    if train_size < 2 or test_size < 1 or gap < 0:
-        raise ValueError("train_size >= 2, test_size >= 1, gap >= 0 required")
+    if train_size < 2 or test_size < 1 or gap < 0 or warmup_size < 0:
+        raise ValueError("train_size >= 2, test_size >= 1, gap >= 0, warmup_size >= 0 required")
     aligned = _align(candles_by_pair)
     pairs = sorted(aligned)
     length = len(aligned[pairs[0]])
@@ -56,6 +60,9 @@ def portfolio_true_walk_forward(
         train = {pair: aligned[pair][start:start + train_size] for pair in pairs}
         test_start = start + train_size + gap
         test = {pair: aligned[pair][test_start:test_start + test_size] for pair in pairs}
+        warmup_start = max(0, test_start - warmup_size)
+        warmup = {pair: aligned[pair][warmup_start:test_start] for pair in pairs}
+        combined = {pair: warmup[pair] + test[pair] for pair in pairs}
         selection = select_portfolio_strategies(
             train,
             candidate_map,
@@ -70,7 +77,26 @@ def portfolio_true_walk_forward(
             pair: (dict(candidate_map[pair])[name]() if name != "__flat__" else (lambda history: "flat"))
             for pair, name in selected.items()
         }
-        result = factory(cash).run(test, signals)
+        guarded_signals = {
+            pair: (lambda signal=signals[pair], count=len(warmup[pair]):
+                   (lambda history: None if len(history) <= count else signal(history)))()
+            for pair in pairs
+        }
+        result = factory(cash).run(combined, guarded_signals)
+        result["history"] = result["history"][len(next(iter(warmup.values()))):]
+        equity_values = [float(row["equity"]) for row in result["history"]]
+        returns = []
+        previous_equity = cash
+        for equity in equity_values:
+            returns.append(equity / previous_equity - 1.0 if previous_equity > 0 else 0.0)
+            previous_equity = equity
+        deviation = statistics.stdev(returns) if len(returns) > 1 else 0.0
+        periods = 252.0
+        if len(test[pairs[0]]) > 1:
+            gaps = [b.timestamp - a.timestamp for a, b in zip(test[pairs[0]], test[pairs[0]][1:]) if b.timestamp > a.timestamp]
+            if gaps:
+                periods = max(1.0, 31536000.0 / statistics.median(gaps))
+        result["sharpe"] = statistics.mean(returns) / deviation * math.sqrt(periods) if deviation > 0 else 0.0
         windows.append({
             "train_start": aligned[pairs[0]][start].timestamp,
             "train_end": aligned[pairs[0]][start + train_size - 1].timestamp,
