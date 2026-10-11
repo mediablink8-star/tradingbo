@@ -186,7 +186,7 @@ class MemeCoinResearchEngine:
             "buy_balance": round(balance_score, 2),
             "momentum": round(momentum_score, 2),
         }
-        score = round(min(100.0, sum(score_components.values())), 2)
+        score = round(min(100.0, liquidity_score + turnover_score + activity_score + balance_score + momentum_score), 2)
 
         if reasons:
             decision = "REJECT"
