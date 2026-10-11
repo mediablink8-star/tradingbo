@@ -1032,9 +1032,20 @@ const money=v=>Number(v||0).toFixed(2);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const cls=v=>Number(v)>0?'pos':Number(v)<0?'neg':'';
 
-const api=async(path,opts)=>{
-  const r=await fetch(path,opts);
-  let j=null;try{j=await r.json()}catch(_){}
+let apiAuth=null,apiAuthPrompted=false;
+const api=async(path,opts={})=>{
+  const send=()=>fetch(path,{...opts,headers:{...(opts.headers||{}),...(apiAuth?{Authorization:'Basic '+apiAuth}:{})}});
+  let r=await send(),j=null;try{j=await r.json()}catch(_){}
+  if(r.status===401&&!apiAuthPrompted){
+    apiAuthPrompted=true;
+    const user=window.prompt('Tradingbo requires your Render dashboard username.');
+    const pass=user===null?null:window.prompt('Enter your Tradingbo dashboard password.');
+    if(user&&pass){
+      apiAuth=btoa(unescape(encodeURIComponent(user.trim()+':'+pass)));
+      r=await send();j=null;try{j=await r.json()}catch(_){}
+    }
+  }
+  if(r.status===401){apiAuth=null;apiAuthPrompted=false;throw Error('Authentication required. Open the dashboard again and enter the username/password configured in Render.')}
   if(!r.ok)throw Error(j?.error||('HTTP '+r.status));
   return j;
 };
