@@ -171,6 +171,49 @@ A `WATCH` label means only that market-data filters passed; it is not a buy sign
 The system is read-only: it cannot connect a wallet, prepare a swap, or submit a transaction.
 Do not enable real-money execution on the strength of these checks alone.
 
+## Tests
+
+```
+cd outputs/trading-lab
+python -m unittest -v test_forex.py test_forex_lab.py test_forex_agents.py test_forex_market.py test_meme_research.py test_meme_safety.py test_backtest.py test_strategies.py test_robustness.py test_historical.py test_dataset.py test_intraday.py test_intraday_dataset.py test_true_walkforward.py test_research_selection.py test_research_report.py test_research_runner.py test_portfolio_report.py test_portfolio_backtest.py test_portfolio_selection.py test_portfolio_walkforward.py
+```
+
+Live broker execution remains intentionally out of scope.
+
+## Indicator warm-up in out-of-sample tests
+
+Walk-forward and isolated holdout evaluation carry the immediately preceding
+candles into each test window as indicator context, while suppressing signals
+and orders during warm-up. Signals begin only after the first out-of-sample
+candle closes and can fill no earlier than the following candle's open.
+Warm-up observations are excluded from reported out-of-sample history and the
+Sharpe calculation. The research runner uses up to 100 preceding candles,
+covering the current candidate library's longest EMA lookback. This avoids
+silently evaluating long-lookback strategies with empty indicator history at
+every test-window boundary.
+
+## Equity/stocks evaluation foundation
+
+The repository now includes a separate long-only, cash-only equity backtester in
+`equity_backtest.py`. It reuses the same `Candle` format and the existing
+chronological `true_walk_forward` selector used by FX research. It supports
+explicit spread, slippage and per-fill commission assumptions, next-bar-open
+fills after completed-candle signals, end-of-data liquidation, and trade,
+equity, drawdown and risk-adjusted summaries. It has no broker or live-order
+integration.
+
+Use `true_walk_forward` with an `EquityBacktester` factory and candidate
+signal factories to select on training windows and score later windows. Choose
+a `periods_per_year` value appropriate to the candle interval.
+
+**Important limitations:** fractional shares are assumed; dividends, splits,
+taxes, borrow, halts, delistings and corporate actions are not modeled. This
+module does not fetch stock prices. Historical studies must use timestamped,
+point-in-time data and a survivorship-aware universe, or results can be
+misleading. Neither this module nor its tests imply profitability. See the
+[QuantConnect research guide](https://www.quantconnect.com/docs/v2/writing-algorithms/key-concepts/research-guide)
+for discussion of walk-forward validation and look-ahead/survivorship bias.
+
 ### Forward-outcome paper evaluation
 
 Every research scan now records WATCH candidates with a valid observed USD price
@@ -208,3 +251,4 @@ python -m unittest -v test_forex.py test_forex_lab.py test_forex_agents.py test_
 ```
 
 Live broker execution remains intentionally out of scope.
+
