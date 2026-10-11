@@ -1,8 +1,8 @@
 # Forex research + paper-trading lab
 
-TradingLab is now a broker-neutral FX research and paper-trading system. It has
-no wallet connection, blockchain integration, token discovery, or live broker
-execution.
+TradingLab is a broker-neutral FX research and paper-trading system. It has no
+wallet connection, on-chain execution, or live broker execution. A separate,
+read-only Solana meme-coin candidate scanner is documented below.
 
 ## Run the paper dashboard
 
@@ -19,9 +19,7 @@ The immersive office is available at `http://127.0.0.1:8765/company.html` and ha
 
 Automatic paper cycles are **off by default**. To opt in, set `EMBER_FOREX_AUTORUN=1` before starting `python app.py`; the server then attempts a cycle every 60 seconds. A cycle may abstain if quotes are stale, there are too few distinct observations, a risk limit is reached, or the broker rejects the paper order. ECB reference rates are not executable prices. No live broker execution is enabled.
 
-Market data defaults to ECB reference rates through Frankfurter. Frankfurter
-supports provider pinning, so the historical pipeline can use the ECB source
-rather than a blended feed. See https://frankfurter.dev/providers/ecb/.
+The live paper-agent snapshot tries Yahoo intraday candles first, using 1-minute candles by default so the strict 5-minute quote-freshness gate can work. Override with `FX_YAHOO_INTERVAL` only if you understand the resulting freshness behavior. If Yahoo fails, the data layer falls back to ECB reference rates through Frankfurter; those daily reference rates are intentionally rejected by the agent freshness gate and must never be treated as executable prices. For historical daily data, Frankfurter can pin to the ECB source: https://frankfurter.dev/providers/ecb/.
 
 ## Architecture
 
@@ -132,14 +130,67 @@ Do not judge the system from a single backtest return. The useful evidence is
 consistency across unseen windows, drawdown, Sharpe, costs, stability of
 strategy selection, and performance on the untouched final holdout.
 
+## Solana meme-coin research (read-only)
+
+The initial meme-coin research engine uses the public DexScreener API to combine
+latest token-profile and boost lists, deduplicate Solana token addresses, inspect
+each token's available pools, and score the highest-liquidity matching Solana
+pair. Paid profiles/boosts are discovery sources only and do not add score.
+See the [official DexScreener API reference](https://docs.dexscreener.com/api/reference).
+
+Start the local server, then request a scan:
+
+```bash
+curl -s http://127.0.0.1:8765/api/meme/research
+curl -s -X POST http://127.0.0.1:8765/api/meme/research/run \
+  -H 'Content-Type: application/json' -d '{"limit":20}'
+```
+
+The scan returns a ranked candidate list, market-data rejection reasons, source
+metadata, and provider errors. Defaults require at least $10,000 liquidity,
+$20,000 24-hour volume, 100 transactions, a pair age between 5 minutes and
+72 hours, and reject a one-hour price spike above 80%. The bounded score uses
+liquidity, turnover, activity, buy/sell balance and modest positive momentum.
+These are starting engineering filters, not a validated profitable strategy.
+
+**Important limitations:** DexScreener market data does not establish contract
+safety. A separate on-demand, read-only Solana RPC check is available:
+
+```bash
+curl -s -X POST http://127.0.0.1:8765/api/meme/security/check \
+  -H 'Content-Type: application/json' -d '{"mint_address":"YOUR_SOLANA_MINT_ADDRESS"}'
+```
+
+It checks the mint account's SPL Token program, active mint/freeze authorities,
+token supply, and the percentage of supply represented by the 20 largest token
+accounts. These are risk indicators, not an audit: token accounts are not the
+same as unique beneficial holders, and pools may appear among the largest accounts.
+It does not test swap sellability or comprehensively inspect Token-2022 extensions.
+If RPC checks fail, the response is `INCOMPLETE` and must not be treated as clean.
+A `WATCH` label means only that market-data filters passed; it is not a buy signal.
+The system is read-only: it cannot connect a wallet, prepare a swap, or submit a transaction.
+Do not enable real-money execution on the strength of these checks alone.
+
 ## Tests
 
 ```
 cd outputs/trading-lab
-python -m unittest -v test_forex.py test_forex_lab.py test_forex_agents.py test_backtest.py test_strategies.py test_robustness.py test_historical.py test_dataset.py test_intraday.py test_intraday_dataset.py test_true_walkforward.py test_research_selection.py test_research_report.py test_research_runner.py test_portfolio_report.py test_portfolio_backtest.py test_portfolio_selection.py test_portfolio_walkforward.py
+python -m unittest -v test_forex.py test_forex_lab.py test_forex_agents.py test_forex_market.py test_meme_research.py test_meme_safety.py test_backtest.py test_strategies.py test_robustness.py test_historical.py test_dataset.py test_intraday.py test_intraday_dataset.py test_true_walkforward.py test_research_selection.py test_research_report.py test_research_runner.py test_portfolio_report.py test_portfolio_backtest.py test_portfolio_selection.py test_portfolio_walkforward.py
 ```
 
 Live broker execution remains intentionally out of scope.
+
+## Indicator warm-up in out-of-sample tests
+
+Walk-forward and isolated holdout evaluation carry the immediately preceding
+candles into each test window as indicator context, while suppressing signals
+and orders during warm-up. Signals begin only after the first out-of-sample
+candle closes and can fill no earlier than the following candle's open.
+Warm-up observations are excluded from reported out-of-sample history and the
+Sharpe calculation. The research runner uses up to 100 preceding candles,
+covering the current candidate library's longest EMA lookback. This avoids
+silently evaluating long-lookback strategies with empty indicator history at
+every test-window boundary.
 
 ## Equity/stocks evaluation foundation
 
@@ -162,3 +213,4 @@ point-in-time data and a survivorship-aware universe, or results can be
 misleading. Neither this module nor its tests imply profitability. See the
 [QuantConnect research guide](https://www.quantconnect.com/docs/v2/writing-algorithms/key-concepts/research-guide)
 for discussion of walk-forward validation and look-ahead/survivorship bias.
+
