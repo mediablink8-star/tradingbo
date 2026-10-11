@@ -40,6 +40,18 @@ class MemePaperTraderTests(unittest.TestCase):
     def price(self, address):
         return self.prices.get(address)
 
+    def test_score_rejection_records_actual_score_and_threshold(self):
+        result = self.trader.run_cycle(
+            [candidate(score=71.4)], lambda _: safe_result(), self.price)
+        decision = result["decisions"][0]
+        self.assertEqual(decision["reason"], "score_below_entry_threshold")
+        self.assertEqual(decision["score"], 71.4)
+        self.assertEqual(decision["min_score"], 75.0)
+        event = self.trader.status()["events"][0]
+        self.assertEqual(event["details"]["score"], 71.4)
+        self.assertEqual(event["details"]["min_score"], 75.0)
+        self.assertEqual(self.trader.status()["open_positions_count"], 0)
+
     def test_opens_paper_position_after_market_and_safety_gates(self):
         result = self.trader.run_cycle([candidate()], lambda _: safe_result(), self.price)
         self.assertEqual(result["decisions"][0]["action"], "OPEN")

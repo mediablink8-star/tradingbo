@@ -1777,8 +1777,11 @@ function renderMemeTrader(status){
   if(!events.length)html+='<div class="empty">No decisions recorded yet.</div>';
   else html+='<div class="log">'+events.slice(0,15).map(e=>{
     const d=e.details||{};const reason=d.reason||d.exit_reason||d.action||'Recorded';
+    let diagnostic='';
+    if(Number.isFinite(Number(d.score))&&Number.isFinite(Number(d.min_score))&&d.score!==undefined&&d.min_score!==undefined)diagnostic='Score '+Number(d.score).toFixed(1)+' / required '+Number(d.min_score).toFixed(1);
+    else if(Number.isFinite(Number(d.buy_ratio))&&d.buy_ratio!==undefined&&d.min_buy_ratio!==undefined&&d.max_buy_ratio!==undefined)diagnostic='Buy ratio '+(Number(d.buy_ratio)*100).toFixed(1)+'% / allowed '+(Number(d.min_buy_ratio)*100).toFixed(0)+'–'+(Number(d.max_buy_ratio)*100).toFixed(0)+'%';
     return '<div class="row"><i class="dot '+(e.event_type==='POSITION_OPENED'?'ok':e.event_type==='REJECTED'?'warn':'')+'"></i><div class="tx"><b>'+esc(e.event_type)+'</b> · '+esc(e.symbol||e.token_address||'portfolio')+' — '+esc(reason)+
-      '<div class="notes">'+esc(new Date(Number(e.created_at)*1000).toLocaleString())+'</div></div></div>';
+      (diagnostic?'<div class="notes">'+esc(diagnostic)+'</div>':'')+'<div class="notes">'+esc(new Date(Number(e.created_at)*1000).toLocaleString())+'</div></div></div>';
   }).join('')+'</div>';
   html+='<div class="notes">Paper simulation only. Public market prices may be stale or non-executable; safety checks are not an audit. Incomplete checks block entries.</div>';
   $id('memeTraderStatus').innerHTML=html;
