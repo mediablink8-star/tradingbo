@@ -247,7 +247,52 @@ body:before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:60
   box-shadow:0 0 22px #a855ff33!important}
 .ava .ring-fg{stroke:#c4a4ff!important}
 .topnav a.on{background:linear-gradient(90deg,#2a1650,#101827)!important;
-  box-shadow:inset 2px 0 var(--neon),0 0 18px #a855ff22!important}</style>
+  box-shadow:inset 2px 0 var(--neon),0 0 18px #a855ff22!important}
+/* Mobile-only usability pass. Keeps the existing floor plan and all panels intact. */
+@media(max-width:640px){
+  html,body{min-height:100%;height:auto;overflow-x:hidden}
+  .wrap{padding:10px;gap:12px}
+  .bar{gap:8px;padding:9px 10px}
+  .bar .path{font-size:10.5px}
+  .topnav{gap:4px;scrollbar-width:thin;overscroll-behavior-x:contain;
+    -webkit-overflow-scrolling:touch;padding-bottom:3px!important}
+  .topnav a{min-height:38px;display:inline-flex;align-items:center;padding:8px 10px!important}
+  .bar .bt{gap:6px}
+  .bar .bt .btn{min-height:42px;flex:1 1 auto}
+  .tag{min-height:26px;display:inline-flex;align-items:center}
+  .capstrip{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .capstrip .cell{padding:10px}
+  .capstrip .k{font-size:8px;letter-spacing:.1em;line-height:1.35}
+  .capstrip .v{font-size:clamp(18px,5.6vw,25px);overflow-wrap:anywhere}
+  .capstrip .s{font-size:8px;overflow-wrap:anywhere}
+  .sechd{padding:10px;gap:7px}
+  .sechd .sub{max-width:58%;font-size:9px;line-height:1.35;overflow-wrap:anywhere;text-align:right}
+  .secbd{padding:10px}
+  .stage{overflow:hidden}
+  #office{width:100%;height:auto;max-width:100%;touch-action:manipulation}
+  .floorfoot{padding:9px 10px;font-size:10px;overflow-wrap:anywhere}
+  .split{grid-template-columns:minmax(0,1fr);gap:12px}
+  .split>div{min-width:0}
+  .roster button{min-height:48px;padding:12px}
+  .station{min-height:48px;padding:12px}
+  .kv div{gap:8px;padding:9px}
+  .kv div>*{min-width:0;overflow-wrap:anywhere}
+  .kv span{text-align:right}
+  .log{max-height:260px;overscroll-behavior:contain}
+  .log .row{padding:10px;gap:8px}
+  button,.btn,select,input{min-height:40px}
+  input,select,textarea{font-size:16px}
+  .note{font-size:10px;overflow-wrap:anywhere}
+}
+@media(max-width:380px){
+  .wrap{padding:8px;gap:10px}
+  .capstrip .cell{padding:9px}
+  .capstrip .v{font-size:18px}
+  .bar .bt .btn{flex-basis:100%}
+  .tag{letter-spacing:.06em;padding:4px 6px}
+}
+
+</style>
 </head>
 <body>
 
