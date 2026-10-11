@@ -109,6 +109,12 @@ class MemeResearchTests(unittest.TestCase):
         self.assertEqual(candidate["decision"], "WATCH")
         self.assertEqual(candidate["security_checks"], "not_checked")
         self.assertFalse(candidate["execution_enabled"])
+        components = candidate["score_components"]
+        self.assertEqual(set(components), {"liquidity", "turnover", "activity", "buy_balance", "momentum"})
+        self.assertEqual(candidate["score"], round(sum(components.values()), 2))
+        self.assertAlmostEqual(components["turnover"], 20.0)
+        self.assertAlmostEqual(components["activity"], 10.4)
+        self.assertAlmostEqual(components["momentum"], 2.4)
 
     def test_low_liquidity_and_extreme_pump_are_rejected(self):
         config = MemeResearchConfig(min_liquidity_usd=10000, max_1h_pump_pct=80)
