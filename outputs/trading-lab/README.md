@@ -154,17 +154,28 @@ liquidity, turnover, activity, buy/sell balance and modest positive momentum.
 These are starting engineering filters, not a validated profitable strategy.
 
 **Important limitations:** DexScreener market data does not establish contract
-safety. The scanner does not check holder concentration, mint/freeze authority,
-honeypot/sellability, or other on-chain security properties. A `WATCH` label
-means only that market-data filters passed; it is not a buy signal. The engine
-is read-only: it cannot connect a wallet, prepare a swap, or submit a transaction.
-Do not enable real-money execution on the strength of this scanner alone.
+safety. A separate on-demand, read-only Solana RPC check is available:
+
+```bash
+curl -s -X POST http://127.0.0.1:8765/api/meme/security/check \
+  -H 'Content-Type: application/json' -d '{"mint_address":"YOUR_SOLANA_MINT_ADDRESS"}'
+```
+
+It checks the mint account's SPL Token program, active mint/freeze authorities,
+token supply, and the percentage of supply represented by the 20 largest token
+accounts. These are risk indicators, not an audit: token accounts are not the
+same as unique beneficial holders, and pools may appear among the largest accounts.
+It does not test swap sellability or comprehensively inspect Token-2022 extensions.
+If RPC checks fail, the response is `INCOMPLETE` and must not be treated as clean.
+A `WATCH` label means only that market-data filters passed; it is not a buy signal.
+The system is read-only: it cannot connect a wallet, prepare a swap, or submit a transaction.
+Do not enable real-money execution on the strength of these checks alone.
 
 ## Tests
 
 ```
 cd outputs/trading-lab
-python -m unittest -v test_forex.py test_forex_lab.py test_forex_agents.py test_forex_market.py test_meme_research.py test_backtest.py test_strategies.py test_robustness.py test_historical.py test_dataset.py test_intraday.py test_intraday_dataset.py test_true_walkforward.py test_research_selection.py test_research_report.py test_research_runner.py test_portfolio_report.py test_portfolio_backtest.py test_portfolio_selection.py test_portfolio_walkforward.py
+python -m unittest -v test_forex.py test_forex_lab.py test_forex_agents.py test_forex_market.py test_meme_research.py test_meme_safety.py test_backtest.py test_strategies.py test_robustness.py test_historical.py test_dataset.py test_intraday.py test_intraday_dataset.py test_true_walkforward.py test_research_selection.py test_research_report.py test_research_runner.py test_portfolio_report.py test_portfolio_backtest.py test_portfolio_selection.py test_portfolio_walkforward.py
 ```
 
 Live broker execution remains intentionally out of scope.
