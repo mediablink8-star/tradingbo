@@ -173,7 +173,7 @@ class MemePaperTrader:
     def _rejection(self, db, candidate, reason, **details):
         self._event(db, "REJECTED", candidate, reason=reason, **details)
         return {"action": "REJECT", "symbol": candidate.get("symbol", "UNKNOWN"),
-                "token_address": candidate.get("token_address"), "reason": reason}
+                "token_address": candidate.get("token_address"), "reason": reason, **details}
 
     def _candidate_reason(self, candidate):
         if candidate.get("decision") != "WATCH":
@@ -229,7 +229,17 @@ class MemePaperTrader:
                 reason = self._candidate_reason(candidate)
                 if reason:
                     if candidate.get("decision") == "WATCH":
-                        decisions.append(self._rejection(db, candidate, reason))
+                        details = {}
+                        if reason == "buy_ratio_outside_entry_band":
+                            try:
+                                details = {
+                                    "buy_ratio": float(candidate.get("buy_ratio")),
+                                    "min_buy_ratio": self.min_buy_ratio,
+                                    "max_buy_ratio": self.max_buy_ratio,
+                                }
+                            except (TypeError, ValueError, OverflowError):
+                                details = {}
+                        decisions.append(self._rejection(db, candidate, reason, **details))
                     continue
                 address = str(candidate.get("token_address") or "").strip()
                 if not address:
@@ -330,6 +340,10 @@ class MemePaperTrader:
                        "take_profit_pct": self.take_profit_pct, "max_hold_seconds": self.max_hold_seconds,
                        "min_score": self.min_score, "min_liquidity_usd": self.min_liquidity_usd,
                        "min_volume_24h_usd": self.min_volume_24h_usd,
+                       "min_transactions_24h": self.min_transactions_24h,
+                       "min_buy_ratio": self.min_buy_ratio,
+                       "max_buy_ratio": self.max_buy_ratio,
+                       "max_entry_change_1h_pct": self.max_entry_change_1h_pct,
                        "daily_loss_limit_usd": self.daily_loss_limit},
             "positions": positions, "events": [
                 {**{k: v for k, v in e.items() if k != "details_json"},
