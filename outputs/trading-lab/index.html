@@ -1692,13 +1692,18 @@ function renderMemeResearch(result){
     '<th>TOKEN</th><th class="r">SCORE</th><th class="r">LIQUIDITY</th><th class="r">24H VOL</th>'+
     '<th class="r">24H TXNS</th><th class="r">1H CHANGE</th><th>DECISION</th></tr></thead><tbody>'+
     candidates.map(c=>{
-      const url=String(c.pair_url||'');
-      const safeUrl=/^https:\/\/dexscreener\.com\//i.test(url)?url:'';
+      const address=String(c.token_address||'').trim();
+      const pairAddress=String(c.pair_address||'').trim();
+      const tokenUrl=/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address)
+        ?'https://dexscreener.com/solana/'+encodeURIComponent(address):'';
+      const pairUrl=/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(pairAddress)
+        ?'https://dexscreener.com/solana/'+encodeURIComponent(pairAddress):'';
       const name=esc(c.name||'Unknown')+' ('+esc(c.symbol||'?')+')';
-      const token=safeUrl?'<a href="'+esc(safeUrl)+'" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">'+name+'</a>':name;
+      const token=tokenUrl?'<a href="'+tokenUrl+'" target="_blank" rel="noopener noreferrer" style="color:var(--accent)" title="Open this token on DexScreener">'+name+'</a>':name;
+      const pairLink=pairUrl?' <a href="'+pairUrl+'" target="_blank" rel="noopener noreferrer" style="color:var(--dim)">PAIR ↗</a>':'';
       const change=Number(c.price_change_1h_pct)||0;
       const reasons=(c.rejection_reasons||[]).map(esc).join(', ');
-      return '<tr><td>'+token+'<span class="sub2">'+esc(c.token_address||'')+
+      return '<tr><td>'+token+pairLink+'<span class="sub2">'+esc(address)+
         (reasons?' · '+reasons:'')+'</span></td>'+
         '<td class="r mono">'+Number(c.score||0).toFixed(1)+'</td>'+
         '<td class="r mono">$'+money(c.liquidity_usd)+'</td>'+
