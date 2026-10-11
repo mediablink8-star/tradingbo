@@ -36,7 +36,11 @@ RESEARCH = ResearchLayer(KEYS)
 AGENTS.attach_research(RESEARCH)
 MEME_RESEARCH = MemeCoinResearchEngine()
 MEME_SAFETY = SolanaMintSafetyChecker()
-MEME_PAPER = MemePaperTracker(ROOT / "meme-paper.sqlite")
+MEME_PAPER = MemePaperTracker(
+    ROOT / "meme-paper.sqlite",
+    slippage_bps=float(os.environ.get("MEME_PAPER_SLIPPAGE_BPS", "50")),
+    fee_bps=float(os.environ.get("MEME_PAPER_FEE_BPS", "30")),
+)
 
 
 class Handler(BaseHTTPRequestHandler):
