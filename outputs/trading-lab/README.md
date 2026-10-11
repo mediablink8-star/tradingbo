@@ -252,3 +252,11 @@ python -m unittest -v test_forex.py test_forex_lab.py test_forex_agents.py test_
 
 Live broker execution remains intentionally out of scope.
 
+## Hosted deployment (Render)
+
+The repository root contains a Render Blueprint at `render.yaml`. In Render, create a new Blueprint Instance from this repository and follow the prompts for `TRADINGLAB_USERNAME` and `TRADINGLAB_PASSWORD`. Use a unique username and a password of at least 16 characters; do not commit either value to Git. Render deploys the Python app from this directory, exposes it on the platform-provided port, and mounts a persistent disk at `/var/data` for both SQLite databases.
+
+Hosted mode enables HTTP Basic Authentication for the dashboard, API routes, and static assets. The public `/healthz` endpoint is reserved for Render's health check. Paper-agent auto-run remains disabled by default; you can use the office's **Run agent cycle** control after signing in. This service is for research and paper trading only; it does not enable live broker or wallet execution.
+
+This Blueprint uses Render's Free web-service plan and does not create a persistent disk. It should cost $0 for compute within Render's free usage limits, but the service may sleep after inactivity and SQLite files/local changes can be lost when the instance restarts, spins down, or redeploys. Treat hosted paper-trading history as disposable; do not use this free deployment as a durable ledger. To preserve data, use a durable external database or a paid service with a persistent disk. After the first deploy, test the root dashboard and `/company.html` while signed in. The service remains research/paper-only.
+
