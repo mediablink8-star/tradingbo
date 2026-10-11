@@ -161,8 +161,9 @@ class EquityBacktester:
                 prior_equity = equity_values[-2] if len(equity_values) > 1 else self.starting_cash
                 history[-1]["period_return"] = cash / prior_equity - 1.0 if prior_equity else 0.0
                 equity_values[-1] = cash
+            position = None
 
-        ending = cash if not position else cash + position["shares"] * candles[-1].close
+        ending = cash
         returns = [row["period_return"] for row in history if math.isfinite(row["period_return"])]
         stdev = statistics.stdev(returns) if len(returns) > 1 else 0.0
         sharpe = (statistics.mean(returns) / stdev * math.sqrt(self.periods_per_year)
