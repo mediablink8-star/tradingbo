@@ -179,3 +179,15 @@ python -m unittest -v test_forex.py test_forex_lab.py test_forex_agents.py test_
 ```
 
 Live broker execution remains intentionally out of scope.
+
+## Indicator warm-up in out-of-sample tests
+
+Walk-forward and isolated holdout evaluation carry the immediately preceding
+candles into each test window as indicator context, while suppressing signals
+and orders during warm-up. Signals begin only after the first out-of-sample
+candle closes and can fill no earlier than the following candle's open.
+Warm-up observations are excluded from reported out-of-sample history and the
+Sharpe calculation. The research runner uses up to 100 preceding candles,
+covering the current candidate library's longest EMA lookback. This avoids
+silently evaluating long-lookback strategies with empty indicator history at
+every test-window boundary.
