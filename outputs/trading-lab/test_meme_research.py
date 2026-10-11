@@ -2,7 +2,7 @@ import unittest
 from meme_research import MemeCoinResearchEngine, MemeResearchConfig, BASE_URL
 
 
-def good_pair(address="TOKEN1", liquidity=50000, volume=80000, buys=180, sells=80,
+def good_pair(address="TOKEN1", liquidity=50000, volume=100000, buys=180, sells=80,
               age_minutes=60, change_1h=8):
     now_ms = 1_800_000_000_000
     return {
