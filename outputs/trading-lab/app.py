@@ -14,6 +14,8 @@ from forex_lab import ForexLab
 from forex_agents import ForexAgentRuntime
 from key_store import KeyStore, PROVIDER_SPECS
 from llm_research import ResearchLayer, ModelError, verify_connection
+from meme_research import MemeCoinResearchEngine
+from meme_safety import SolanaMintSafetyChecker
 
 ROOT = Path(__file__).resolve().parent
 LAB = ForexLab(ROOT / "lab.sqlite")
@@ -31,6 +33,8 @@ KEYS = KeyStore(
 )
 RESEARCH = ResearchLayer(KEYS)
 AGENTS.attach_research(RESEARCH)
+MEME_RESEARCH = MemeCoinResearchEngine()
+MEME_SAFETY = SolanaMintSafetyChecker()
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -53,6 +57,16 @@ class Handler(BaseHTTPRequestHandler):
             state["runtime_available"] = True
             self.send_json(state)
             return
+        if path == "/api/meme/research":
+            self.send_json(MEME_RESEARCH.last_result or {
+                "available": True,
+                "mode": "research_only",
+                "chain": "solana",
+                "last_run": None,
+                "execution_enabled": False,
+                "note": "POST /api/meme/research/run to discover and screen candidates.",
+            })
+            return
         if path == "/api/connections/model":
             self.send_json({**KEYS.status(),
                             "providers": {
@@ -63,7 +77,6 @@ class Handler(BaseHTTPRequestHandler):
                                 for name, spec in PROVIDER_SPECS.items()}})
             return
         if path == "/api/connections/research":
-            state = AGENTS.status()
             self.send_json({
                 "available": RESEARCH.available(),
                 "model": KEYS.model,
@@ -139,7 +152,8 @@ class Handler(BaseHTTPRequestHandler):
             self._handle_connection(self.path)
             return
         if self.path not in (
-            "/api/forex/open", "/api/forex/close", "/api/forex/agents/run"
+            "/api/forex/open", "/api/forex/close", "/api/forex/agents/run",
+            "/api/meme/research/run", "/api/meme/security/check",
         ):
             self.send_json({"error": "not found"}, 404)
             return
@@ -151,15 +165,23 @@ class Handler(BaseHTTPRequestHandler):
             if not 1 <= n <= 10000:
                 raise ValueError("Invalid request size")
             data = json.loads(self.rfile.read(n))
+            if not isinstance(data, dict):
+                raise ValueError("JSON object required")
             if self.path == "/api/forex/open":
                 result = LAB.open(data.get("pair"), data.get("side"), float(data.get("notional")))
             elif self.path == "/api/forex/close":
                 result = LAB.close(data.get("id"))
+            elif self.path == "/api/meme/research/run":
+                result = MEME_RESEARCH.run(data.get("limit", 20))
+            elif self.path == "/api/meme/security/check":
+                result = MEME_SAFETY.check(data.get("mint_address"))
             else:
                 result = AGENTS.run_cycle()
             self.send_json(result)
-        except Exception as exc:
+        except ValueError as exc:
             self.send_json({"error": str(exc)}, 400)
+        except Exception as exc:
+            self.send_json({"error": str(exc)}, 502 if self.path in ("/api/meme/research/run", "/api/meme/security/check") else 400)
 
     def _read_json(self):
         n = int(self.headers.get("Content-Length", "0"))
