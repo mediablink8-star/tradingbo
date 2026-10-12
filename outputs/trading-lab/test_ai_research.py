@@ -41,11 +41,17 @@ class KeyStoreTest(unittest.TestCase):
                 target.write_text(json.dumps(row))
             self.assertNotIn(b"sk-should-not-persist", target.read_bytes())
 
-    def test_blank_key_clears(self):
+    def test_blank_key_keeps_existing(self):
+        # Dashboard clears the password input after Connect. Re-saving model
+        # or base URL with an empty key field must not wipe the credential.
         self.store.store("sk-x", "m")
-        result = self.store.store("   ")
-        self.assertFalse(result["connected"])
-        self.assertFalse(self.store.has_key())
+        result = self.store.store("   ", model="m2")
+        self.assertTrue(result["connected"])
+        self.assertTrue(self.store.has_key())
+        self.assertEqual(result["model"], "m2")
+        result = self.store.store(None, model="m3")
+        self.assertTrue(result["connected"])
+        self.assertEqual(result["model"], "m3")
 
     def test_forget_clears(self):
         self.store.store("sk-x", "m")
