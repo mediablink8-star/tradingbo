@@ -42,15 +42,22 @@ class MemePaperTraderTests(unittest.TestCase):
 
     def test_score_rejection_records_actual_score_and_threshold(self):
         result = self.trader.run_cycle(
-            [candidate(score=71.4)], lambda _: safe_result(), self.price)
+            [candidate(score=61.4)], lambda _: safe_result(), self.price)
         decision = result["decisions"][0]
         self.assertEqual(decision["reason"], "score_below_entry_threshold")
-        self.assertEqual(decision["score"], 71.4)
-        self.assertEqual(decision["min_score"], 75.0)
+        self.assertEqual(decision["score"], 61.4)
+        self.assertEqual(decision["min_score"], 70.0)
         event = self.trader.status()["events"][0]
-        self.assertEqual(event["details"]["score"], 71.4)
-        self.assertEqual(event["details"]["min_score"], 75.0)
+        self.assertEqual(event["details"]["score"], 61.4)
+        self.assertEqual(event["details"]["min_score"], 70.0)
         self.assertEqual(self.trader.status()["open_positions_count"], 0)
+
+    def test_score_between_70_and_75_can_pass_paper_score_gate(self):
+        result = self.trader.run_cycle(
+            [candidate(score=71.4)], lambda _: safe_result(), self.price)
+        self.assertEqual(result["decisions"][0]["action"], "OPEN")
+        self.assertEqual(result["decisions"][0]["score"], 71.4)
+        self.assertEqual(self.trader.status()["open_positions_count"], 1)
 
     def test_momentum_rejection_records_actual_change_and_limit(self):
         result = self.trader.run_cycle(

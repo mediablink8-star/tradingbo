@@ -14,7 +14,7 @@ class MemePaperTrader:
     def __init__(self, db_path="meme-trader.sqlite", clock=None, initial_cash=1000.0,
                  position_usd=50.0, max_positions=3, daily_loss_limit=50.0,
                  stop_loss_pct=0.12, take_profit_pct=0.20, max_hold_seconds=4 * 3600,
-                 fee_bps=30.0, slippage_bps=50.0, min_score=75.0,
+                 fee_bps=30.0, slippage_bps=50.0, min_score=70.0,
                  min_liquidity_usd=10000.0, min_volume_24h_usd=25000.0,
                  min_transactions_24h=150, min_buy_ratio=0.52, max_buy_ratio=0.80,
                  max_entry_change_1h_pct=25.0):
@@ -29,7 +29,7 @@ class MemePaperTrader:
         self.max_hold_seconds = int(max_hold_seconds)
         self.fee_bps = self._nonnegative(fee_bps, "fee_bps")
         self.slippage_bps = self._nonnegative(slippage_bps, "slippage_bps")
-        self.min_score = float(min_score)
+        self.min_score = self._positive(min_score, "min_score")
         self.min_liquidity_usd = self._positive(min_liquidity_usd, "min_liquidity_usd")
         self.min_volume_24h_usd = self._positive(min_volume_24h_usd, "min_volume_24h_usd")
         self.min_transactions_24h = int(min_transactions_24h)
