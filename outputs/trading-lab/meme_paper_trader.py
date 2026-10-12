@@ -17,7 +17,7 @@ class MemePaperTrader:
                  fee_bps=30.0, slippage_bps=50.0, min_score=75.0,
                  min_liquidity_usd=10000.0, min_volume_24h_usd=25000.0,
                  min_transactions_24h=150, min_buy_ratio=0.52, max_buy_ratio=0.80,
-                 max_entry_change_1h_pct=25.0):
+                 max_entry_change_1h_pct=25.0, min_score=70.0):
         self.db_path = str(db_path)
         self.clock = clock or time.time
         self.initial_cash = self._positive(initial_cash, "initial_cash")
@@ -29,7 +29,7 @@ class MemePaperTrader:
         self.max_hold_seconds = int(max_hold_seconds)
         self.fee_bps = self._nonnegative(fee_bps, "fee_bps")
         self.slippage_bps = self._nonnegative(slippage_bps, "slippage_bps")
-        self.min_score = float(min_score)
+        self.min_score = self._positive(min_score, "min_score")
         self.min_liquidity_usd = self._positive(min_liquidity_usd, "min_liquidity_usd")
         self.min_volume_24h_usd = self._positive(min_volume_24h_usd, "min_volume_24h_usd")
         self.min_transactions_24h = int(min_transactions_24h)
