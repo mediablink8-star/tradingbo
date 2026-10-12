@@ -32,8 +32,6 @@ AGENTS = ForexAgentRuntime(
     DATA_DIR / "lab.sqlite", LAB,
     auto_run=os.environ.get("EMBER_FOREX_AUTORUN", "").strip() == "1",
 )
-# The AI layer is advisory: it writes recorded commentary only. Entry, sizing,
-# stops and the loss breaker remain deterministic inside the runtime.
 AGENTS.attach_research(None)
 KEYS = KeyStore(
     max_calls=int(os.environ.get("FX_MAX_MODEL_CALLS", "40")),
@@ -63,7 +61,6 @@ MEME_TRADER = MemePaperTrader(
 
 
 def meme_current_price(token_address):
-    """Fetch a fresh public DEX quote; never treat missing data as zero."""
     safe = urllib.parse.quote(str(token_address or ""), safe="")
     if not safe:
         return None
@@ -96,7 +93,6 @@ def meme_current_price(token_address):
 
 
 def run_meme_paper_cycle(limit=30):
-    """Discover, safety-screen, paper-trade and persist one complete cycle."""
     scan = MEME_RESEARCH.run(limit)
     all_candidates = scan.get("candidates", [])
     paper_tracking = MEME_PAPER.record_scan(all_candidates)
@@ -188,12 +184,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"status": "ok"})
             return
         public_dashboard_gets = {
-            "/api/forex",
-            "/api/forex/agents",
-            "/api/forex/bars",
-            "/api/meme/research",
-            "/api/meme/paper",
-            "/api/meme/trader",
+            "/api/forex", "/api/forex/agents", "/api/forex/bars",
+            "/api/meme/research", "/api/meme/paper", "/api/meme/trader",
         }
         if path.startswith("/api/") and path not in public_dashboard_gets and not self._require_auth():
             return
@@ -210,11 +202,8 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/meme/research":
             self.send_json(MEME_RESEARCH.last_result or {
-                "available": True,
-                "mode": "research_only",
-                "chain": "solana",
-                "last_run": None,
-                "execution_enabled": False,
+                "available": True, "mode": "research_only", "chain": "solana",
+                "last_run": None, "execution_enabled": False,
                 "note": "POST /api/meme/research/run to discover and screen candidates.",
             })
             return
@@ -222,30 +211,28 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(MEME_PAPER.status())
             return
         if path == "/api/meme/trader":
-            self.send_json(MEME_TRADER.status())
+            state = MEME_TRADER.status()
+            state["deliberation_available"] = True
+            state["deliberation_endpoint"] = "POST /api/meme/trader/deliberate"
+            self.send_json(state)
             return
         if path == "/api/connections/model":
             self.send_json({**KEYS.status(),
                             "providers": {
-                                name: {"label": spec["label"],
-                                       "base_url": spec["base_url"],
+                                name: {"label": spec["label"], "base_url": spec["base_url"],
                                        "needs_key": spec["needs_key"],
                                        "default_model": spec["default_model"]}
                                 for name, spec in PROVIDER_SPECS.items()}})
             return
         if path == "/api/connections/research":
             self.send_json({
-                "available": RESEARCH.available(),
-                "model": KEYS.model,
-                "budget": KEYS.budget_remaining(),
-                "last": RESEARCH.last_result,
+                "available": RESEARCH.available(), "model": KEYS.model,
+                "budget": KEYS.budget_remaining(), "last": RESEARCH.last_result,
                 "note": "Advisory only. These reports never place or size an order.",
             })
             return
         if path == "/api/forex/bars":
-            query = urllib.parse.parse_qs(
-                urllib.parse.urlsplit(self.path).query
-            )
+            query = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
             pair = (query.get("pair") or ["EUR/USD"])[0].upper()
             interval = (query.get("interval") or ["15m"])[0]
             try:
@@ -256,14 +243,10 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"error": "invalid pair"}, 400)
                 return
             if interval not in forex_market.YAHOO_INTERVALS:
-                self.send_json(
-                    {"error": "unsupported interval"}, 400
-                )
+                self.send_json({"error": "unsupported interval"}, 400)
                 return
             try:
-                self.send_json(forex_market.yahoo_bars(
-                    pair, interval, max(1, min(limit, 1500))
-                ))
+                self.send_json(forex_market.yahoo_bars(pair, interval, max(1, min(limit, 1500))))
             except Exception as exc:
                 self.send_json({"error": str(exc)}, 502)
             return
@@ -315,6 +298,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/forex/agents/config", "/api/forex/agents/deliberate",
             "/api/meme/research/run", "/api/meme/security/check",
             "/api/meme/paper/update", "/api/meme/trader/run", "/api/meme/trader/tick",
+            "/api/meme/trader/deliberate",
         ):
             self.send_json({"error": "not found"}, 404)
             return
@@ -341,6 +325,39 @@ class Handler(BaseHTTPRequestHandler):
                 if isinstance(apply_paper, str):
                     apply_paper = apply_paper.strip().lower() not in ("", "0", "false", "no", "off")
                 result = AGENTS.run_deliberation(apply_paper=bool(apply_paper))
+            elif self.path == "/api/meme/trader/deliberate":
+                from multi_agent import deliberate_meme
+                limit = int(data.get("limit", 20) or 20)
+                apply_paper = data.get("apply_paper", False)
+                if isinstance(apply_paper, str):
+                    apply_paper = apply_paper.strip().lower() not in ("", "0", "false", "no", "off")
+                scan = MEME_RESEARCH.run(limit)
+                candidates = scan.get("candidates", [])
+                trader_status = MEME_TRADER.status()
+                deliberation = deliberate_meme(RESEARCH, candidates, trader_status)
+                paper_result = {"action": "hold", "executed": [], "reason": "apply_paper=False"}
+                if apply_paper and deliberation.get("ok"):
+                    paper_result = MEME_TRADER.run_cycle(
+                        candidates, MEME_SAFETY.check, meme_current_price
+                    )
+                    paper_result["note"] = (
+                        "Paper cycle ran through deterministic gates. "
+                        "AI deliberation is advisory and cannot bypass safety checks."
+                    )
+                result = {
+                    "ok": True,
+                    "scan": {
+                        "discovered_tokens": scan.get("discovered_tokens", 0),
+                        "scored_candidates": scan.get("scored_candidates", 0),
+                        "watchlist_count": scan.get("watchlist_count", 0),
+                        "errors": scan.get("errors", []),
+                    },
+                    "deliberation": deliberation,
+                    "paper": paper_result,
+                    "status": MEME_TRADER.status(),
+                    "execution_enabled": False,
+                    "mode": "six_agent_meme_deliberation",
+                }
             elif self.path == "/api/meme/research/run":
                 result = MEME_RESEARCH.run(data.get("limit", 20))
                 result["paper_tracking"] = MEME_PAPER.record_scan(result.get("candidates", []))
@@ -362,7 +379,10 @@ class Handler(BaseHTTPRequestHandler):
         except ValueError as exc:
             self.send_json({"error": str(exc)}, 400)
         except Exception as exc:
-            self.send_json({"error": str(exc)}, 502 if self.path in ("/api/meme/research/run", "/api/meme/security/check", "/api/meme/paper/update", "/api/meme/trader/run", "/api/meme/trader/tick") else 400)
+            self.send_json({"error": str(exc)}, 502 if self.path in (
+                "/api/meme/research/run", "/api/meme/security/check",
+                "/api/meme/paper/update", "/api/meme/trader/run",
+                "/api/meme/trader/tick", "/api/meme/trader/deliberate") else 400)
 
     def _read_json(self):
         n = int(self.headers.get("Content-Length", "0"))
@@ -374,12 +394,11 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if path == "/api/connections/model":
                 data = self._read_json()
-                status = KEYS.store(data.get("key"), data.get("model"),
-                                    data.get("provider"), data.get("base_url"))
+                KEYS.store(data.get("key"), data.get("model"),
+                           data.get("provider"), data.get("base_url"))
                 if data.get("json_mode") is not None:
                     KEYS.set_json_mode(data["json_mode"])
-                status = KEYS.status()
-                self.send_json(status)
+                self.send_json(KEYS.status())
                 return
             if path == "/api/connections/model/forget":
                 self._read_json()
