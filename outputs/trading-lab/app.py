@@ -190,9 +190,18 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/healthz":
             self.send_json({"status": "ok"})
             return
-        # Let the static dashboard load so it can present an in-page login.
-        # All API data and state-changing requests remain authenticated.
-        if path.startswith("/api/") and not self._require_auth():
+        # Public endpoints are deliberately limited to read-only paper/demo
+        # dashboard data. Mutations and connection/configuration endpoints
+        # remain protected by Basic Auth; no live-order endpoint exists.
+        public_dashboard_gets = {
+            "/api/forex",
+            "/api/forex/agents",
+            "/api/forex/bars",
+            "/api/meme/research",
+            "/api/meme/paper",
+            "/api/meme/trader",
+        }
+        if path.startswith("/api/") and path not in public_dashboard_gets and not self._require_auth():
             return
         if path == "/api/forex":
             self.send_json(LAB.tick())
