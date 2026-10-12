@@ -6,6 +6,8 @@ token is safe, sellable, or free of coordinated holders, and never execute trade
 import json
 import math
 import os
+import time
+import urllib.error
 import urllib.request
 
 
@@ -13,6 +15,7 @@ DEFAULT_RPC_URL = "https://api.mainnet-beta.solana.com"
 LEGACY_TOKEN_PROGRAM = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 TOKEN_2022_PROGRAM = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
 USER_AGENT = "TradingBo-MemeSafety/0.1"
+MAX_RPC_RETRIES = 2
 
 
 def _fetch_json(url, payload, timeout=12):
@@ -23,8 +26,35 @@ def _fetch_json(url, payload, timeout=12):
                  "User-Agent": USER_AGENT},
         method="POST",
     )
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        return json.loads(response.read(1_000_000))
+    for attempt in range(MAX_RPC_RETRIES + 1):
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                return json.loads(response.read(1_000_000))
+        except urllib.error.HTTPError as exc:
+            # Retry only throttling/transient server errors. Never retry permanent
+            # client errors, and never turn a failed check into a clean result.
+            if attempt >= MAX_RPC_RETRIES or (exc.code != 429 and not 500 <= exc.code < 600):
+                raise
+            try:
+                retry_after = float(exc.headers.get("Retry-After", ""))
+            except (TypeError, ValueError, AttributeError):
+                retry_after = 0.0
+            time.sleep(min(3.0, max(retry_after, 0.5 * (2 ** attempt))))
+        except (urllib.error.URLError, TimeoutError):
+            if attempt >= MAX_RPC_RETRIES:
+                raise
+            time.sleep(0.5 * (2 ** attempt))
+    raise RuntimeError("solana_rpc_retries_exhausted")
+
+
+def _error_label(exc):
+    if isinstance(exc, urllib.error.HTTPError):
+        return "http_" + str(exc.code)
+    if isinstance(exc, TimeoutError):
+        return "timeout"
+    if isinstance(exc, urllib.error.URLError):
+        return "url_error"
+    return type(exc).__name__
 
 
 def _finite_number(value):
@@ -73,7 +103,7 @@ class SolanaMintSafetyChecker:
             if not account:
                 errors.append("mint_account_not_found")
         except Exception as exc:
-            errors.append("mint_account_check_failed:" + type(exc).__name__)
+            errors.append("mint_account_check_failed:" + _error_label(exc))
 
         owner_program = account.get("owner") if isinstance(account, dict) else None
         parsed = (((account or {}).get("data") or {}).get("parsed") or {})
