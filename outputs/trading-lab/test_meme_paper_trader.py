@@ -74,10 +74,19 @@ class MemePaperTraderTests(unittest.TestCase):
         self.assertFalse(status["execution_enabled"])
         self.assertEqual(status["mode"], "autonomous_paper_trading")
 
-    def test_incomplete_security_check_fails_closed(self):
+    def test_incomplete_security_check_fails_closed_and_records_errors(self):
+        safety = {
+            "status": "INCOMPLETE",
+            "errors": ["mint_account_check_failed:TimeoutError", "supply_check_failed:HTTPError"],
+        }
         result = self.trader.run_cycle(
-            [candidate()], lambda _: {"status": "INCOMPLETE"}, self.price)
-        self.assertEqual(result["decisions"][0]["reason"], "security_check_incomplete")
+            [candidate()], lambda _: safety, self.price)
+        decision = result["decisions"][0]
+        self.assertEqual(decision["reason"], "security_check_incomplete")
+        self.assertEqual(decision["safety_status"], "INCOMPLETE")
+        self.assertEqual(decision["safety_errors"], safety["errors"])
+        event = self.trader.status()["events"][0]
+        self.assertEqual(event["details"]["safety_errors"], safety["errors"])
         self.assertEqual(self.trader.status()["open_positions_count"], 0)
 
     def test_active_authority_and_high_concentration_are_rejected(self):

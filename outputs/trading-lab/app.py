@@ -420,10 +420,25 @@ if __name__ == "__main__":
             while True:
                 try:
                     result = run_meme_paper_cycle()
+                    cycle_decisions = result["cycle"].get("decisions", [])
+                    action_counts = {}
+                    for decision in cycle_decisions:
+                        label = decision.get("reason") or decision.get("action", "unknown").lower()
+                        action_counts[label] = action_counts.get(label, 0) + 1
+                    market_filters = result["scan"].get("market_rejection_reasons", {})
+                    top_market_filters = sorted(
+                        market_filters.items(), key=lambda item: item[1], reverse=True
+                    )[:3]
                     print(
                         "Meme paper cycle: "
-                        f"{result['scan']['scored_candidates']} scored, "
-                        f"{len(result['cycle'].get('decisions', []))} decisions",
+                        f"{result['scan'].get('scored_candidates', 0)} scored; "
+                        f"{result['scan'].get('watchlist_count', 0)} passed market screen; "
+                        f"{result['scan'].get('watchlist_considered', 0)} considered; "
+                        f"{sum(d.get('action') == 'OPEN' for d in cycle_decisions)} opened; "
+                        f"{sum(d.get('action') == 'CLOSE' for d in cycle_decisions)} closed; "
+                        f"{sum(d.get('action') == 'REJECT' for d in cycle_decisions)} rejected; "
+                        f"entry_reasons={json.dumps(action_counts, sort_keys=True)}; "
+                        f"market_filters={json.dumps(top_market_filters)}",
                         flush=True,
                     )
                 except Exception as exc:
