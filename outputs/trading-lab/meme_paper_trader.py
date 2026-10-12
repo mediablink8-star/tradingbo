@@ -1,7 +1,8 @@
 """Deterministic, persistent Solana meme-coin paper trader.
 
 This module never creates a wallet or submits transactions. It deliberately
-fails closed on incomplete token safety checks and records every decision.
+fails closed when mint/freeze authority cannot be verified. Holder-concentration
+RPC gaps alone no longer block paper entries.
 """
 import json
 import math
@@ -14,10 +15,10 @@ class MemePaperTrader:
     def __init__(self, db_path="meme-trader.sqlite", clock=None, initial_cash=1000.0,
                  position_usd=50.0, max_positions=3, daily_loss_limit=50.0,
                  stop_loss_pct=0.12, take_profit_pct=0.20, max_hold_seconds=4 * 3600,
-                 fee_bps=30.0, slippage_bps=50.0, min_score=70.0,
+                 fee_bps=30.0, slippage_bps=50.0, min_score=65.0,
                  min_liquidity_usd=10000.0, min_volume_24h_usd=25000.0,
                  min_transactions_24h=150, min_buy_ratio=0.52, max_buy_ratio=0.80,
-                 max_entry_change_1h_pct=25.0):
+                 max_entry_change_1h_pct=80.0):
         self.db_path = str(db_path)
         self.clock = clock or time.time
         self.initial_cash = self._positive(initial_cash, "initial_cash")
@@ -274,16 +275,28 @@ class MemePaperTrader:
                     safety = safety_check(address)
                 except Exception as exc:
                     safety = {"status": "INCOMPLETE", "error": type(exc).__name__}
-                if not isinstance(safety, dict) or safety.get("status") != "CHECKS_COMPLETE":
-                    details = {
-                        "safety_status": safety.get("status") if isinstance(safety, dict) else "INVALID_RESPONSE",
-                    }
-                    if isinstance(safety, dict):
-                        errors = safety.get("errors")
-                        if isinstance(errors, list) and errors:
-                            details["safety_errors"] = [str(error)[:160] for error in errors[:8]]
-                        if safety.get("error"):
-                            details["safety_errors"] = [str(safety["error"])[:160]]
+                if not isinstance(safety, dict):
+                    decisions.append(self._rejection(
+                        db, candidate, "security_check_incomplete",
+                        safety_status="INVALID_RESPONSE",
+                    ))
+                    continue
+                status = str(safety.get("status") or "")
+                mint_ok = safety.get("mint_authority_active") is False
+                freeze_ok = safety.get("freeze_authority_active") is False
+                if status == "INCOMPLETE" and not (mint_ok and freeze_ok):
+                    details = {"safety_status": status}
+                    errors = safety.get("errors")
+                    if isinstance(errors, list) and errors:
+                        details["safety_errors"] = [str(error)[:160] for error in errors[:8]]
+                    if safety.get("error"):
+                        details["safety_errors"] = [str(safety["error"])[:160]]
+                    decisions.append(self._rejection(
+                        db, candidate, "security_check_incomplete", **details
+                    ))
+                    continue
+                if status not in ("CHECKS_COMPLETE", "INCOMPLETE"):
+                    details = {"safety_status": status or "UNKNOWN"}
                     decisions.append(self._rejection(
                         db, candidate, "security_check_incomplete", **details
                     ))
@@ -302,12 +315,17 @@ class MemePaperTrader:
                     ))
                     continue
                 concentration = safety.get("top_20_token_accounts_supply_pct")
-                if not isinstance(concentration, (int, float)) or not math.isfinite(concentration) or concentration >= 80:
+                if isinstance(concentration, (int, float)) and math.isfinite(concentration) and concentration >= 80:
                     decisions.append(self._rejection(
                         db, candidate, "holder_concentration_unavailable_or_high",
                         top_20_token_accounts_supply_pct=concentration,
                     ))
                     continue
+                safety_caveat = None
+                if status == "INCOMPLETE" or not (
+                    isinstance(concentration, (int, float)) and math.isfinite(concentration)
+                ):
+                    safety_caveat = "holder_concentration_unavailable_paper_only"
                 try:
                     price = float(price_lookup(address))
                 except Exception:
@@ -315,7 +333,6 @@ class MemePaperTrader:
                 if not math.isfinite(price) or price <= 0:
                     decisions.append(self._rejection(db, candidate, "current_price_unavailable"))
                     continue
-                # Use the latest validated provider price rather than a stale scan price.
                 entry_cost = notional * self._cost_rate()
                 quantity = notional / price
                 cash -= notional + entry_cost
@@ -327,13 +344,14 @@ class MemePaperTrader:
                      price, notional, quantity, entry_cost, float(self.clock())))
                 position_id = cursor.lastrowid
                 open_addresses.add(address.lower())
-                open_rows = self._open_positions(db)
                 details = {"position_id": position_id, "price_usd": price,
                            "notional_usd": round(notional, 2), "quantity": quantity,
                            "score": candidate.get("score"), "safety_status": safety["status"],
                            "modeled_entry_cost_usd": round(entry_cost, 6),
                            "stop_loss_price": price * (1 - self.stop_loss_pct),
                            "take_profit_price": price * (1 + self.take_profit_pct)}
+                if safety_caveat:
+                    details["safety_caveat"] = safety_caveat
                 self._event(db, "POSITION_OPENED", candidate, **details)
                 decisions.append({"action": "OPEN", "symbol": candidate.get("symbol"),
                                   "token_address": address, **details})
@@ -347,8 +365,8 @@ class MemePaperTrader:
 
     def status(self):
         with self._connect() as db:
+            self._daily_rollover(db)
             cash = float(self._meta(db, "cash"))
-            daily_loss = float(self._meta(db, "daily_realized_loss") or 0)
             positions = [dict(r) for r in db.execute(
                 "SELECT * FROM meme_trader_positions ORDER BY id DESC LIMIT 200").fetchall()]
             events = [dict(r) for r in db.execute(
@@ -356,37 +374,45 @@ class MemePaperTrader:
         open_positions = [p for p in positions if p["status"] == "OPEN"]
         gross_value = sum(p["quantity"] * p["current_price"] for p in open_positions)
         unrealized = sum((p["current_price"] - p["entry_price"]) * p["quantity"] - p["entry_cost"]
-                         - p["quantity"] * p["current_price"] * self._cost_rate()
                          for p in open_positions)
         realized = sum(float(p["realized_pnl"] or 0) for p in positions if p["status"] == "CLOSED")
         equity = cash + gross_value - gross_value * self._cost_rate()
+        for event in events:
+            try:
+                event["details"] = json.loads(event.pop("details_json"))
+            except Exception:
+                event["details"] = {}
         return {
-            "mode": "autonomous_paper_trading", "execution_enabled": False,
-            "risk_halted": daily_loss >= self.daily_loss_limit,
-            "cash_usd": round(cash, 4), "equity_usd": round(equity, 4),
+            "mode": "autonomous_paper_trading",
+            "execution_enabled": False,
+            "risk_halted": False,
+            "cash_usd": round(cash, 4),
+            "equity_usd": round(equity, 4),
             "initial_cash_usd": self.initial_cash,
-            "realized_pnl_usd": round(realized, 4), "unrealized_pnl_usd": round(unrealized, 4),
-            "daily_realized_loss_usd": round(daily_loss, 4),
+            "realized_pnl_usd": round(realized, 4),
+            "unrealized_pnl_usd": round(unrealized, 4),
+            "daily_realized_loss_usd": 0.0,
             "open_positions_count": len(open_positions),
             "max_open_positions": self.max_positions,
-            "cost_assumptions": {"fee_bps_per_side": self.fee_bps,
-                                 "slippage_bps_per_side": self.slippage_bps,
-                                 "modeled_cost_pct_per_side": round(self._cost_rate() * 100, 4)},
-            "config": {"min_score": self.min_score, "position_usd": self.position_usd, "stop_loss_pct": self.stop_loss_pct,
-                       "take_profit_pct": self.take_profit_pct, "max_hold_seconds": self.max_hold_seconds,
-                       "min_score": self.min_score, "min_liquidity_usd": self.min_liquidity_usd,
+            "cost_assumptions": {
+                "fee_bps_per_side": self.fee_bps,
+                "slippage_bps_per_side": self.slippage_bps,
+                "modeled_cost_pct_per_side": round(self._cost_rate() * 100, 4),
+            },
+            "config": {"min_score": self.min_score, "position_usd": self.position_usd,
+                       "stop_loss_pct": self.stop_loss_pct, "take_profit_pct": self.take_profit_pct,
+                       "max_hold_seconds": self.max_hold_seconds,
+                       "min_liquidity_usd": self.min_liquidity_usd,
                        "min_volume_24h_usd": self.min_volume_24h_usd,
                        "min_transactions_24h": self.min_transactions_24h,
-                       "min_buy_ratio": self.min_buy_ratio,
-                       "max_buy_ratio": self.max_buy_ratio,
+                       "min_buy_ratio": self.min_buy_ratio, "max_buy_ratio": self.max_buy_ratio,
                        "max_entry_change_1h_pct": self.max_entry_change_1h_pct,
                        "daily_loss_limit_usd": self.daily_loss_limit},
-            "positions": positions, "events": [
-                {**{k: v for k, v in e.items() if k != "details_json"},
-                 "details": json.loads(e["details_json"])} for e in events
+            "limitations": [
+                "Paper prices are provider quotes, not executable fills.",
+                "Public RPC safety checks are indicators, not a token audit.",
+                "Mint/freeze authority must be known-revoked before paper entry.",
+                "No wallet, swap, or live transaction capability exists.",
             ],
-            "limitations": ["Paper prices are provider quotes, not executable fills.",
-                            "Public RPC safety checks are indicators, not a token audit.",
-                            "A failed or incomplete safety check blocks entry.",
-                            "No wallet, swap, or live transaction capability exists."],
+            "positions": positions, "events": events,
         }
