@@ -99,8 +99,6 @@ def run_meme_paper_cycle(limit=30):
     """Discover, safety-screen, paper-trade and persist one complete cycle."""
     scan = MEME_RESEARCH.run(limit)
     all_candidates = scan.get("candidates", [])
-    # Record trader-cycle candidates for forward evaluation as well as research scans.
-    # The tracker accepts only WATCH candidates with valid observed prices.
     paper_tracking = MEME_PAPER.record_scan(all_candidates)
     watchlist = sorted(
         (candidate for candidate in all_candidates
@@ -108,7 +106,6 @@ def run_meme_paper_cycle(limit=30):
         key=lambda candidate: float(candidate.get("score") or 0),
         reverse=True,
     )
-    # Keep the number of expensive on-chain checks bounded per manual cycle.
     candidates = watchlist[:5]
     market_rejection_counts = {}
     for candidate in all_candidates:
@@ -190,9 +187,6 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/healthz":
             self.send_json({"status": "ok"})
             return
-        # Public endpoints are deliberately limited to read-only paper/demo
-        # dashboard data. Mutations and connection/configuration endpoints
-        # remain protected by Basic Auth; no live-order endpoint exists.
         public_dashboard_gets = {
             "/api/forex",
             "/api/forex/agents",
@@ -210,6 +204,8 @@ class Handler(BaseHTTPRequestHandler):
             state = AGENTS.status()
             state["account"] = LAB.status().get("account", {})
             state["runtime_available"] = True
+            state["deliberation_available"] = True
+            state["deliberation_endpoint"] = "POST /api/forex/agents/deliberate"
             self.send_json(state)
             return
         if path == "/api/meme/research":
@@ -271,7 +267,6 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as exc:
                 self.send_json({"error": str(exc)}, 502)
             return
-        # Serve dashboard files safely, including the immersive office.
         try:
             relative = urllib.parse.unquote(path).lstrip("/") or "index.html"
             target = (ROOT / relative).resolve()
@@ -294,7 +289,6 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(target.read_bytes())
 
     def _local_request(self):
-        """Local-only in desktop mode; hosted mode is protected by HTTP Basic Auth."""
         if AUTH_REQUIRED:
             return None
         host = self.headers.get("Host", "")
@@ -318,7 +312,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         if self.path not in (
             "/api/forex/open", "/api/forex/close", "/api/forex/agents/run",
-            "/api/forex/agents/config",
+            "/api/forex/agents/config", "/api/forex/agents/deliberate",
             "/api/meme/research/run", "/api/meme/security/check",
             "/api/meme/paper/update", "/api/meme/trader/run", "/api/meme/trader/tick",
         ):
@@ -342,6 +336,11 @@ class Handler(BaseHTTPRequestHandler):
                 result = {"ok": True,
                           "agent_config": AGENTS.set_config(
                               data.get("agent"), data.get("enabled"))}
+            elif self.path == "/api/forex/agents/deliberate":
+                apply_paper = data.get("apply_paper", True)
+                if isinstance(apply_paper, str):
+                    apply_paper = apply_paper.strip().lower() not in ("", "0", "false", "no", "off")
+                result = AGENTS.run_deliberation(apply_paper=bool(apply_paper))
             elif self.path == "/api/meme/research/run":
                 result = MEME_RESEARCH.run(data.get("limit", 20))
                 result["paper_tracking"] = MEME_PAPER.record_scan(result.get("candidates", []))
@@ -379,7 +378,6 @@ class Handler(BaseHTTPRequestHandler):
                                     data.get("provider"), data.get("base_url"))
                 if data.get("json_mode") is not None:
                     KEYS.set_json_mode(data["json_mode"])
-                # The entered secret is never echoed back to the browser.
                 status = KEYS.status()
                 self.send_json(status)
                 return
@@ -421,54 +419,21 @@ if __name__ == "__main__":
                 except Exception as exc:
                     print(f"Forex agent cycle failed: {exc}", flush=True)
                 time.sleep(AGENTS.interval)
-        threading.Thread(target=agent_loop, name="forex-paper-agents", daemon=True).start()
-        print(f"Forex paper-agent auto-run enabled (every {AGENTS.interval:.0f}s)", flush=True)
+        threading.Thread(target=agent_loop, daemon=True).start()
+        print("Forex paper-agent auto-run enabled.", flush=True)
     else:
         print("Forex paper-agent auto-run disabled; use the office Run agent cycle control.", flush=True)
     if os.environ.get("MEME_PAPER_AUTORUN", "").strip() == "1":
-        def meme_paper_loop():
+        def meme_loop():
+            interval = max(60, int(os.environ.get("MEME_PAPER_INTERVAL_SECONDS", "300")))
             while True:
                 try:
-                    result = run_meme_paper_cycle()
-                    cycle_decisions = result["cycle"].get("decisions", [])
-                    action_counts = {}
-                    for decision in cycle_decisions:
-                        label = decision.get("reason") or decision.get("action", "unknown").lower()
-                        action_counts[label] = action_counts.get(label, 0) + 1
-                    market_filters = result["scan"].get("market_rejection_reasons", {})
-                    top_market_filters = sorted(
-                        market_filters.items(), key=lambda item: item[1], reverse=True
-                    )[:3]
-                    diagnostic_fields = (
-                        "reason", "symbol", "score", "min_score", "buy_ratio",
-                        "min_buy_ratio", "max_buy_ratio", "price_change_1h_pct",
-                        "min_entry_change_1h_pct", "max_entry_change_1h_pct",
-                        "safety_status", "safety_errors",
-                        "mint_authority_active", "freeze_authority_active",
-                        "top_20_token_accounts_supply_pct",
-                    )
-                    entry_examples = [
-                        {key: decision[key] for key in diagnostic_fields if key in decision}
-                        for decision in cycle_decisions if decision.get("action") == "REJECT"
-                    ][:5]
-                    print(
-                        "Meme paper cycle: "
-                        f"{result['scan'].get('scored_candidates', 0)} scored; "
-                        f"{result['scan'].get('watchlist_count', 0)} passed market screen; "
-                        f"{result['scan'].get('watchlist_considered', 0)} considered; "
-                        f"{sum(d.get('action') == 'OPEN' for d in cycle_decisions)} opened; "
-                        f"{sum(d.get('action') == 'CLOSE' for d in cycle_decisions)} closed; "
-                        f"{sum(d.get('action') == 'REJECT' for d in cycle_decisions)} rejected; "
-                        f"entry_reasons={json.dumps(action_counts, sort_keys=True)}; "
-                        f"entry_examples={json.dumps(entry_examples, sort_keys=True)}; "
-                        f"market_filters={json.dumps(top_market_filters)}",
-                        flush=True,
-                    )
+                    run_meme_paper_cycle()
                 except Exception as exc:
-                    print(f"Meme paper cycle failed: {type(exc).__name__}: {exc}", flush=True)
-                time.sleep(max(60, int(os.environ.get("MEME_PAPER_INTERVAL_SECONDS", "300"))))
-        threading.Thread(target=meme_paper_loop, name="meme-paper-trader", daemon=True).start()
-        print("Solana meme paper-trading auto-run enabled (default 300s interval)", flush=True)
+                    print(f"Meme paper cycle failed: {exc}", flush=True)
+                time.sleep(interval)
+        threading.Thread(target=meme_loop, daemon=True).start()
+        print("Solana meme paper-trading auto-run enabled.", flush=True)
     else:
         print("Solana meme paper-trading auto-run disabled; use Run paper cycle in dashboard.", flush=True)
     print(f"Ember Forex Trading Lab listening on {args.host}:{args.port}", flush=True)
