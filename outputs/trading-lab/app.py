@@ -95,7 +95,7 @@ def meme_current_price(token_address):
         return None
 
 
-def run_meme_paper_cycle(limit=20):
+def run_meme_paper_cycle(limit=30):
     """Discover, safety-screen, paper-trade and persist one complete cycle."""
     scan = MEME_RESEARCH.run(limit)
     all_candidates = scan.get("candidates", [])
@@ -342,7 +342,7 @@ class Handler(BaseHTTPRequestHandler):
                 result = MEME_PAPER.update_due()
                 result["status"] = MEME_PAPER.status()
             elif self.path == "/api/meme/trader/run":
-                result = run_meme_paper_cycle(data.get("limit", 20))
+                result = run_meme_paper_cycle(data.get("limit", 30))
             elif self.path == "/api/meme/trader/tick":
                 result = MEME_TRADER.tick(meme_current_price)
                 result["status"] = MEME_TRADER.status()
