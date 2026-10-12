@@ -65,6 +65,18 @@ class SolanaMintSafetyTests(unittest.TestCase):
         self.assertEqual(fetch.call_count, 2)
         sleep.assert_called_once_with(0.5)
 
+    def test_transient_rpc_retry_count_is_bounded(self):
+        headers = Message()
+        error = urllib.error.HTTPError(
+            "https://example.test/rpc", 429, "Too Many Requests", headers, None
+        )
+        with patch.object(
+            meme_safety.urllib.request, "urlopen", side_effect=[error, error]
+        ) as fetch, patch.object(meme_safety.time, "sleep"):
+            with self.assertRaises(urllib.error.HTTPError):
+                meme_safety._fetch_json("https://example.test/rpc", {"method": "test"})
+        self.assertEqual(fetch.call_count, 2)
+
     def test_primary_rpc_throttle_uses_read_only_fallback(self):
         primary = "https://primary.example/rpc"
         fallback = "https://fallback.example/rpc"
