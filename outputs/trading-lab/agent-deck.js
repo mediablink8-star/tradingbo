@@ -1,44 +1,105 @@
-/* TradingLab · Command Deck — six-agent deliberation UI (2029) */
+/* TradingLab · Command Deck
+   Functional six-agent floor + paper PnL dashboard.
+   Matches Grok Bot demo layout; stays paper-only. */
 (function () {
+  "use strict";
+
   const AGENTS = [
-    { key: "market", name: "Market Observer", short: "01", role: "Data quality" },
-    { key: "technical", name: "Technical Analyst", short: "02", role: "Structure" },
-    { key: "macro", name: "Macro / Narrative", short: "03", role: "Regime" },
-    { key: "strategy", name: "Strategy Proposer", short: "04", role: "Hypotheses" },
-    { key: "risk", name: "Risk Critic", short: "05", role: "Adversarial" },
-    { key: "coordinator", name: "Portfolio Coord", short: "06", role: "Final call" },
+    { key: "market",      name: "Observer",   short: "OBS", role: "Market data" },
+    { key: "technical",   name: "Technical",  short: "TEC", role: "Structure" },
+    { key: "macro",       name: "Narrative",  short: "NAR", role: "Regime" },
+    { key: "strategy",    name: "Strategy",   short: "STR", role: "Hypotheses" },
+    { key: "risk",        name: "Risk Critic",short: "RSK", role: "Veto power" },
+    { key: "coordinator", name: "Coordinator",short: "CRD", role: "Final call" },
   ];
 
+  const history = []; // {t, equity}
+  let tasks = 0;
+  let combo = 1;
+  let logCount = 0;
+
   function $(id) { return document.getElementById(id); }
+
+  function money(n) {
+    const x = Number(n);
+    if (!Number.isFinite(x)) return "—";
+    const sign = x < 0 ? "-" : "";
+    return sign + "$" + Math.abs(x).toLocaleString(undefined, {
+      minimumFractionDigits: 2, maximumFractionDigits: 2
+    });
+  }
+
+  function pct(n) {
+    const x = Number(n);
+    if (!Number.isFinite(x)) return "—";
+    return (x >= 0 ? "+" : "") + x.toFixed(1) + "%";
+  }
+
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&").replace(/</g, "<")
+      .replace(/>/g, ">").replace(/"/g, """);
+  }
 
   function renderStations() {
     const grid = $("agentGrid");
     if (!grid) return;
-    grid.innerHTML = AGENTS.map(a => `
-      <div class="agent-card" data-key="${a.key}" id="ac-${a.key}">
+    grid.innerHTML = AGENTS.map((a, i) => `
+      <div class="acard" data-agent="${a.key}" id="acard-${a.key}">
         <div class="ring">${a.short}</div>
-        <div class="aname">${a.name}</div>
-        <div class="arole">${a.role}</div>
-        <div class="astatus" id="as-${a.key}">STANDBY</div>
+        <div class="aname">${esc(a.name)}</div>
+        <div class="arole">${esc(a.role)}</div>
+        <div class="abal" id="abal-${a.key}">$0.00</div>
+        <div class="astatus" id="astat-${a.key}">IDLE</div>
       </div>`).join("");
   }
 
   function setAgentState(key, state) {
-    const card = $("ac-" + key);
-    const st = $("as-" + key);
-    if (!card || !st) return;
+    const card = $("acard-" + key);
+    const st = $("astat-" + key);
+    if (!card) return;
     card.classList.remove("active", "speaking");
     if (state === "speaking") {
       card.classList.add("speaking");
-      st.textContent = "SPEAKING";
+      if (st) st.textContent = "SPEAKING";
     } else if (state === "done") {
       card.classList.add("active");
-      st.textContent = "REPORT FILED";
+      if (st) st.textContent = "DONE";
     } else if (state === "error") {
-      st.textContent = "FAULT";
+      if (st) st.textContent = "FAULT";
+    } else if (state === "active") {
+      card.classList.add("active");
+      if (st) st.textContent = "LIVE";
     } else {
-      st.textContent = "STANDBY";
+      if (st) st.textContent = "IDLE";
     }
+  }
+
+  function resetAgents() {
+    AGENTS.forEach(a => setAgentState(a.key, "idle"));
+  }
+
+  function logLine(tag, text, cls) {
+    const box = $("deckLog");
+    if (!box) return;
+    logCount += 1;
+    const row = document.createElement("div");
+    row.className = "log-row";
+    row.innerHTML =
+      `<span class="log-tag ${cls || tag.toLowerCase()}">[${esc(tag)}]</span>` +
+      `<span class="log-txt">${text}</span>`;
+    box.prepend(row);
+    while (box.children.length > 80) box.removeChild(box.lastChild);
+    const c = $("deckLogCount");
+    if (c) c.textContent = logCount + " resolved";
+  }
+
+  function termClear(bootMsg) {
+    const body = $("termBody");
+    if (!body) return;
+    body.innerHTML = bootMsg
+      ? `<div class="boot-line ok">${esc(bootMsg)}</div>`
+      : "";
   }
 
   function termAppend(html) {
@@ -47,56 +108,237 @@
     const empty = body.querySelector(".term-empty");
     if (empty) empty.remove();
     body.insertAdjacentHTML("beforeend", html);
-    const screen = $("termScreen");
-    if (screen) screen.scrollTop = screen.scrollHeight;
-  }
-
-  function termBoot(mode) {
-    const body = $("termBody");
-    if (!body) return;
-    body.innerHTML = "";
-    const lines = [
-      "TRADINGLAB AGENT COMPANY · KERNEL 2029.10",
-      "MODE=" + mode.toUpperCase() + " · PAPER_ONLY=TRUE · EXECUTION=DISABLED",
-      "Loading specialist stations…",
-      "Risk interlock online. Daily-loss circuit armed.",
-      "---",
-    ];
-    lines.forEach((l, i) => {
-      setTimeout(() => {
-        termAppend(`<div class="boot-line ${i > 2 ? "ok" : ""}">${l}</div>`);
-      }, i * 90);
-    });
+    body.scrollTop = body.scrollHeight;
   }
 
   function formatReport(report) {
-    if (!report || typeof report !== "object") return "(no payload)";
-    const parts = [];
-    for (const [k, v] of Object.entries(report)) {
-      if (k === "concerns" || k === "veto_reasons") continue;
-      if (Array.isArray(v)) parts.push(k + ": " + v.slice(0, 4).join("; "));
-      else if (v != null && String(v).trim()) parts.push(k + ": " + String(v));
+    if (report == null) return "—";
+    if (typeof report === "string") return esc(report);
+    try {
+      return esc(JSON.stringify(report, null, 2));
+    } catch (_) {
+      return esc(String(report));
     }
-    const concerns = report.concerns || report.veto_reasons || [];
-    if (concerns.length) parts.push("concerns: " + concerns.slice(0, 4).join("; "));
-    return parts.join("\n") || "(empty report)";
   }
 
   function paintDecision(final) {
     const box = $("decisionBox");
-    if (!box || !final) return;
-    const side = (final.side || final.decision || "hold").toLowerCase();
+    if (!box) return;
+    const action = String((final && (final.action || final.decision || final.preferred_action)) || "hold").toLowerCase();
+    const rationale = (final && (final.rationale || final.reason || final.summary)) || "No rationale returned.";
     let cls = "hold";
-    if (side === "buy" || side === "long") cls = "buy";
-    else if (side === "sell" || side === "short") cls = "sell";
-    box.innerHTML = `
-      <div class="label">COORDINATOR DECISION</div>
-      <div class="val ${cls}">${(final.decision || side || "HOLD").toUpperCase()}</div>
-      <div class="rationale">${final.rationale || "—"}</div>
-      <div style="margin-top:10px;font-size:10px;color:#6b7a88">
-        ${final.pair_or_token ? "Instrument: <b style='color:#c8d4e0'>" + final.pair_or_token + "</b>" : "No instrument named"}
-        ${final.size_hint ? " · Size hint: " + final.size_hint : ""}
-      </div>`;
+    if (/buy|long|open/.test(action)) cls = "buy";
+    else if (/sell|short|close/.test(action)) cls = "sell";
+    box.innerHTML =
+      `<div class="label">COORDINATOR DECISION</div>` +
+      `<div class="val ${cls}">${esc(action.toUpperCase())}</div>` +
+      `<div class="rationale">${esc(String(rationale).slice(0, 420))}</div>`;
+  }
+
+  function pushHistory(equity) {
+    const e = Number(equity);
+    if (!Number.isFinite(e)) return;
+    history.push({ t: Date.now(), equity: e });
+    if (history.length > 120) history.shift();
+    drawChart();
+  }
+
+  function drawChart() {
+    const canvas = $("deckChart");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth || 640;
+    const h = 220;
+    canvas.width = Math.floor(w * dpr);
+    canvas.height = Math.floor(h * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+
+    ctx.strokeStyle = "rgba(0,245,160,0.06)";
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 5; i++) {
+      const y = 20 + (h - 40) * (i / 4);
+      ctx.beginPath(); ctx.moveTo(12, y); ctx.lineTo(w - 12, y); ctx.stroke();
+    }
+
+    if (history.length < 2) {
+      ctx.fillStyle = "#3a4a55";
+      ctx.font = "11px JetBrains Mono, monospace";
+      ctx.fillText("Equity trail appears after paper cycles.", 16, h / 2);
+      return;
+    }
+
+    let min = Infinity, max = -Infinity;
+    history.forEach(p => {
+      min = Math.min(min, p.equity);
+      max = Math.max(max, p.equity);
+    });
+    if (max - min < 1) { min -= 1; max += 1; }
+    const pad = (max - min) * 0.08;
+    min -= pad; max += pad;
+
+    const xs = (i) => 16 + (w - 32) * (i / (history.length - 1));
+    const ys = (v) => 16 + (h - 32) * (1 - (v - min) / (max - min));
+
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, "rgba(0,245,160,0.25)");
+    grad.addColorStop(1, "rgba(0,245,160,0.0)");
+    ctx.beginPath();
+    history.forEach((p, i) => {
+      const x = xs(i), y = ys(p.equity);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.lineTo(xs(history.length - 1), h - 16);
+    ctx.lineTo(xs(0), h - 16);
+    ctx.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    ctx.beginPath();
+    history.forEach((p, i) => {
+      const x = xs(i), y = ys(p.equity);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = "#00f5a0";
+    ctx.lineWidth = 2;
+    ctx.shadowColor = "rgba(0,245,160,0.55)";
+    ctx.shadowBlur = 8;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    const last = history[history.length - 1];
+    const lx = xs(history.length - 1), ly = ys(last.equity);
+    ctx.beginPath();
+    ctx.arc(lx, ly, 4, 0, Math.PI * 2);
+    ctx.fillStyle = "#e8fff6";
+    ctx.fill();
+  }
+
+  function paintStatus(s) {
+    if (!s || typeof s !== "object") return;
+    const equity = Number(s.equity_usd != null ? s.equity_usd : s.equity);
+    const cash = Number(s.cash_usd != null ? s.cash_usd : s.cash);
+    const realized = Number(s.realized_pnl != null ? s.realized_pnl : 0);
+    const openN = Number(s.open_positions_count != null ? s.open_positions_count : 0);
+
+    if (Number.isFinite(equity)) {
+      $("deckBal") && ($("deckBal").textContent = money(equity));
+      pushHistory(equity);
+    }
+    const start = Number(s.starting_cash_usd != null ? s.starting_cash_usd :
+      (Number.isFinite(cash) && Number.isFinite(realized) ? cash - realized : NaN));
+    let pnl = Number.isFinite(equity) && Number.isFinite(start) ? equity - start : realized;
+    const pnlEl = $("deckPnl");
+    if (pnlEl && Number.isFinite(pnl)) {
+      pnlEl.textContent = (pnl >= 0 ? "+" : "") + money(pnl).replace("$", "$");
+      pnlEl.className = "pnl-val " + (pnl >= 0 ? "up" : "dn");
+    }
+    if ($("deckBalSub")) {
+      $("deckBalSub").textContent =
+        (Number.isFinite(cash) ? "cash " + money(cash) : "paper equity") +
+        " · " + openN + " open";
+    }
+
+    const positions = Array.isArray(s.positions) ? s.positions : [];
+    const closed = positions.filter(p => String(p.status || "").toUpperCase() === "CLOSED");
+    const wins = closed.filter(p => Number(p.realized_pnl) > 0);
+    if (closed.length && $("deckWin")) {
+      const rate = Math.round((wins.length / closed.length) * 100);
+      $("deckWin").textContent = rate + "%";
+      if ($("deckWinSub")) $("deckWinSub").textContent = wins.length + "W / " + closed.length + " closed";
+    }
+    if (closed.length) {
+      let best = null;
+      closed.forEach(p => {
+        const r = Number(p.realized_pnl);
+        if (!Number.isFinite(r)) return;
+        if (!best || r > Number(best.realized_pnl)) best = p;
+      });
+      if (best && $("deckBig")) {
+        $("deckBig").textContent = money(best.realized_pnl);
+        if ($("deckBigSub")) {
+          $("deckBigSub").textContent =
+            (best.symbol || best.token_address || "trade") + " · closed";
+        }
+      }
+    }
+
+    if (Number.isFinite(equity) && equity > 0) {
+      const weights = [0.22, 0.18, 0.17, 0.16, 0.15, 0.12];
+      AGENTS.forEach((a, i) => {
+        const el = $("abal-" + a.key);
+        if (el) el.textContent = money(equity * weights[i]);
+      });
+    }
+  }
+
+  async function api(path, opts) {
+    const r = await fetch(path, opts || {});
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || r.statusText || "request failed");
+    return j;
+  }
+
+  async function refreshStatus() {
+    try {
+      const s = await api("/api/meme/trader");
+      paintStatus(s);
+      if (s.deliberation_available) {
+        $("deckLive") && ($("deckLive").textContent = "LIVE");
+      }
+    } catch (_) { /* quiet */ }
+  }
+
+  function bumpTasks(n) {
+    tasks += n || 1;
+    if ($("deckTasks")) $("deckTasks").textContent = tasks.toLocaleString() + " TASKS";
+  }
+
+  function bumpCombo() {
+    combo = Math.min(combo + 1, 12);
+    if ($("deckCombo")) $("deckCombo").textContent = "COMBO ×" + combo;
+  }
+
+  async function runPaperCycle() {
+    const btn = $("deckPaper");
+    if (btn) btn.disabled = true;
+    $("deckStatus") && ($("deckStatus").textContent = "PAPER CYCLE…");
+    logLine("SCAN", "Starting deterministic meme paper cycle…", "scan");
+    try {
+      const r = await api("/api/meme/trader/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ limit: 30 })
+      });
+      bumpTasks(8);
+      const scan = r.scan || {};
+      logLine("SCAN",
+        `discovered ${scan.discovered_tokens || 0} · scored ${scan.scored_candidates || 0} · watch ${scan.watchlist_count || 0}`,
+        "scan");
+      const decisions = ((r.cycle || {}).decisions) || [];
+      decisions.forEach(d => {
+        const act = String(d.action || d.reason || "hold").toUpperCase();
+        const sym = d.symbol || d.name || d.token_address || "pair";
+        if (/BUY|OPEN/.test(act)) {
+          logLine("EXEC", `<b>BUY</b> ${esc(sym)} · ${esc(d.reason || "gate passed")}`, "exec");
+          bumpCombo();
+        } else if (/SELL|CLOSE/.test(act)) {
+          logLine("FILL", `<b>SELL</b> ${esc(sym)} · ${esc(d.reason || "exit")}`, "fill");
+        } else {
+          logLine("RISK", `${esc(sym)} · ${esc(d.reason || act)}`, "risk");
+        }
+      });
+      if (r.status) paintStatus(r.status);
+      else await refreshStatus();
+      $("deckStatus") && ($("deckStatus").textContent = "PAPER CYCLE DONE");
+      if (typeof say === "function") say("Paper cycle finished. Still no live orders.", "ok");
+    } catch (e) {
+      logLine("WARN", esc(e.message), "warn");
+      $("deckStatus") && ($("deckStatus").textContent = "FAULT");
+    } finally {
+      if (btn) btn.disabled = false;
+    }
   }
 
   async function runDeliberation(kind) {
@@ -104,78 +346,91 @@
     const memeBtn = $("deckMeme");
     if (fxBtn) fxBtn.disabled = true;
     if (memeBtn) memeBtn.disabled = true;
-    AGENTS.forEach(a => setAgentState(a.key, "idle"));
-    termBoot(kind === "meme" ? "solana_meme" : "forex");
-    $("deckStatus").textContent = "DELIBERATING…";
-    $("deckStatus").className = "gate-chip";
+    resetAgents();
+    termClear("Opening floor · six agents · paper only");
+    $("deckStatus") && ($("deckStatus").textContent = "DELIBERATING…");
+    $("deckLive") && ($("deckLive").textContent = "LIVE");
+    logLine("SCAN", `Six-agent ${kind} deliberation requested`, "scan");
 
     const endpoint = kind === "meme"
       ? "/api/meme/trader/deliberate"
       : "/api/forex/agents/deliberate";
     const body = kind === "meme"
-      ? { limit: 20, apply_paper: false }
-      : { apply_paper: false };
+      ? { limit: 20, apply_paper: true }
+      : { apply_paper: true };
 
     try {
-      let i = 0;
-      const pulse = setInterval(() => {
-        if (i > 0) setAgentState(AGENTS[i - 1].key, "done");
-        if (i < AGENTS.length) {
-          setAgentState(AGENTS[i].key, "speaking");
-          i++;
-        } else clearInterval(pulse);
-      }, 420);
-
-      const res = await fetch(endpoint, {
+      const r = await api(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify(body)
       });
-      clearInterval(pulse);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || res.statusText);
+      bumpTasks(12);
+      const delib = r.deliberation || r;
+      const agents = delib.conversation || delib.agents || delib.stages || [];
 
-      const delib = data.deliberation || data;
-      const agents = delib.agents || [];
-      AGENTS.forEach(a => setAgentState(a.key, "idle"));
+      if (!agents.length && delib.error) {
+        throw new Error(delib.error);
+      }
+      if (!agents.length) {
+        termAppend(`<div class="term-line agent"><div class="who">SYSTEM</div><div class="body">${formatReport(delib)}</div></div>`);
+      }
 
       for (const rec of agents) {
-        const key = rec.key || "market";
+        const key = rec.key || rec.agent_key ||
+          (String(rec.agent || "").toLowerCase().includes("risk") ? "risk" :
+           String(rec.agent || "").toLowerCase().includes("coord") ? "coordinator" :
+           String(rec.agent || "").toLowerCase().includes("tech") ? "technical" :
+           String(rec.agent || "").toLowerCase().includes("macro") || String(rec.agent || "").toLowerCase().includes("narr") ? "macro" :
+           String(rec.agent || "").toLowerCase().includes("strat") ? "strategy" : "market");
         setAgentState(key, "speaking");
-        await new Promise(r => setTimeout(r, 180));
+        await new Promise(res => setTimeout(res, 160));
         const cls = key === "risk" ? "risk" : key === "coordinator" ? "coord" : "agent";
         const ok = rec.ok !== false;
         termAppend(`
           <div class="term-line ${cls}">
-            <div class="who">${(rec.agent || key).toUpperCase()}${ok ? "" : " · FAULT"}</div>
-            <div class="body">${formatReport(rec.report)}${rec.error ? "\n" + rec.error : ""}</div>
-            <div class="meta">${ok ? "advisory · does not execute" : "fallback hold"}</div>
+            <div class="who">${esc((rec.agent || key).toUpperCase())}${ok ? "" : " · FAULT"}</div>
+            <div class="body">${formatReport(rec.report || rec.text || rec.content || rec)}</div>
+            <div class="meta">${ok ? "advisory · does not execute" : "fallback"}</div>
           </div>`);
         setAgentState(key, ok ? "done" : "error");
-        await new Promise(r => setTimeout(r, 120));
+        logLine(ok ? "FILL" : "WARN",
+          `${esc(rec.agent || key)} spoke`,
+          ok ? "fill" : "warn");
+        await new Promise(res => setTimeout(res, 90));
       }
 
-      const final = delib.final_decision || {};
+      const final = delib.final_decision || delib.decision || r.decision || {};
       paintDecision(final);
+      if (final && (final.action || final.decision)) {
+        logLine("MEGA",
+          `Coordinator → <b>${esc(String(final.action || final.decision).toUpperCase())}</b>`,
+          "mega");
+        bumpCombo();
+      }
+
+      if (r.paper || r.status || kind === "meme") {
+        if (r.status) paintStatus(r.status);
+        else if (r.paper && r.paper.status) paintStatus(r.paper.status);
+        else await refreshStatus();
+      }
+
       termAppend(`
         <div class="term-line coord">
           <div class="who">SYSTEM</div>
-          <div class="body">Cycle ${delib.cycle_id || "—"} complete · ${delib.duration_seconds || "?"}s · paper_only</div>
-          <div class="meta">Deterministic risk engine remains final authority</div>
+          <div class="body">Cycle ${esc(delib.cycle_id || "—")} complete · paper_only</div>
+          <div class="meta">Risk engine remains final authority · no wallet</div>
         </div>
         <span class="term-cursor"></span>`);
 
-      $("deckStatus").textContent = "CYCLE COMPLETE · PAPER ONLY";
-      $("deckStatus").className = "gate-chip";
-      if (typeof say === "function") {
-        say("Six-agent deliberation finished. Advisory only — no live order.", "ok");
-      }
+      $("deckStatus") && ($("deckStatus").textContent = "CYCLE COMPLETE · PAPER ONLY");
+      if (typeof say === "function") say("Six-agent deliberation finished. Paper only.", "ok");
       if (typeof refresh === "function") await refresh();
       if (kind === "meme" && typeof loadMemeTrader === "function") await loadMemeTrader();
     } catch (e) {
-      termAppend(`<div class="term-line risk"><div class="who">SYSTEM FAULT</div><div class="body">${e.message}</div></div>`);
-      $("deckStatus").textContent = "FAULT";
-      $("deckStatus").className = "gate-chip warn";
+      termAppend(`<div class="term-line risk"><div class="who">SYSTEM FAULT</div><div class="body">${esc(e.message)}</div></div>`);
+      logLine("WARN", esc(e.message), "warn");
+      $("deckStatus") && ($("deckStatus").textContent = "FAULT");
       if (typeof say === "function") say(e.message, "bad");
     } finally {
       if (fxBtn) fxBtn.disabled = false;
@@ -186,10 +441,19 @@
   function init() {
     document.body.classList.add("t2029");
     renderStations();
+    drawChart();
+    refreshStatus();
+    setInterval(refreshStatus, 20000);
+
     const fx = $("deckFx");
     const meme = $("deckMeme");
+    const paper = $("deckPaper");
     if (fx) fx.addEventListener("click", () => runDeliberation("forex"));
     if (meme) meme.addEventListener("click", () => runDeliberation("meme"));
+    if (paper) paper.addEventListener("click", runPaperCycle);
+
+    window.addEventListener("resize", drawChart);
+    logLine("SCAN", "Command Deck online · paper mode · risk engine armed", "scan");
   }
 
   if (document.readyState === "loading") {
@@ -198,5 +462,5 @@
     init();
   }
 
-  window.TradingLabDeck = { runDeliberation, renderStations };
+  window.TradingLabDeck = { runDeliberation, runPaperCycle, renderStations, refreshStatus };
 })();
