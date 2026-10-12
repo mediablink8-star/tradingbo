@@ -135,7 +135,7 @@ class SolanaMintSafetyChecker:
             ])
             supply = ((result or {}).get("value") or {})
         except Exception as exc:
-            errors.append("supply_check_failed:" + type(exc).__name__)
+            errors.append("supply_check_failed:" + _error_label(exc))
 
         try:
             result = self._rpc("getTokenLargestAccounts", [
@@ -145,7 +145,7 @@ class SolanaMintSafetyChecker:
             if not isinstance(largest, list):
                 raise RuntimeError("invalid_largest_accounts")
         except Exception as exc:
-            errors.append("largest_accounts_check_failed:" + type(exc).__name__)
+            errors.append("largest_accounts_check_failed:" + _error_label(exc))
 
         total_raw = _finite_number((supply or {}).get("amount"))
         concentration = None
