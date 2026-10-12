@@ -12,6 +12,7 @@ import urllib.request
 
 
 DEFAULT_RPC_URL = "https://api.mainnet-beta.solana.com"
+DEFAULT_FALLBACK_RPC_URL = "https://solana-rpc.publicnode.com"
 LEGACY_TOKEN_PROGRAM = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 TOKEN_2022_PROGRAM = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
 USER_AGENT = "TradingBo-MemeSafety/0.1"
@@ -70,14 +71,30 @@ class SolanaMintSafetyChecker:
 
     def __init__(self, rpc_url=None, rpc_call=None):
         self.rpc_url = rpc_url or os.environ.get("SOLANA_RPC_URL", DEFAULT_RPC_URL)
+        self.fallback_rpc_url = os.environ.get(
+            "SOLANA_RPC_FALLBACK_URL", DEFAULT_FALLBACK_RPC_URL
+        ).strip()
+        self._using_default_rpc = rpc_call is None
         self.rpc_call = rpc_call or _fetch_json
         if not self.rpc_url.startswith("https://"):
             raise ValueError("SOLANA_RPC_URL must use HTTPS")
+        if self.fallback_rpc_url and not self.fallback_rpc_url.startswith("https://"):
+            raise ValueError("SOLANA_RPC_FALLBACK_URL must use HTTPS")
 
     def _rpc(self, method, params):
-        response = self.rpc_call(self.rpc_url, {
+        payload = {
             "jsonrpc": "2.0", "id": 1, "method": method, "params": params,
-        })
+        }
+        try:
+            response = self.rpc_call(self.rpc_url, payload)
+        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError):
+            # If the primary endpoint is throttled/unavailable, retry the same
+            # read-only query against a separate HTTPS RPC. Any fallback failure
+            # still propagates to check(), which marks the safety result incomplete.
+            if (not self._using_default_rpc or not self.fallback_rpc_url
+                    or self.fallback_rpc_url == self.rpc_url):
+                raise
+            response = self.rpc_call(self.fallback_rpc_url, payload)
         if not isinstance(response, dict):
             raise RuntimeError("invalid_rpc_response")
         if response.get("error"):
