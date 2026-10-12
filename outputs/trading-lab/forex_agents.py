@@ -369,3 +369,93 @@ class ForexAgentRuntime:
                        "momentum_threshold": MOMENTUM_THRESHOLD,
                        "max_entries_per_cycle": 1},
         }
+
+    def run_deliberation(self, apply_paper: bool = True):
+        """Run the six-agent deliberative cycle and optionally act on it.
+
+        The AI conversation is advisory. Any paper order still goes through
+        the existing deterministic risk engine inside self.lab.open/close.
+        """
+        from multi_agent import MultiAgentEngine, apply_decision_to_paper
+
+        layer = getattr(self, "research", None)
+        engine = MultiAgentEngine(layer, max_rounds=1)
+        data = self.lab.tick()
+        market = data.get("market", {})
+        account = data.get("account", {})
+        risk = data.get("risk", {})
+        positions = account.get("positions", []) if isinstance(account, dict) else []
+        history = self.histories()
+
+        deliberation = engine.deliberate(
+            market, account, risk, history, positions
+        )
+
+        cycle_id = deliberation.get("cycle_id") or uuid.uuid4().hex[:12]
+        now = time.time()
+        events = []
+
+        with self._db() as db:
+            for agent_rec in deliberation.get("agents", []):
+                report = agent_rec.get("report") or {}
+                status = "Deliberation" if agent_rec.get("ok") else "Unavailable"
+                parts = []
+                for k, v in report.items():
+                    if k == "concerns":
+                        continue
+                    if isinstance(v, list):
+                        parts.append(f"{k}: " + "; ".join(str(x) for x in v[:3]))
+                    else:
+                        parts.append(f"{k}: {v}")
+                summary = " | ".join(parts)[:500] or agent_rec.get("error", "No output")
+                concerns = report.get("concerns") or report.get("veto_reasons") or []
+                if agent_rec.get("error"):
+                    concerns = list(concerns) + [agent_rec["error"]]
+                events.append(self._event(
+                    db, cycle_id, agent_rec.get("agent", "Agent"),
+                    status, summary,
+                    approve=[], concerns=concerns[:8],
+                ))
+
+            final = deliberation.get("final_decision") or {}
+            events.append(self._event(
+                db, cycle_id, "Portfolio Coordinator (final)",
+                final.get("decision", "hold").upper(),
+                (final.get("rationale") or "No rationale")[:500],
+                approve=[final.get("pair_or_token")] if final.get("pair_or_token") else [],
+                concerns=final.get("concerns") or [],
+            ))
+
+        paper_result = {"action": "hold", "executed": [], "reason": "apply_paper=False"}
+        if apply_paper and deliberation.get("ok"):
+            paper_result = apply_decision_to_paper(
+                final,
+                lab_open=self.lab.open,
+                lab_close=self.lab.close,
+                account=self.lab.status().get("account", {}),
+                max_notional=PAPER_NOTIONAL,
+            )
+            with self._db() as db:
+                events.append(self._event(
+                    db, cycle_id, "Paper execution gate",
+                    paper_result.get("action", "hold").upper(),
+                    paper_result.get("reason", "Deterministic risk gate evaluated the recommendation.")[:500],
+                    approve=[paper_result.get("pair")] if paper_result.get("pair") else [],
+                    concerns=[] if paper_result.get("executed") else [
+                        paper_result.get("reason") or "No paper order submitted."
+                    ],
+                ))
+
+        self.last_cycle = now
+        return {
+            "ok": True,
+            "cycle_id": cycle_id,
+            "timestamp": now,
+            "deliberation": deliberation,
+            "paper": paper_result,
+            "events": events,
+            "account": self.lab.status().get("account", {}),
+            "auto_run_enabled": self.auto_run,
+            "mode": "six_agent_deliberation",
+            "execution_enabled": False,
+        }
