@@ -16,10 +16,10 @@ DEFAULT_FALLBACK_RPC_URL = "https://solana-rpc.publicnode.com"
 LEGACY_TOKEN_PROGRAM = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 TOKEN_2022_PROGRAM = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
 USER_AGENT = "TradingBo-MemeSafety/0.1"
-MAX_RPC_RETRIES = 2
+MAX_RPC_RETRIES = 1
 
 
-def _fetch_json(url, payload, timeout=12):
+def _fetch_json(url, payload, timeout=6):
     request = urllib.request.Request(
         url,
         data=json.dumps(payload).encode("utf-8"),
