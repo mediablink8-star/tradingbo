@@ -1,26 +1,74 @@
       <section class="sec" id="command-deck"><i class="hud tl"></i><i class="hud tr"></i><i class="hud bl"></i><i class="hud br"></i>
         <div class="sechd">
           <h2>Command Deck</h2>
-          <span class="sub">SIX-AGENT AUTONOMOUS COMPANY · PAPER ONLY</span>
+          <span class="sub">GROK-STYLE SIX-AGENT PAPER TERMINAL · NO LIVE ORDERS</span>
         </div>
         <div class="secbd">
-          <div class="deck-hero">
-            <div>
-              <div class="title">AGENT COMPANY · LIVE FLOOR</div>
-              <div class="subtitle">Six specialists debate every cycle. The deterministic risk engine remains the final authority. No wallets. No live orders. Pure paper.</div>
+          <div class="deck-top">
+            <div class="deck-brand">
+              <div class="logo">◈</div>
+              <div>
+                TradingLab Bot
+                <small>TRADING MODE · PAPER ACCOUNTING</small>
+              </div>
             </div>
-            <div class="deck-actions">
-              <button class="btn go" id="deckFx">Run Forex deliberation</button>
-              <button class="btn ghost" id="deckMeme">Run Meme deliberation</button>
-              <span class="gate-chip" id="deckStatus">STANDBY</span>
+            <div class="deck-meta">
+              <span class="chip" id="deckTasks">0 TASKS</span>
+              <span class="chip ghost" id="deckCombo">COMBO ×1</span>
+              <span class="chip live" id="deckLive">STANDBY</span>
             </div>
           </div>
-          <div class="agent-grid" id="agentGrid"></div>
+
+          <div class="deck-kpis">
+            <div class="dkpi">
+              <div class="lab">Balance</div>
+              <div class="bal-val" id="deckBal">$—</div>
+              <div class="sub" id="deckBalSub">paper equity</div>
+            </div>
+            <div class="dkpi">
+              <div class="lab">Total PnL</div>
+              <div class="pnl-val up" id="deckPnl">—</div>
+              <div class="sub" id="deckPnlSub">realized + unrealized</div>
+            </div>
+            <div class="dkpi win">
+              <div class="win-ring"><span class="win-pct" id="deckWin">—</span></div>
+              <div>
+                <div class="lab">Win rate</div>
+                <div class="sub" id="deckWinSub">closed trades</div>
+              </div>
+            </div>
+            <div class="dkpi">
+              <div class="lab">Largest win</div>
+              <div class="bal-val" id="deckBig" style="font-size:18px">—</div>
+              <div class="trophy" id="deckBigSub">no closes yet</div>
+            </div>
+          </div>
+
+          <div class="deck-main">
+            <div class="chart-panel">
+              <div class="panel-hd"><span><span class="led"></span>BALANCE HISTORY · PAPER</span><span id="deckChartMeta">24h session</span></div>
+              <canvas id="deckChart" width="640" height="220"></canvas>
+            </div>
+            <div class="log-panel">
+              <div class="panel-hd"><span><span class="led"></span>ACTIVITY LOG</span><span id="deckLogCount">0 resolved</span></div>
+              <div class="log-body" id="deckLog"></div>
+            </div>
+          </div>
+
+          <div class="agent-rail" id="agentGrid"></div>
+
+          <div class="deck-actions">
+            <button class="btn go" id="deckMeme">Run meme deliberation</button>
+            <button class="btn ghost" id="deckFx">Run forex deliberation</button>
+            <button class="btn ghost" id="deckPaper">Run paper cycle</button>
+            <span class="chip" id="deckStatus">STANDBY</span>
+          </div>
+
           <div class="term-wrap">
             <div class="term-screen" id="termScreen">
               <div class="term-head"><span class="led"></span> DELIBERATION TRANSCRIPT · SECURE CHANNEL</div>
               <div class="term-body" id="termBody">
-                <div class="term-empty">Awaiting cycle. Press Run Forex deliberation or Run Meme deliberation to open the floor.</div>
+                <div class="term-empty">Awaiting cycle. Agents stay silent until you open the floor.</div>
               </div>
             </div>
             <div class="side-panel">
@@ -28,13 +76,13 @@
               <div class="decision-box" id="decisionBox">
                 <div class="label">COORDINATOR DECISION</div>
                 <div class="val hold">—</div>
-                <div class="rationale">No cycle yet.</div>
+                <div class="rationale">No cycle yet. Risk engine remains the only executor.</div>
               </div>
-              <div class="gate-chip">RISK ENGINE ARMED</div>
-              <div class="gate-chip">EXECUTION DISABLED</div>
-              <div class="gate-chip">PAPER ACCOUNTING ONLY</div>
+              <div class="chip">RISK ENGINE ARMED</div>
+              <div class="chip warn">EXECUTION DISABLED</div>
+              <div class="chip">PAPER ACCOUNTING ONLY</div>
               <p class="fine" style="margin:0;color:#5a6a78;font-size:10px;line-height:1.55">
-                AI output is advisory. Configure Grok under AI Desk to power the conversation.
+                AI is advisory. Configure Grok under AI Desk. Filters (liquidity, LP, score, daily loss) still gate every paper entry.
               </p>
             </div>
           </div>
