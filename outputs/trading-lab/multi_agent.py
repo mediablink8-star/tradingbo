@@ -471,3 +471,109 @@ def apply_decision_to_paper(
         }
 
     return {"action": "hold", "reason": "Unhandled decision path.", "executed": []}
+
+
+def build_meme_context(
+    candidates: List[Dict],
+    trader_status: Dict[str, Any],
+    extra: Optional[Dict] = None,
+) -> Dict[str, Any]:
+    """Compact context for Solana meme-coin candidates (paper only)."""
+    cleaned = []
+    for c in (candidates or [])[:15]:
+        if not isinstance(c, dict):
+            continue
+        cleaned.append({
+            "name": str(c.get("name") or "")[:80],
+            "symbol": str(c.get("symbol") or "")[:40],
+            "token_address": str(c.get("token_address") or "")[:64],
+            "score": _safe_float(c.get("score")),
+            "liquidity_usd": _safe_float(c.get("liquidity_usd")),
+            "volume_24h_usd": _safe_float(c.get("volume_24h_usd")),
+            "price_usd": _safe_float(c.get("price_usd") or c.get("price")),
+            "price_change_1h_pct": _safe_float(c.get("price_change_1h_pct")),
+            "buy_ratio": _safe_float(c.get("buy_ratio")),
+            "txns_24h": c.get("txns_24h") or c.get("transactions_24h"),
+            "decision": str(c.get("decision") or "")[:20],
+            "rejection_reasons": (c.get("rejection_reasons") or [])[:6],
+            "pair_age_minutes": _safe_float(c.get("pair_age_minutes")),
+        })
+    status = trader_status or {}
+    ctx = {
+        "mode": "paper_only_solana_meme",
+        "note": (
+            "No wallet, no swaps, no live execution. Safety checks and "
+            "deterministic entry gates remain the final authority."
+        ),
+        "candidates": cleaned,
+        "portfolio": {
+            "cash": _safe_float(status.get("cash")),
+            "equity": _safe_float(status.get("equity")),
+            "open_positions": status.get("open_positions") or status.get("positions") or [],
+            "daily_realized_loss": _safe_float(status.get("daily_realized_loss")),
+            "risk_halted": bool(status.get("risk_halted")),
+        },
+        "entry_gates_reminder": {
+            "min_score": status.get("min_score"),
+            "min_liquidity_usd": status.get("min_liquidity_usd"),
+            "min_volume_24h_usd": status.get("min_volume_24h_usd"),
+            "max_positions": status.get("max_positions"),
+            "daily_loss_limit": status.get("daily_loss_limit"),
+        },
+    }
+    if extra:
+        ctx["extra"] = extra
+    return ctx
+
+
+def deliberate_meme(
+    research_layer,
+    candidates: List[Dict],
+    trader_status: Dict[str, Any],
+    max_rounds: int = 1,
+) -> Dict[str, Any]:
+    """Run the six-agent conversation over meme candidates.
+
+    Returns the full deliberation. Does not place paper trades by itself;
+    the caller decides whether to feed the recommendation into MemePaperTrader.
+    """
+    engine = MultiAgentEngine(research_layer, max_rounds=max_rounds)
+    market = {"pairs": {}}
+    for c in (candidates or [])[:10]:
+        if not isinstance(c, dict):
+            continue
+        addr = str(c.get("token_address") or c.get("symbol") or "")[:48]
+        if not addr:
+            continue
+        price = _safe_float(c.get("price_usd") or c.get("price"))
+        if price <= 0:
+            continue
+        market["pairs"][addr] = {
+            "price": price,
+            "observed": time.time(),
+            "source": "dexscreener",
+            "instrument": "solana_meme",
+            "symbol": c.get("symbol"),
+            "name": c.get("name"),
+            "score": c.get("score"),
+            "liquidity_usd": c.get("liquidity_usd"),
+            "volume_24h_usd": c.get("volume_24h_usd"),
+        }
+
+    extra = build_meme_context(candidates, trader_status)
+    account = {
+        "equity": _safe_float((trader_status or {}).get("equity")),
+        "daily_halted": bool((trader_status or {}).get("risk_halted")),
+        "positions": (trader_status or {}).get("open_positions")
+        or (trader_status or {}).get("positions")
+        or [],
+    }
+    risk = {
+        "max_trade_notional": _safe_float((trader_status or {}).get("position_usd"), 50),
+        "max_positions": (trader_status or {}).get("max_positions"),
+        "max_daily_loss": _safe_float((trader_status or {}).get("daily_loss_limit"), 50),
+    }
+    result = engine.deliberate(market, account, risk, {}, account.get("positions") or [], extra=extra)
+    result["asset_class"] = "solana_meme"
+    result["candidates_considered"] = len(candidates or [])
+    return result
