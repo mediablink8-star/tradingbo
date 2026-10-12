@@ -275,17 +275,38 @@ class MemePaperTrader:
                 except Exception as exc:
                     safety = {"status": "INCOMPLETE", "error": type(exc).__name__}
                 if not isinstance(safety, dict) or safety.get("status") != "CHECKS_COMPLETE":
-                    decisions.append(self._rejection(db, candidate, "security_check_incomplete"))
+                    details = {
+                        "safety_status": safety.get("status") if isinstance(safety, dict) else "INVALID_RESPONSE",
+                    }
+                    if isinstance(safety, dict):
+                        errors = safety.get("errors")
+                        if isinstance(errors, list) and errors:
+                            details["safety_errors"] = [str(error)[:160] for error in errors[:8]]
+                        if safety.get("error"):
+                            details["safety_errors"] = [str(safety["error"])[:160]]
+                    decisions.append(self._rejection(
+                        db, candidate, "security_check_incomplete", **details
+                    ))
                     continue
                 if safety.get("mint_authority_active") is not False or safety.get("freeze_authority_active") is not False:
-                    decisions.append(self._rejection(db, candidate, "active_or_unknown_token_authority"))
+                    decisions.append(self._rejection(
+                        db, candidate, "active_or_unknown_token_authority",
+                        mint_authority_active=safety.get("mint_authority_active"),
+                        freeze_authority_active=safety.get("freeze_authority_active"),
+                    ))
                     continue
                 if safety.get("highest_finding_severity") == "high":
-                    decisions.append(self._rejection(db, candidate, "high_severity_security_finding"))
+                    decisions.append(self._rejection(
+                        db, candidate, "high_severity_security_finding",
+                        findings=safety.get("findings", []),
+                    ))
                     continue
                 concentration = safety.get("top_20_token_accounts_supply_pct")
                 if not isinstance(concentration, (int, float)) or not math.isfinite(concentration) or concentration >= 80:
-                    decisions.append(self._rejection(db, candidate, "holder_concentration_unavailable_or_high"))
+                    decisions.append(self._rejection(
+                        db, candidate, "holder_concentration_unavailable_or_high",
+                        top_20_token_accounts_supply_pct=concentration,
+                    ))
                     continue
                 try:
                     price = float(price_lookup(address))
