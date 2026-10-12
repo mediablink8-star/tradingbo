@@ -265,11 +265,49 @@ class Handler(BaseHTTPRequestHandler):
         mime = mimetypes.guess_type(str(target))[0] or "application/octet-stream"
         if mime.startswith("text/") or mime in ("application/javascript", "image/svg+xml"):
             mime += "; charset=utf-8"
+        raw = target.read_bytes()
+        if target.name == "index.html":
+            try:
+                html = raw.decode("utf-8")
+                changed = False
+                if "terminal-2029.css" not in html:
+                    html = html.replace(
+                        "</head>",
+                        "<link rel=\"stylesheet\" href=\"terminal-2029.css\">\n</head>",
+                        1,
+                    )
+                    changed = True
+                if 'href="#command-deck"' not in html and '<a href="#pipeline">Agents</a>' in html:
+                    html = html.replace(
+                        '<a href="#pipeline">Agents</a>',
+                        '<a href="#pipeline">Agents</a>\n        <a href="#command-deck">Command Deck</a>',
+                        1,
+                    )
+                    changed = True
+                if 'id="command-deck"' not in html:
+                    frag_path = ROOT / "command-deck.fragment.html"
+                    if frag_path.is_file():
+                        frag = frag_path.read_text(encoding="utf-8")
+                        needle = '<section class="sec" id="meme-research">'
+                        if needle in html:
+                            html = html.replace(needle, frag + "\n      " + needle, 1)
+                            changed = True
+                if "agent-deck.js" not in html:
+                    html = html.replace(
+                        "</body>",
+                        '<script src="agent-deck.js"></script>\n</body>',
+                        1,
+                    )
+                    changed = True
+                if changed:
+                    raw = html.encode("utf-8")
+            except Exception:
+                pass
         self.send_response(200)
         self.send_header("Content-Type", mime)
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
-        self.wfile.write(target.read_bytes())
+        self.wfile.write(raw)
 
     def _local_request(self):
         if AUTH_REQUIRED:
