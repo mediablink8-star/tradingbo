@@ -1,4 +1,9 @@
+import io
 import unittest
+import urllib.error
+from email.message import Message
+from unittest.mock import patch
+import meme_safety
 from meme_safety import SolanaMintSafetyChecker, LEGACY_TOKEN_PROGRAM
 
 MINT = "So11111111111111111111111111111111111111112"
@@ -30,6 +35,30 @@ def rpc_adapter(method_handler=response_for):
 
 
 class SolanaMintSafetyTests(unittest.TestCase):
+    def test_http_429_is_retried_with_retry_after(self):
+        headers = Message()
+        headers["Retry-After"] = "0"
+        rate_limited = urllib.error.HTTPError(
+            "https://example.test/rpc", 429, "Too Many Requests", headers, None
+        )
+
+        class Response(io.BytesIO):
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                self.close()
+
+        with patch.object(
+            meme_safety.urllib.request, "urlopen",
+            side_effect=[rate_limited, Response(b'{"result": {"ok": true}}')],
+        ) as fetch, patch.object(meme_safety.time, "sleep") as sleep:
+            result = meme_safety._fetch_json("https://example.test/rpc", {"method": "test"})
+
+        self.assertEqual(result, {"result": {"ok": True}})
+        self.assertEqual(fetch.call_count, 2)
+        sleep.assert_called_once_with(0.5)
+
     def test_reports_revoked_authorities_and_account_concentration(self):
         result = SolanaMintSafetyChecker(rpc_call=rpc_adapter()).check(MINT)
         self.assertEqual(result["status"], "CHECKS_COMPLETE")
