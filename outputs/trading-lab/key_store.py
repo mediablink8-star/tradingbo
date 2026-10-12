@@ -99,27 +99,25 @@ class KeyStore:
         self._spent = 0.0
         self._log = []
 
-    # ── secret handling ────────────────────────────────────────────
-    def store(self, key, model=None, provider=None, base_url=None):
-        """Keep an entered key in memory only. Blank input clears it."""
-        if key is None:
-            raise ValueError("A key value is required.")
-        key = str(key).strip()
+    # ── secret handling ────────────────────────────
+    def store(self, key=None, model=None, provider=None, base_url=None):
+        """Update provider settings; keep an entered key in memory only.
+
+        A non-empty key replaces the in-memory secret. A blank or omitted key
+        leaves the existing secret alone — the dashboard clears the password
+        field after Connect for security, and subsequent saves (model id, base
+        URL, Run research) must not wipe the credential. Use forget() to clear.
+        """
         with self._lock:
             if provider is not None:
                 self._provider = str(provider).strip() or self._provider
             if base_url is not None:
-                self._base_url = str(base_url).strip() or self._base_url
-            if not key:
-                self._key = None
-                self._key_source = None
-                if model:
-                    self._model = str(model).strip()
-                return self.status()
-            self._key = key
-            self._key_source = "entered in the dashboard"
-            if model:
+                self._base_url = str(base_url).strip()
+            if model is not None and str(model).strip():
                 self._model = str(model).strip()
+            if key is not None and str(key).strip():
+                self._key = str(key).strip()
+                self._key_source = "entered in the dashboard"
             return self.status()
 
     def forget(self):
@@ -181,7 +179,7 @@ class KeyStore:
         key, _ = self.resolve_key()
         return bool(key)
 
-    # ── budget ────────────────────────────────────────────────────
+    # ── budget ────────────────────────────────────
     def _day_key(self):
         return time.strftime("%Y-%m-%d", time.gmtime(self._clock()))
 
@@ -234,7 +232,7 @@ class KeyStore:
             if len(self._log) > 500:
                 del self._log[:-500]
 
-    # ── status ────────────────────────────────────────────────────
+    # ── status ────────────────────────────────────
     def status(self):
         key, source = self.resolve_key()
         with self._lock:
