@@ -273,7 +273,7 @@ class Handler(BaseHTTPRequestHandler):
                 if "terminal-2029.css" not in html:
                     html = html.replace(
                         "</head>",
-                        "<link rel=\"stylesheet\" href=\"terminal-2029.css\">\n</head>",
+                        '<link rel="stylesheet" href="terminal-2029.css">\n</head>',
                         1,
                     )
                     changed = True
@@ -432,8 +432,14 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if path == "/api/connections/model":
                 data = self._read_json()
-                KEYS.store(data.get("key"), data.get("model"),
-                           data.get("provider"), data.get("base_url"))
+                # Blank key means "keep the key already in memory". Only
+                # /api/connections/model/forget clears credentials.
+                KEYS.store(
+                    data.get("key") if str(data.get("key") or "").strip() else None,
+                    data.get("model"),
+                    data.get("provider"),
+                    data.get("base_url"),
+                )
                 if data.get("json_mode") is not None:
                     KEYS.set_json_mode(data["json_mode"])
                 self.send_json(KEYS.status())
