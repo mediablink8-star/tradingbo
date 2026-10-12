@@ -1819,10 +1819,10 @@ async function loadMemeTrader(){
 async function runMemeTrader(){
   const b=$id('memeTraderRun'),label=b.textContent;
   b.disabled=true;b.textContent='Running…';
-  $id('memeTraderMsg').textContent='Scanning public data, refreshing open positions, checking candidate safety and recording paper decisions. This can take a little while.';
+  $id('memeTraderMsg').textContent='Scanning up to 30 public candidates, refreshing open positions, checking candidate safety and recording paper decisions. This can take a little while.';
   $id('memeTraderMsg').className='msg';
   try{
-    const result=await api('/api/meme/trader/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({limit:20})});
+    const result=await api('/api/meme/trader/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({limit:30})});
     renderMemeTrader(result.status||{});
     const decisions=result.cycle?.decisions||[];
     const opened=decisions.filter(d=>d.action==='OPEN').length;
