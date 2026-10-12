@@ -65,6 +65,27 @@ class SolanaMintSafetyTests(unittest.TestCase):
         self.assertEqual(fetch.call_count, 2)
         sleep.assert_called_once_with(0.5)
 
+    def test_primary_rpc_throttle_uses_read_only_fallback(self):
+        primary = "https://primary.example/rpc"
+        fallback = "https://fallback.example/rpc"
+        calls = []
+
+        def call(url, payload):
+            calls.append(url)
+            if url == primary:
+                raise urllib.error.HTTPError(
+                    url, 429, "Too Many Requests", Message(), None
+                )
+            return {"result": {"value": {"ok": True}}}
+
+        checker = SolanaMintSafetyChecker(rpc_url=primary, rpc_call=call)
+        checker._using_default_rpc = True
+        checker.fallback_rpc_url = fallback
+        result = checker._rpc("getTokenSupply", [MINT, {"commitment": "confirmed"}])
+
+        self.assertEqual(result, {"value": {"ok": True}})
+        self.assertEqual(calls, [primary, fallback])
+
     def test_reports_revoked_authorities_and_account_concentration(self):
         result = SolanaMintSafetyChecker(rpc_call=rpc_adapter()).check(MINT)
         self.assertEqual(result["status"], "CHECKS_COMPLETE")
