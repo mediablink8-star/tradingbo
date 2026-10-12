@@ -430,6 +430,18 @@ if __name__ == "__main__":
                     top_market_filters = sorted(
                         market_filters.items(), key=lambda item: item[1], reverse=True
                     )[:3]
+                    diagnostic_fields = (
+                        "reason", "symbol", "score", "min_score", "buy_ratio",
+                        "min_buy_ratio", "max_buy_ratio", "price_change_1h_pct",
+                        "min_entry_change_1h_pct", "max_entry_change_1h_pct",
+                        "safety_status", "safety_errors",
+                        "mint_authority_active", "freeze_authority_active",
+                        "top_20_token_accounts_supply_pct",
+                    )
+                    entry_examples = [
+                        {key: decision[key] for key in diagnostic_fields if key in decision}
+                        for decision in cycle_decisions if decision.get("action") == "REJECT"
+                    ][:5]
                     print(
                         "Meme paper cycle: "
                         f"{result['scan'].get('scored_candidates', 0)} scored; "
@@ -439,6 +451,7 @@ if __name__ == "__main__":
                         f"{sum(d.get('action') == 'CLOSE' for d in cycle_decisions)} closed; "
                         f"{sum(d.get('action') == 'REJECT' for d in cycle_decisions)} rejected; "
                         f"entry_reasons={json.dumps(action_counts, sort_keys=True)}; "
+                        f"entry_examples={json.dumps(entry_examples, sort_keys=True)}; "
                         f"market_filters={json.dumps(top_market_filters)}",
                         flush=True,
                     )
