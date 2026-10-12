@@ -1036,7 +1036,7 @@ let apiAuth=null,apiAuthPrompt=null;
 const api=async(path,opts={})=>{
   const send=()=>fetch(path,{...opts,headers:{...(opts.headers||{}),...(apiAuth?{Authorization:'Basic '+apiAuth}:{})}});
   let r=await send(),j=null;try{j=await r.json()}catch(_){}
-  if(r.status===401&&!apiAuth){
+  if(r.status===401&&!apiAuth&&String(opts.method||'GET').toUpperCase()==='POST'){
     if(!apiAuthPrompt){
       apiAuthPrompt=(async()=>{
         const user=window.prompt('Tradingbo requires the username configured for this Render service.');
