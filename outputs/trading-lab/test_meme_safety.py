@@ -35,6 +35,12 @@ def rpc_adapter(method_handler=response_for):
 
 
 class SolanaMintSafetyTests(unittest.TestCase):
+    def test_http_error_label_includes_status_code(self):
+        error = urllib.error.HTTPError(
+            "https://example.test/rpc", 429, "Too Many Requests", Message(), None
+        )
+        self.assertEqual(meme_safety._error_label(error), "http_429")
+
     def test_http_429_is_retried_with_retry_after(self):
         headers = Message()
         headers["Retry-After"] = "0"
