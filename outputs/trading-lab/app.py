@@ -7,7 +7,18 @@ _root = Path(__file__).resolve().parent
 
 
 def _load() -> str:
-    # Primary: zlib-compressed body split across zbody_0..2
+    # Primary: zlib body across zb_0..5 (small chunks survive git push)
+    zparts = []
+    for i in range(6):
+        p = _root / f"zb_{i}.txt"
+        if not p.exists() or p.stat().st_size < 10:
+            zparts = []
+            break
+        zparts.append(p.read_text(encoding="ascii").strip())
+    if len(zparts) == 6:
+        return zlib.decompress(base64.b64decode("".join(zparts))).decode("utf-8")
+
+    # Secondary: zbody_0..2
     zparts = []
     for name in ("zbody_0.txt", "zbody_1.txt", "zbody_2.txt"):
         p = _root / name
@@ -18,12 +29,7 @@ def _load() -> str:
     if len(zparts) == 3:
         return zlib.decompress(base64.b64decode("".join(zparts))).decode("utf-8")
 
-    # Fallback: plain halves
-    a, b = _root / "app_body_a.py", _root / "app_body_b.py"
-    if a.exists() and b.exists() and a.stat().st_size > 1000:
-        return a.read_text(encoding="utf-8") + b.read_text(encoding="utf-8")
-
-    # Legacy base64
+    # Legacy base64 halves
     parts = []
     for name in ("_app_b64_0.txt", "_app_b64_1.txt", "_app_b64_2.txt", "_app_b64_3.txt"):
         text = (_root / name).read_text(encoding="ascii").strip()
@@ -36,7 +42,6 @@ def _load() -> str:
 
 
 _src = _load()
-# Repair broken loadMemeTrader injection (missing } before catch)
 _src = _src.replace(
     '"    renderMemeTrader(await api(\'/api/meme/trader\'));",\n                        1,',
     '"    renderMemeTrader(await api(\'/api/meme/trader\'));}",\n                        1,',
