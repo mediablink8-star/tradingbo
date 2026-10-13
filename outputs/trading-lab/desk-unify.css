@@ -1,0 +1,122 @@
+/* Unified desk — one book, one positions list, less noise */
+:root {
+  --desk-bg: #070b0a;
+  --desk-panel: #0c1210;
+  --desk-line: #1a2e28;
+  --desk-text: #c8ddd4;
+  --desk-muted: #6a857a;
+  --desk-accent: #00f5a0;
+  --desk-danger: #ff6b6b;
+}
+
+body.desk-unified {
+  background: var(--desk-bg) !important;
+}
+
+/* Hide legacy clutter */
+body.desk-unified #pipeline,
+body.desk-unified #ai,
+body.desk-unified #ticket,
+body.desk-unified .nav a[href="#pipeline"],
+body.desk-unified .nav a[href="#ai"],
+body.desk-unified .nav a[href="#ticket"] {
+  display: none !important;
+}
+
+/* Paper outcome tracking is a second budget — hide */
+body.desk-unified #memePaperStatus,
+body.desk-unified #memePaperMeta,
+body.desk-unified #memePaperUpdate {
+  display: none !important;
+}
+body.desk-unified #meme-research h3 {
+  display: none !important;
+}
+
+body.desk-unified #kpis { display: none !important; }
+
+body.desk-unified #command-deck {
+  order: -1;
+  border: 1px solid var(--desk-line);
+  border-radius: 14px;
+  margin-bottom: 16px;
+}
+
+#unifiedStrip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  padding: 12px 14px;
+  margin: 0 0 14px;
+  background: linear-gradient(180deg, #0e1613, #0a100e);
+  border: 1px solid var(--desk-line);
+  border-radius: 12px;
+}
+#unifiedStrip .cell .lab {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--desk-muted);
+}
+#unifiedStrip .cell .val {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 1.15rem;
+  color: var(--desk-accent);
+  margin-top: 2px;
+}
+#unifiedStrip .cell .val.dn { color: var(--desk-danger); }
+#unifiedStrip .cell .val.muted { color: var(--desk-text); }
+
+#modeBar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0 0 12px;
+}
+#modeBar button.mode-btn { min-width: 96px; }
+#modeBar button.mode-btn.active {
+  outline: 1px solid var(--desk-accent);
+  box-shadow: 0 0 12px rgba(0, 245, 160, 0.25);
+}
+#modeBar .hint {
+  font-size: 12px;
+  color: var(--desk-muted);
+  flex: 1;
+}
+
+#unifiedPositions {
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid var(--desk-line);
+  border-radius: 12px;
+  background: var(--desk-panel);
+}
+#unifiedPositions table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+#unifiedPositions th,
+#unifiedPositions td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #15221c;
+  text-align: left;
+}
+#unifiedPositions th.r,
+#unifiedPositions td.r { text-align: right; }
+#unifiedPositions .empty {
+  color: var(--desk-muted);
+  font-size: 13px;
+  padding: 8px 0;
+}
+
+body.desk-unified.mode-meme #markets,
+body.desk-unified.mode-meme #positions,
+body.desk-unified.mode-meme #activity {
+  opacity: 0.55;
+}
+body.desk-unified.mode-forex #meme-research {
+  opacity: 0.55;
+}
