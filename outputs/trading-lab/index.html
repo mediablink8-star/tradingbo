@@ -1287,8 +1287,9 @@ function drawChart(){
 }
 
 function loadPair(p){
-  if(!series[p])return;
+  if(!p)return;
   chartPair=p;
+  if(!series[p])series[p]=[];
   const q=quotes[p];
   $id('cSym').textContent=p;
   $id('cPx').textContent=q?px(p,q.price):'—';
@@ -1307,6 +1308,9 @@ function loadPair(p){
     }else{warn.hidden=true}
   }
   renderQuotes();drawChart();
+  if(!series[p]||!series[p].length){
+    loadSeries(p);
+  }
 }
 document.addEventListener('click',e=>{
   const tr=e.target.closest?.('#quotes tr[data-p]');
