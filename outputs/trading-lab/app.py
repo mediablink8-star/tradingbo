@@ -1,18 +1,29 @@
 """Ember Forex Trading Lab HTTP application — launcher."""
+import base64
+import zlib
 from pathlib import Path
 
 _root = Path(__file__).resolve().parent
 
 
 def _load() -> str:
-    # Preferred: plain-text halves (no empty base64 trap)
-    a = _root / "app_body_a.py"
-    b = _root / "app_body_b.py"
-    if a.exists() and b.exists() and a.stat().st_size > 1000 and b.stat().st_size > 1000:
-        return a.read_text(encoding="utf-8") + b.read_text(encoding="utf-8")
-    # Legacy base64 parts
-    import base64
+    # Primary: zlib-compressed body split across zbody_0..2
+    zparts = []
+    for name in ("zbody_0.txt", "zbody_1.txt", "zbody_2.txt"):
+        p = _root / name
+        if not p.exists() or p.stat().st_size < 10:
+            zparts = []
+            break
+        zparts.append(p.read_text(encoding="ascii").strip())
+    if len(zparts) == 3:
+        return zlib.decompress(base64.b64decode("".join(zparts))).decode("utf-8")
 
+    # Fallback: plain halves
+    a, b = _root / "app_body_a.py", _root / "app_body_b.py"
+    if a.exists() and b.exists() and a.stat().st_size > 1000:
+        return a.read_text(encoding="utf-8") + b.read_text(encoding="utf-8")
+
+    # Legacy base64
     parts = []
     for name in ("_app_b64_0.txt", "_app_b64_1.txt", "_app_b64_2.txt", "_app_b64_3.txt"):
         text = (_root / name).read_text(encoding="ascii").strip()
