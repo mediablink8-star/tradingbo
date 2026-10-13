@@ -1,8 +1,15 @@
-/* Live ARM / DISARM control — phone-friendly */
+/* Live ARM / DISARM + emergency data load if main script died */
 (function () {
   "use strict";
 
   function $(id) { return document.getElementById(id); }
+
+  function money(n) {
+    var x = Number(n);
+    if (!Number.isFinite(x)) return "—";
+    var sign = x < 0 ? "-" : "";
+    return sign + "$" + Math.abs(x).toFixed(2);
+  }
 
   function ensurePanel() {
     if ($("liveArmPanel")) return;
@@ -23,7 +30,6 @@
       '<div id="liveArmMsg" style="margin-top:8px;font-size:12px;color:#8a9"></div>';
     if (host.firstChild) host.insertBefore(panel, host.firstChild);
     else host.appendChild(panel);
-
     $("liveArmBtn").addEventListener("click", function () { act("arm"); });
     $("liveDisarmBtn").addEventListener("click", function () { act("disarm"); });
   }
@@ -66,7 +72,7 @@
     if (disarmBtn) disarmBtn.disabled = !armed;
   }
 
-  async function refresh() {
+  async function refreshArm() {
     try {
       var s = await api("/api/live/status");
       paint(s);
@@ -97,15 +103,97 @@
     }
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", function () {
-      ensurePanel();
-      refresh();
-      setInterval(refresh, 15000);
-    });
-  } else {
+  async function emergencyLoad() {
+    try {
+      var s = await api("/api/meme/trader");
+      var bal = $("deckBal");
+      if (bal) bal.textContent = money(s.equity_usd);
+      var sub = $("deckBalSub");
+      if (sub) {
+        sub.textContent =
+          "cash " + money(s.cash_usd) + " · " + (s.open_positions_count || 0) + " open";
+      }
+      var pnl = $("deckPnl");
+      if (pnl) {
+        var start = Number(s.initial_cash_usd || 1000);
+        var eq = Number(s.equity_usd);
+        var d = eq - start;
+        pnl.textContent = (d >= 0 ? "+" : "") + money(d);
+        pnl.className = "pnl-val " + (d >= 0 ? "up" : "dn");
+      }
+      var st = $("memeTraderStatus");
+      if (st) {
+        var text = st.textContent || "";
+        if (!text.trim() || /unavailable|Loading|—/.test(text) || st.children.length === 0) {
+          var pos = Array.isArray(s.positions) ? s.positions : [];
+          var open = pos.filter(function (p) {
+            return String(p.status || "").toUpperCase() === "OPEN";
+          });
+          var rows = open
+            .map(function (p) {
+              return (
+                "<tr><td>" +
+                (p.symbol || p.token_address || "?") +
+                "</td><td class=\"r mono\">" +
+                money(p.entry_price) +
+                "</td><td class=\"r mono\">" +
+                money(p.current_price) +
+                "</td><td class=\"r mono\">" +
+                money(p.unrealized_pnl) +
+                "</td></tr>"
+              );
+            })
+            .join("");
+          st.innerHTML =
+            '<div class="notes">Equity ' +
+            money(s.equity_usd) +
+            " · realized " +
+            money(s.realized_pnl_usd) +
+            " · open " +
+            (s.open_positions_count || 0) +
+            "</div>" +
+            (rows
+              ? '<table class="tbl"><thead><tr><th>Sym</th><th class="r">Entry</th><th class="r">Px</th><th class="r">uPnL</th></tr></thead><tbody>' +
+                rows +
+                "</tbody></table>"
+              : "<div class=\"notes\">No open positions.</div>");
+        }
+      }
+      var live = $("deckLive");
+      if (live) live.textContent = "LIVE";
+      var status = $("deckStatus");
+      if (status && /STANDBY|—|Loading/.test(status.textContent || "")) {
+        status.textContent = "DATA LOADED";
+      }
+    } catch (e) {
+      var st = $("memeTraderStatus");
+      if (st && !(st.textContent || "").trim()) {
+        st.innerHTML =
+          '<div class="notes">Paper trader load failed: ' +
+          String(e.message || e) +
+          "</div>";
+      }
+    }
+    try {
+      var fx = await api("/api/forex");
+      var eq = $("equity");
+      if (eq && fx.account) {
+        eq.textContent = money(fx.account.equity || fx.account.cash);
+      }
+    } catch (_) {}
+  }
+
+  function boot() {
     ensurePanel();
-    refresh();
-    setInterval(refresh, 15000);
+    refreshArm();
+    emergencyLoad();
+    setInterval(refreshArm, 15000);
+    setInterval(emergencyLoad, 20000);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
   }
 })();
