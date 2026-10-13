@@ -1,0 +1,203 @@
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--dim);
+  flex: 1;
+  min-width: 160px;
+}
+
+/* Unified KPI strip */
+#unifiedStrip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0 0 14px;
+  padding: 0;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+#unifiedStrip .cell {
+  background: linear-gradient(180deg, #0f1814, #0b1210);
+  padding: 14px 12px;
+  min-width: 0;
+}
+
+#unifiedStrip .cell .lab {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+#unifiedStrip .cell .val {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: clamp(0.95rem, 2.5vw, 1.25rem);
+  color: var(--accent);
+  margin-top: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#unifiedStrip .cell .val.dn { color: var(--danger); }
+#unifiedStrip .cell .val.muted { color: var(--text); font-weight: 500; }
+
+/* Positions card */
+#unifiedPositions {
+  margin: 0 0 16px;
+  padding: 14px 16px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(14, 22, 19, 0.95), rgba(8, 12, 11, 0.95));
+}
+
+#unifiedPositions strong {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+}
+
+#unifiedPositions table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+#unifiedPositions th {
+  color: var(--dim);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 10px;
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+#unifiedPositions td {
+  padding: 10px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--text);
+}
+
+#unifiedPositions th.r,
+#unifiedPositions td.r { text-align: right; }
+
+#unifiedPositions tr:hover td {
+  background: rgba(0, 245, 160, 0.03);
+}
+
+#unifiedPositions .empty {
+  font-family: var(--font-mono);
+  color: var(--muted);
+  font-size: 12px;
+  padding: 16px 4px;
+}
+
+/* Buttons */
+body.desk-unified .btn,
+body.desk-unified button.btn {
+  font-family: var(--font-mono) !important;
+  border-radius: 10px !important;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+body.desk-unified .btn.go,
+body.desk-unified button.btn.go {
+  background: linear-gradient(135deg, #00e891, #00c4a7) !important;
+  color: #03140e !important;
+  border: none !important;
+  font-weight: 600 !important;
+  box-shadow: 0 0 18px rgba(0, 245, 160, 0.25);
+}
+
+body.desk-unified .btn.go:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 28px rgba(0, 245, 160, 0.4);
+}
+
+/* Agent cards */
+body.desk-unified .acard {
+  border: 1px solid var(--line) !important;
+  border-radius: 12px !important;
+  background: rgba(0, 0, 0, 0.25) !important;
+}
+
+body.desk-unified .acard.speaking {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 16px rgba(0, 245, 160, 0.25);
+}
+
+body.desk-unified .acard .ring {
+  color: var(--accent);
+  font-family: var(--font-mono);
+}
+
+/* Live risk panel */
+#liveArmPanel {
+  border: 1px solid var(--line) !important;
+  border-radius: 12px !important;
+  background: linear-gradient(135deg, rgba(0, 245, 160, 0.05), rgba(0, 0, 0, 0.2)) !important;
+  margin: 12px 0 !important;
+}
+
+/* Dim secondary sections by mode */
+body.desk-unified.mode-meme #markets,
+body.desk-unified.mode-meme #positions,
+body.desk-unified.mode-meme #activity {
+  opacity: 0.5;
+  filter: saturate(0.7);
+  transition: opacity 0.2s ease;
+}
+
+body.desk-unified.mode-forex #meme-research {
+  opacity: 0.5;
+  filter: saturate(0.7);
+}
+
+body.desk-unified.mode-meme #markets:hover,
+body.desk-unified.mode-meme #positions:hover,
+body.desk-unified.mode-meme #activity:hover,
+body.desk-unified.mode-forex #meme-research:hover {
+  opacity: 0.85;
+  filter: none;
+}
+
+/* Chart / tape */
+body.desk-unified .chartbox,
+body.desk-unified .tape {
+  border-radius: 10px;
+  border-color: var(--line) !important;
+}
+
+body.desk-unified .bal-val,
+body.desk-unified .pnl-val {
+  font-family: var(--font-mono) !important;
+}
+
+body.desk-unified .log-row,
+body.desk-unified .term-line {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+body.desk-unified .deck-chart {
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+@media (max-width: 720px) {
+  #unifiedStrip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  #unifiedStrip .cell:last-child {
+    grid-column: span 2;
+  }
+}
