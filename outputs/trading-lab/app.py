@@ -1,11 +1,18 @@
 """Ember Forex Trading Lab HTTP application — launcher."""
-import base64
 from pathlib import Path
 
 _root = Path(__file__).resolve().parent
 
 
-def _load():
+def _load() -> str:
+    # Preferred: plain-text halves (no empty base64 trap)
+    a = _root / "app_body_a.py"
+    b = _root / "app_body_b.py"
+    if a.exists() and b.exists() and a.stat().st_size > 1000 and b.stat().st_size > 1000:
+        return a.read_text(encoding="utf-8") + b.read_text(encoding="utf-8")
+    # Legacy base64 parts
+    import base64
+
     parts = []
     for name in ("_app_b64_0.txt", "_app_b64_1.txt", "_app_b64_2.txt", "_app_b64_3.txt"):
         text = (_root / name).read_text(encoding="ascii").strip()
@@ -33,6 +40,7 @@ exec(compile(_src, str(_root / "app.py"), "exec"), globals())
 
 try:
     import live_routes
+
     if "Handler" in globals():
         live_routes.install(Handler, globals())
         print("Live risk gate installed (/api/live/*).", flush=True)
