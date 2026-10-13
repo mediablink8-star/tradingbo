@@ -1,7 +1,7 @@
       <section class="sec" id="command-deck"><i class="hud tl"></i><i class="hud tr"></i><i class="hud bl"></i><i class="hud br"></i>
         <div class="sechd">
           <h2>Command Deck</h2>
-          <span class="sub">GROK-STYLE SIX-AGENT PAPER TERMINAL · NO LIVE ORDERS</span>
+          <span class="sub">SIX-AGENT DESK · LIVE GATE · PAPER UNTIL ARMED EXECUTION</span>
         </div>
         <div class="secbd">
           <div class="deck-top">
@@ -9,7 +9,7 @@
               <div class="logo">◈</div>
               <div>
                 TradingLab Bot
-                <small>TRADING MODE · PAPER ACCOUNTING</small>
+                <small>MANUAL ARM REQUIRED FOR LIVE · AGENTS CANNOT BYPASS</small>
               </div>
             </div>
             <div class="deck-meta">
@@ -39,52 +39,34 @@
             </div>
             <div class="dkpi">
               <div class="lab">Largest win</div>
-              <div class="bal-val" id="deckBig" style="font-size:18px">—</div>
-              <div class="trophy" id="deckBigSub">no closes yet</div>
+              <div class="bal-val" style="font-size:1.1rem" id="deckBig">—</div>
+              <div class="sub" id="deckBigSub">best closed</div>
             </div>
           </div>
 
-          <div class="deck-main">
-            <div class="chart-panel">
-              <div class="panel-hd"><span><span class="led"></span>BALANCE HISTORY · PAPER</span><span id="deckChartMeta">24h session</span></div>
-              <canvas id="deckChart" width="640" height="220"></canvas>
-            </div>
-            <div class="log-panel">
-              <div class="panel-hd"><span><span class="led"></span>ACTIVITY LOG</span><span id="deckLogCount">0 resolved</span></div>
-              <div class="log-body" id="deckLog"></div>
-            </div>
-          </div>
+          <canvas id="deckChart" class="deck-chart" height="220"></canvas>
 
           <div class="agent-rail" id="agentGrid"></div>
 
           <div class="deck-actions">
-            <button class="btn go" id="deckMeme">Run meme deliberation</button>
-            <button class="btn ghost" id="deckFx">Run forex deliberation</button>
-            <button class="btn ghost" id="deckPaper">Run paper cycle</button>
-            <span class="chip" id="deckStatus">STANDBY</span>
+            <button type="button" class="btn go" id="deckPaper">Run paper cycle</button>
+            <button type="button" class="btn" id="deckMeme">Six-agent meme</button>
+            <button type="button" class="btn" id="deckFx">Six-agent forex</button>
           </div>
 
-          <div class="term-wrap">
-            <div class="term-screen" id="termScreen">
-              <div class="term-head"><span class="led"></span> DELIBERATION TRANSCRIPT · SECURE CHANNEL</div>
-              <div class="term-body" id="termBody">
-                <div class="term-empty">Awaiting cycle. Agents stay silent until you open the floor.</div>
-              </div>
-            </div>
-            <div class="side-panel">
-              <h3>FINAL AUTHORITY</h3>
-              <div class="decision-box" id="decisionBox">
-                <div class="label">COORDINATOR DECISION</div>
-                <div class="val hold">—</div>
-                <div class="rationale">No cycle yet. Risk engine remains the only executor.</div>
-              </div>
-              <div class="chip">RISK ENGINE ARMED</div>
-              <div class="chip warn">EXECUTION DISABLED</div>
-              <div class="chip">PAPER ACCOUNTING ONLY</div>
-              <p class="fine" style="margin:0;color:#5a6a78;font-size:10px;line-height:1.55">
-                AI is advisory. Configure Grok under AI Desk. Filters (liquidity, LP, score, daily loss) still gate every paper entry.
-              </p>
-            </div>
+          <div class="deck-log" id="deckLog"></div>
+          <div class="notes" id="deckLogCount">0 resolved</div>
+
+          <div id="decisionBox" class="decision-box">
+            <div class="label">COORDINATOR DECISION</div>
+            <div class="val hold">STANDBY</div>
+            <div class="rationale">Arm the live gate from your phone when ready. Paper cycles stay available anytime.</div>
+          </div>
+
+          <div id="termBody" class="term-body">
+            <div class="term-empty">Agent transcript appears after deliberation.</div>
           </div>
         </div>
       </section>
+<script src="boot-live.js"></script>
+<script src="live-control.js"></script>
