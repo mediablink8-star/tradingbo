@@ -24,8 +24,6 @@ def install(handler_cls: type, g: dict) -> Any:
 
         path = urllib.parse.urlsplit(self.path).path
         if path == "/api/live/status":
-            if hasattr(self, "_require_auth") and not self._require_auth():
-                return
             self.send_json(engine.status())
             return
         if path in ("/", "/index.html") or path.endswith("/index.html"):
