@@ -1,0 +1,172 @@
+/* TradingLab · unified terminal skin */
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@500;600;700&display=swap");
+
+:root {
+  --bg0: #050807;
+  --bg1: #0a0f0d;
+  --bg2: #0e1512;
+  --panel: rgba(12, 20, 17, 0.92);
+  --line: rgba(0, 245, 160, 0.12);
+  --line-strong: rgba(0, 245, 160, 0.28);
+  --text: #d7ebe2;
+  --muted: #6f8a7e;
+  --dim: #4a5f55;
+  --accent: #00f5a0;
+  --accent-2: #5eead4;
+  --warn: #fbbf24;
+  --danger: #fb7185;
+  --glow: 0 0 24px rgba(0, 245, 160, 0.15);
+  --radius: 14px;
+  --font-ui: "Syne", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+html { scroll-behavior: smooth; }
+
+body.desk-unified {
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(0, 245, 160, 0.07), transparent 55%),
+    radial-gradient(900px 500px at 90% 0%, rgba(56, 189, 248, 0.05), transparent 50%),
+    var(--bg0) !important;
+  color: var(--text);
+  font-family: var(--font-ui);
+}
+
+body.desk-unified::before {
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.12) 3px
+  );
+  opacity: 0.35;
+  z-index: 0;
+}
+
+body.desk-unified > * { position: relative; z-index: 1; }
+
+body.desk-unified #pipeline,
+body.desk-unified #ai,
+body.desk-unified #ticket,
+body.desk-unified #kpis,
+body.desk-unified #memePaperStatus,
+body.desk-unified #memePaperMeta,
+body.desk-unified #memePaperUpdate,
+body.desk-unified .nav a[href="#pipeline"],
+body.desk-unified .nav a[href="#ai"],
+body.desk-unified .nav a[href="#ticket"] {
+  display: none !important;
+}
+body.desk-unified #meme-research h3 { display: none !important; }
+
+body.desk-unified header,
+body.desk-unified .topbar,
+body.desk-unified nav {
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line) !important;
+}
+
+body.desk-unified .sec {
+  background: var(--panel) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: var(--glow);
+  overflow: hidden;
+}
+
+body.desk-unified .sechd {
+  border-bottom: 1px solid var(--line) !important;
+  background: linear-gradient(180deg, rgba(0, 245, 160, 0.04), transparent);
+  padding: 14px 16px !important;
+}
+
+body.desk-unified .sechd h2 {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  font-size: 1.05rem !important;
+  color: var(--text) !important;
+}
+
+body.desk-unified .sechd .sub,
+body.desk-unified .notes,
+body.desk-unified .fine {
+  font-family: var(--font-mono);
+  font-size: 11px !important;
+  color: var(--muted) !important;
+  letter-spacing: 0.04em;
+}
+
+body.desk-unified #command-deck {
+  border-color: var(--line-strong) !important;
+  box-shadow: 0 0 0 1px rgba(0, 245, 160, 0.08), var(--glow);
+  margin-bottom: 18px !important;
+}
+
+body.desk-unified #command-deck .deck-brand {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+body.desk-unified #command-deck .logo {
+  color: var(--accent);
+  text-shadow: 0 0 18px rgba(0, 245, 160, 0.55);
+}
+
+body.desk-unified .chip {
+  font-family: var(--font-mono);
+  font-size: 10px !important;
+  border-radius: 999px !important;
+  border: 1px solid var(--line) !important;
+  background: rgba(0, 245, 160, 0.06) !important;
+  color: var(--accent-2) !important;
+  padding: 4px 10px !important;
+}
+
+body.desk-unified .chip.live {
+  border-color: rgba(0, 245, 160, 0.35) !important;
+  box-shadow: 0 0 12px rgba(0, 245, 160, 0.2);
+}
+
+#modeBar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0 0 14px;
+  padding: 4px;
+}
+
+#modeBar button.mode-btn {
+  font-family: var(--font-mono) !important;
+  font-size: 12px !important;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  min-width: 108px;
+  padding: 10px 16px !important;
+  border-radius: 10px !important;
+  border: 1px solid var(--line) !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: var(--muted) !important;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+#modeBar button.mode-btn:hover {
+  border-color: var(--line-strong) !important;
+  color: var(--text) !important;
+}
+
+#modeBar button.mode-btn.active {
+  color: #04140e !important;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2)) !important;
+  border-color: transparent !important;
+  box-shadow: 0 0 20px rgba(0, 245, 160, 0.35);
+}
+
+#modeBar .hint {
