@@ -798,8 +798,33 @@ body:before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:60
 }
 
 </style>
+<link rel="stylesheet" href="terminal-2029.css">
+<link rel="stylesheet" href="desk-unify-a.css">
+<style id="bootStyles">
+#bootOverlay{position:fixed;inset:0;background:#05070a;z-index:9999;display:flex;
+  flex-direction:column;gap:4px;padding:24px;font:400 11px/1.35 "SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  color:#2fbf87;overflow-y:auto}
+#bootOverlay:after{content:"";display:block;width:1em;height:1em;margin-top:2px}
+#bootLines .line{display:flex;align-items:center;gap:8px;margin:3px 0}
+#bootLines .line .p{color:#5a7a6a;min-width:180px}
+#bootLines .line.ok .p{color:var(--accent,#00d4ff)}
+#bootLines .line.ok .dot{width:4px;height:4px;border-radius:50%;background:#00d97e;box-shadow:0 0 6px #00d97e}
+#bootLines .line.err .dot{width:4px;height:4px;border-radius:50%;background:#ff4d6a}
+#bootLines .line.warn .dot{width:4px;height:4px;border-radius:50%;background:#f0a92b}
+#bootLines .line .txt{color:#a8b8c8;white-space:pre-wrap;word-break:break-word}
+#bootCursor{display:inline-block;width:10px;height:13px;background:#00e891;animation:blink .9s step-end infinite;margin-left:2px}
+@keyframes blink{50%{opacity:0}}
+#themeToggle{transition:box-shadow .2s}
+#themeToggle.active{box-shadow:0 0 14px rgba(0,245,160,.6)}
+.kpi .v.fresh{animation:pulseIn .5s ease-out;box-shadow:0 0 12px rgba(0,245,160,.5)}
+@keyframes pulseIn{0%,100%{box-shadow:0 0 0 0 rgba(0,245,160,.5)}50%{box-shadow:0 0 0 6px rgba(0,245,160,0)}}
+.thinking{color:#22d3ee;text-shadow:0 0 10px rgba(34,211,238,.5)}
+.dots{display:inline-block;animation:bounceDots 1.4s infinite;vertical-align:bottom}
+@keyframes bounceDots{0%,100%{opacity:1}48%{opacity:.3}49%{opacity:.3;transform:translateY(-2px)}50%{opacity:.3;transform:translateY(-3px)}51%{opacity:.3}70%{opacity:.8}}
+</style>
 </head>
 <body>
+<div id="bootOverlay"><div id="bootLines"></div><div id="bootCursor">▌</div></div>
 <div class="shell">
 
   <main class="main">
@@ -815,6 +840,7 @@ body:before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:60
         <a href="#activity">Events</a>
         <a href="company.html">Office</a>
       </nav>
+      <button type="button" class="btn" id="themeToggle" title="Cycle visual theme: terminal → 2029 neon → unified desk" style="font:600 9.5px/1 var(--mono);letter-spacing:.1em;padding:5px 10px;border-radius:5px;margin-left:8px">2029</button>
       <div class="btags">
         <span class="tag" id="clock" title="Coordinated Universal Time">--:--:--</span>
         <span class="tag" id="tagFeed">ECB REFERENCE</span>
@@ -1144,8 +1170,9 @@ function renderKpis(s){
     ['Positions',     String(pos)+' / '+(r.max_positions??'—'), pos?'up':'', 'MAX '+((r.max_positions??'—'))]
   ];
   $id('kpis').innerHTML=rows.map(([k,v,c,s])=>
-    '<div class="kpi"><div class="k">'+k+'</div><div class="v '+c+'">'+v+
+    '<div class="kpi"><div class="k">'+k+'</div><div class="v '+c+' fresh">'+v+
     '</div><div class="s">'+s+'</div></div>').join('');
+  setTimeout(()=>{document.querySelectorAll('.kpi .v.fresh').forEach(el=>el.classList.remove('fresh'))},600);
 }
 
 /* ── tape + quotes ─────────────────────────────────────── */
@@ -1665,6 +1692,8 @@ async function aiForget(){
 async function aiRun(){
   const btn=$id('aiRun');btn.disabled=true;
   const label=btn.textContent;btn.textContent='Researching…';
+  // Show a thinking indicator in the AI stages panel
+  $id('aiStages').innerHTML='<div class="empty"><span class="thinking">AI agents are deliberating</span><span class="dots">...</span></div>';
   try{
     const s=await saveForm();
     renderBudget(s.budget);
@@ -2017,6 +2046,116 @@ function tickClock(){
   if(el)el.textContent=p(d.getUTCHours())+':'+p(d.getUTCMinutes())+':'+p(d.getUTCSeconds())+' UTC';
 }
 tickClock();
+/* ── Terminal boot sequence ──────────────────────────────── */
+(function bootSequence() {
+  var overlay = document.getElementById('bootOverlay');
+  if (!overlay) return;
+
+  var lines = [
+    ['ok', '[boot]',   'TradingLab Autonomous Agent Terminal'],
+    ['ok', '[kernel]', 'initialising subsystems…'],
+    ['ok', '[kernel]', 'memory allocator online'],
+    ['ok', '[kernel]', 'thread pool ready'],
+    ['ok', '[feed]',   'connecting to market data streams…'],
+    ['ok', '[feed]',   'ECB reference rate link established'],
+    ['ok', '[feed]',   'Yahoo Finance proxy connected'],
+    ['ok', '[feed]',   'live feeds: 12 instruments'],
+    ['ok', '[agents]', 'spawning six-agent research desk'],
+    ['ok', '[agents]', 'Market Observer — online'],
+    ['ok', '[agents]', 'Macro Analyst — online'],
+    ['ok', '[agents]', 'Strategy Analyst — online'],
+    ['ok', '[agents]', 'Risk Critic — online'],
+    ['ok', '[agents]', 'Portfolio Coordinator — online'],
+    ['warn', '[risk]', 'daily-loss gate armed (paper mode)'],
+    ['ok', '[api]',    'HTTP server listening on port $PORT'],
+    ['ok', '[ui]',     'terminal canvas ready'],
+    ['',  '[boot]',    'READY — type or click to begin'],
+  ];
+
+  var container = document.getElementById('bootLines');
+  var cursor = document.getElementById('bootCursor');
+  var idx = 0;
+
+  function nextLine() {
+    if (idx >= lines.length) {
+      // Fade out
+      overlay.style.transition = 'opacity 0.8s ease';
+      overlay.style.opacity = '0';
+      setTimeout(function() {
+        overlay.parentNode.removeChild(overlay);
+      }, 800);
+      return;
+    }
+
+    var line = lines[idx];
+    var cls = line[0] || '';
+    var proc = line[1];
+    var msg = line[2];
+
+    var div = document.createElement('div');
+    div.className = 'line' + (cls ? ' ' + cls : '');
+    div.innerHTML =
+      '<span class="p">' + proc + '</span>' +
+      (cls === 'ok' ? '<span class="dot"></span>'
+       : cls === 'err' ? '<span class="dot"></span>'
+       : cls === 'warn' ? '<span class="dot"></span>'
+       : '') +
+      '<span class="txt">' + msg + '</span>';
+
+    container.appendChild(div);
+    idx++;
+
+    // Scroll to bottom
+    container.scrollTop = container.scrollHeight;
+
+    setTimeout(nextLine, 120 + Math.random() * 80);
+  }
+
+  // Start with cursor visible
+  if (cursor) cursor.style.display = 'inline-block';
+  setTimeout(nextLine, 300);
+})();
+
+/* ── Theme toggle: terminal ↔ 2029 neon ↔ unified desk ────── */
+(function themeToggle() {
+  var btn = document.getElementById('themeToggle');
+  if (!btn) return;
+
+  var themes = ['terminal', 'neon2029', 'unified'];
+  var current = 0;
+
+  function applyTheme() {
+    document.body.classList.remove('t2029', 'desk-unified');
+    btn.textContent = '2029';
+    btn.classList.remove('active');
+
+    if (themes[current] === 'neon2029') {
+      document.body.classList.add('t2029');
+      btn.textContent = '◉';
+      btn.classList.add('active');
+    } else if (themes[current] === 'unified') {
+      document.body.classList.add('desk-unified');
+      btn.textContent = '◌';
+      btn.classList.add('active');
+    }
+  }
+
+  btn.addEventListener('click', function() {
+    current = (current + 1) % themes.length;
+    applyTheme();
+  });
+
+  // Persist preference
+  var saved = localStorage.getItem('tradinglab_theme');
+  if (saved === 'neon2029') { current = 1; }
+  else if (saved === 'unified') { current = 2; }
+  applyTheme();
+
+  btn.addEventListener('click', function() {
+    localStorage.setItem('tradinglab_theme', themes[current]);
+  });
+})();
+
 setInterval(tickClock,1000);
 refreshSeries();
 aiStatus();
