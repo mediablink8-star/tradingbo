@@ -20,3 +20,7 @@ services:
         sync: false
       - key: EMBER_FOREX_AUTORUN
         value: "0"
+      - key: SOLANA_PRIVATE_KEY
+        sync: false
+      - key: JUPITER_API_KEY
+        sync: false

@@ -47,6 +47,7 @@ class JupiterClient:
         rpc_url: str = SOLANA_RPC,
         jupiter_base: str = JUPITER_BASE,
         slippage_bps: float = DEFAULT_SLIPPAGE_BPS,
+        api_key: Optional[str] = None,
     ):
         self._lock = threading.RLock()
         self._private_key: Optional[bytes] = None
@@ -54,6 +55,9 @@ class JupiterClient:
         self.rpc_url = rpc_url
         self.jupiter_base = jupiter_base
         self.slippage_bps = slippage_bps
+        self._api_key: Optional[str] = (
+            api_key or os.environ.get("JUPITER_API_KEY", "").strip() or None
+        )
         if private_key_b58:
             self._set_key(private_key_b58)
 
@@ -93,6 +97,7 @@ class JupiterClient:
                 "wallet_configured": self._private_key is not None,
                 "wallet_address": self._pubkey,
                 "slippage_bps": self.slippage_bps,
+                "api_key_configured": self._api_key is not None,
             }
 
     # ── On-chain queries ────────────────────────────────────
@@ -155,28 +160,78 @@ class JupiterClient:
 
     # ── Jupiter API ─────────────────────────────────────────
 
+    def _jup_headers(self) -> dict:
+        """Build headers, including API key if present."""
+        headers = {
+            "Accept": "application/json",
+            "User-Agent": USER_AGENT,
+        }
+        if self._api_key:
+            headers["x-api-key"] = self._api_key
+            headers["Jupiter-API-Key"] = self._api_key
+        return headers
+
     def _jup_get(self, path: str, params: dict) -> dict:
+        """GET request to Jupiter Swap V1 API with error handling and retries.
+        Always returns a dict — on HTTP error, returns the decoded error body
+        so callers can inspect the 'error' field instead of crashing.
+        """
         query = urllib.parse.urlencode(params)
         url = f"{self.jupiter_base}{path}?{query}"
-        req = urllib.request.Request(url, headers={
-            "Accept": "application/json", "User-Agent": USER_AGENT,
-        })
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            return json.loads(resp.read(2_000_000))
+        for attempt in range(3):
+            req = urllib.request.Request(url, headers=self._jup_headers())
+            try:
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    return json.loads(resp.read(2_000_000))
+            except urllib.error.HTTPError as exc:
+                # API returned 4xx/5xx — parse the error body
+                body = exc.read(2_000_000)
+                try:
+                    error_data = json.loads(body)
+                except json.JSONDecodeError:
+                    error_data = {
+                        "error": f"HTTP {exc.code}",
+                        "detail": body.decode("utf-8", errors="replace")[:300],
+                    }
+                return error_data
+            except (urllib.error.URLError, TimeoutError):
+                if attempt >= 2:
+                    return {"error": "Network error after retries"}
+                time.sleep(0.5 * (2 ** attempt))
+        return {"error": "Max retries exceeded"}
 
     def _jup_post(self, path: str, body: dict) -> dict:
-        req = urllib.request.Request(
-            f"{self.jupiter_base}{path}",
-            data=json.dumps(body).encode(),
-            headers={"Content-Type": "application/json", "User-Agent": USER_AGENT},
-            method="POST",
-        )
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            return json.loads(resp.read(2_000_000))
+        """POST request to Jupiter Swap V1 API with error handling and retries."""
+        for attempt in range(3):
+            req = urllib.request.Request(
+                f"{self.jupiter_base}{path}",
+                data=json.dumps(body).encode(),
+                headers={**self._jup_headers(), "Content-Type": "application/json"},
+                method="POST",
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    return json.loads(resp.read(2_000_000))
+            except urllib.error.HTTPError as exc:
+                raw = exc.read(2_000_000)
+                try:
+                    return json.loads(raw)
+                except json.JSONDecodeError:
+                    return {
+                        "error": f"HTTP {exc.code}",
+                        "detail": raw.decode("utf-8", errors="replace")[:300],
+                    }
+            except (urllib.error.URLError, TimeoutError):
+                if attempt >= 2:
+                    return {"error": "Network error after retries"}
+                time.sleep(0.5 * (2 ** attempt))
+        return {"error": "Max retries exceeded"}
 
     def quote(self, input_mint: str, output_mint: str, amount: int,
               slippage_bps: Optional[int] = None, restrict_intermediate_tokens: bool = True) -> dict:
-        """Get a swap quote from Jupiter Swap V1. `amount` is in input token raw units."""
+        """Get a swap quote from Jupiter Swap V1. `amount` is in input token raw units.
+        Returns a dict — on API error, returns {'error': '...', 'detail': ...}.
+        """
         params = {
             "inputMint": input_mint,
             "outputMint": output_mint,
@@ -185,7 +240,11 @@ class JupiterClient:
         }
         if restrict_intermediate_tokens:
             params["restrictIntermediateTokens"] = "true"
-        return self._jup_get("/quote", params)
+        result = self._jup_get("/quote", params)
+        if "error" in result and "data" not in result:
+            # Jupiter API error response
+            return {"error": result.get("error", "Unknown error"), **result}
+        return result
 
     def build_swap_tx(self, quote_response: dict, user_pubkey: str) -> dict:
         """Build the swap transaction from a quote response (Jupiter /swap endpoint)."""
@@ -287,6 +346,8 @@ class JupiterClient:
                 return {"ok": False, "error": "Wallet not configured"}
         lamports = int(sol_amount * 1_000_000_000)
         quote = self.quote(WRAPPED_SOL_MINT, output_mint, lamports)
+        if "error" in quote:
+            return {"ok": False, "error": quote.get("error", "Unknown API error"), "detail": quote}
         out_amount = int(quote.get("outAmount", "0"))
         if out_amount <= 0:
             return {"ok": False, "error": "No swap routes available", "detail": quote}
