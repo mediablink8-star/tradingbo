@@ -15,10 +15,10 @@ class MemePaperTrader:
     def __init__(self, db_path="meme-trader.sqlite", clock=None, initial_cash=1000.0,
                  position_usd=50.0, max_positions=3, daily_loss_limit=50.0,
                  stop_loss_pct=0.12, take_profit_pct=0.20, max_hold_seconds=4 * 3600,
-                 fee_bps=30.0, slippage_bps=50.0, min_score=65.0,
+                 fee_bps=30.0, slippage_bps=50.0, min_score=70.0,
                  min_liquidity_usd=10000.0, min_volume_24h_usd=25000.0,
                  min_transactions_24h=150, min_buy_ratio=0.52, max_buy_ratio=0.80,
-                 max_entry_change_1h_pct=80.0):
+                 max_entry_change_1h_pct=25.0):
         self.db_path = str(db_path)
         self.clock = clock or time.time
         self.initial_cash = self._positive(initial_cash, "initial_cash")
