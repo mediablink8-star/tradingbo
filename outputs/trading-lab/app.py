@@ -55,6 +55,26 @@ _src = _src.replace(
     "renderMemeTrader(await api('/api/meme/trader'));}\n  catch(e)",
 )
 
+# The dashboard loads its read-only data through fetch(). Basic Auth
+# challenges on GET fetches are unreliable in embedded/mobile browsers.
+# Keep only explicitly read-only paper/demo endpoints public.
+_auth_guard_old = (
+    "        # Let the static dashboard load so it can present an in-page login.\n"
+    "        # All API data and state-changing requests remain authenticated.\n"
+    "        if path.startswith(\"/api/\") and not self._require_auth():"
+)
+_auth_guard_new = (
+    "        # Only read-only paper/demo status is public; mutations and config stay protected.\n"
+    "        public_dashboard_gets = {\n"
+    "            \"/api/forex\", \"/api/forex/agents\", \"/api/forex/bars\",\n"
+    "            \"/api/meme/research\", \"/api/meme/paper\", \"/api/meme/trader\",\n"
+    "        }\n"
+    "        if path.startswith(\"/api/\") and path not in public_dashboard_gets and not self._require_auth():"
+)
+if _auth_guard_old not in _src:
+    raise RuntimeError("Could not apply read-only dashboard auth fix: source guard not found.")
+_src = _src.replace(_auth_guard_old, _auth_guard_new, 1)
+
 # Strip the `if __name__ == "__main__"` block so we can install route
 # extensions before starting the server.
 _main_marker = "\nif __name__ == \"__main__\""
