@@ -50,7 +50,7 @@ _src = _load()
 # the readable index.html source. This only requests wallet connection/public key;
 # it never asks the wallet to sign or submit a transaction.
 _phantom_button_old = '<button type="button" class="btn" id="themeToggle" title="Cycle visual theme: terminal → 2029 neon → unified desk" style="font:600 9.5px/1 var(--mono);letter-spacing:.1em;padding:5px 10px;border-radius:5px;margin-left:8px">2029</button>'
-_phantom_button_new = _phantom_button_old + '\\n      <button type="button" class="btn go" id="phantomConnect" aria-label="Connect Phantom wallet" title="Connect your Phantom wallet; no transactions will be signed" style="font:600 9.5px/1 var(--mono);letter-spacing:.06em;padding:7px 10px;margin-left:6px;white-space:nowrap">CONNECT PHANTOM</button>'
+_phantom_button_new = _phantom_button_old + '\n      <button type="button" class="btn go" id="phantomConnect" aria-label="Connect Phantom wallet" title="Connect your Phantom wallet; no transactions will be signed" style="font:600 9.5px/1 var(--mono);letter-spacing:.06em;padding:7px 10px;margin-left:6px;white-space:nowrap">CONNECT PHANTOM</button>'
 if _phantom_button_old in _src:
     _src = _src.replace(_phantom_button_old, _phantom_button_new, 1)
 
@@ -104,10 +104,10 @@ _phantom_runtime_js = r"""
 """
 _phantom_script_marker = "setInterval(tickClock,1000);"
 if _phantom_script_marker in _src and "function initPhantomWallet()" not in _src:
-    _src = _src.replace(_phantom_script_marker, _phantom_runtime_js + "\\n" + _phantom_script_marker, 1)
+    _src = _src.replace(_phantom_script_marker, _phantom_runtime_js + "\n" + _phantom_script_marker, 1)
 _phantom_css_marker = ".btn:disabled{opacity:.55;cursor:not-allowed}"
 if _phantom_css_marker in _src and "#phantomConnect.wallet-connected" not in _src:
-    _src = _src.replace(_phantom_css_marker, _phantom_css_marker + "\\n#phantomConnect.wallet-connected{background:rgba(47,191,135,.12);border-color:#2fbf87;color:#7ee2b7}\\n#phantomConnect{max-width:175px;overflow:hidden;text-overflow:ellipsis}", 1)
+    _src = _src.replace(_phantom_css_marker, _phantom_css_marker + "\n#phantomConnect.wallet-connected{background:rgba(47,191,135,.12);border-color:#2fbf87;color:#7ee2b7}\n#phantomConnect{max-width:175px;overflow:hidden;text-overflow:ellipsis}", 1)
 _src = _src.replace(
     '"    renderMemeTrader(await api(\'/api/meme/trader\'));",\n                        1,',
     '"    renderMemeTrader(await api(\'/api/meme/trader\'));}",\n                        1,',
