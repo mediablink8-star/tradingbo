@@ -10,12 +10,6 @@ _root = Path(__file__).resolve().parent
 
 
 def _load() -> str:
-    # Prefer the readable dashboard source so UI changes are deployed directly.
-    # Keep the compressed payloads below as a compatibility fallback.
-    html_path = _root / "index.html"
-    if html_path.exists() and html_path.stat().st_size > 1000:
-        return html_path.read_text(encoding="utf-8")
-
     # Primary: zlib body across zb_0..5 (small chunks survive git push)
     zparts = []
     for i in range(6):
@@ -51,6 +45,69 @@ def _load() -> str:
 
 
 _src = _load()
+
+# Add a client-side Phantom connect button to the embedded dashboard as well as
+# the readable index.html source. This only requests wallet connection/public key;
+# it never asks the wallet to sign or submit a transaction.
+_phantom_button_old = '<button type="button" class="btn" id="themeToggle" title="Cycle visual theme: terminal → 2029 neon → unified desk" style="font:600 9.5px/1 var(--mono);letter-spacing:.1em;padding:5px 10px;border-radius:5px;margin-left:8px">2029</button>'
+_phantom_button_new = _phantom_button_old + '\\n      <button type="button" class="btn go" id="phantomConnect" aria-label="Connect Phantom wallet" title="Connect your Phantom wallet; no transactions will be signed" style="font:600 9.5px/1 var(--mono);letter-spacing:.06em;padding:7px 10px;margin-left:6px;white-space:nowrap">CONNECT PHANTOM</button>'
+if _phantom_button_old in _src:
+    _src = _src.replace(_phantom_button_old, _phantom_button_new, 1)
+
+_phantom_runtime_js = r"""
+(function initPhantomWallet(){
+  const btn=document.getElementById('phantomConnect');
+  if(!btn)return;
+  let provider=null,connectedAddress='';
+  const shortAddress=a=>a.length>12?a.slice(0,5)+'…'+a.slice(-5):a;
+  const setConnected=a=>{
+    connectedAddress=a||'';
+    btn.textContent=connectedAddress?shortAddress(connectedAddress):'CONNECT PHANTOM';
+    btn.title=connectedAddress?'Connected wallet: '+connectedAddress+' (click to disconnect)':'Connect your Phantom wallet; no transactions will be signed';
+    btn.setAttribute('aria-label',connectedAddress?'Disconnect Phantom wallet '+connectedAddress:'Connect Phantom wallet');
+    btn.classList.toggle('go',!connectedAddress);
+    btn.classList.toggle('wallet-connected',!!connectedAddress);
+  };
+  const findProvider=()=>{
+    if(window.phantom&&window.phantom.solana&&window.phantom.solana.isPhantom)return window.phantom.solana;
+    if(window.solana&&window.solana.isPhantom)return window.solana;
+    return null;
+  };
+  provider=findProvider();
+  if(provider&&provider.publicKey)setConnected(String(provider.publicKey));
+  if(provider&&provider.on){
+    provider.on('connect',key=>setConnected(String(key||provider.publicKey||'')));
+    provider.on('disconnect',()=>setConnected(''));
+    provider.on('accountChanged',key=>setConnected(key?String(key):''));
+  }
+  btn.addEventListener('click',async()=>{
+    btn.disabled=true;
+    try{
+      provider=findProvider();
+      if(connectedAddress&&provider){await provider.disconnect();setConnected('');return;}
+      if(!provider){
+        btn.textContent='PHANTOM NOT FOUND';
+        btn.title='Install Phantom from https://phantom.app/ then reload Tradingbo';
+        if(window.confirm('Phantom was not detected. Open the official Phantom website to install it?'))window.open('https://phantom.app/','_blank','noopener,noreferrer');
+        return;
+      }
+      const result=await provider.connect();
+      const address=String((result&&result.publicKey)||provider.publicKey||'');
+      if(!address)throw new Error('Phantom did not return a public wallet address.');
+      setConnected(address);
+    }catch(error){
+      btn.title=error&&error.code===4001?'Connection request was rejected in Phantom.':((error&&error.message)||'Unable to connect to Phantom.');
+      btn.textContent='CONNECT PHANTOM';
+    }finally{btn.disabled=false;}
+  });
+})();
+"""
+_phantom_script_marker = "setInterval(tickClock,1000);"
+if _phantom_script_marker in _src and "function initPhantomWallet()" not in _src:
+    _src = _src.replace(_phantom_script_marker, _phantom_runtime_js + "\\n" + _phantom_script_marker, 1)
+_phantom_css_marker = ".btn:disabled{opacity:.55;cursor:not-allowed}"
+if _phantom_css_marker in _src and "#phantomConnect.wallet-connected" not in _src:
+    _src = _src.replace(_phantom_css_marker, _phantom_css_marker + "\\n#phantomConnect.wallet-connected{background:rgba(47,191,135,.12);border-color:#2fbf87;color:#7ee2b7}\\n#phantomConnect{max-width:175px;overflow:hidden;text-overflow:ellipsis}", 1)
 _src = _src.replace(
     '"    renderMemeTrader(await api(\'/api/meme/trader\'));",\n                        1,',
     '"    renderMemeTrader(await api(\'/api/meme/trader\'));}",\n                        1,',
