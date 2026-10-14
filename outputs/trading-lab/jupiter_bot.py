@@ -12,6 +12,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import os
 import threading
 import time
 import urllib.error
@@ -391,6 +392,15 @@ def install(handler_cls, g: dict):
     )
     g["JUPITER"] = jupiter
     g["JUPITER_RISK"] = risk
+
+    # Auto-connect wallet from SOLANA_PRIVATE_KEY env var (for hosted / persistent mode)
+    env_key = os.environ.get("SOLANA_PRIVATE_KEY", "").strip()
+    if env_key:
+        try:
+            jupiter._set_key(env_key)
+            print(f"Jupiter wallet auto-connected from env SOLANA_PRIVATE_KEY (pubkey: {jupiter._pubkey})", flush=True)
+        except (ValueError, Exception) as _jup_key_err:
+            print(f"SOLANA_PRIVATE_KEY in env is invalid: {_jup_key_err}", flush=True)
 
     orig_get = handler_cls.do_GET
     orig_post = handler_cls.do_POST
