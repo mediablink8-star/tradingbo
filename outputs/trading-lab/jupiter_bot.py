@@ -1,7 +1,8 @@
 """Jupiter swap client + bot trading route installer.
 
-Provides live Solana memecoin execution through the Jupiter Swap V1 API.
-The private key is held only in server memory — never written to disk.
+Provides live Solana memecoin execution through the Jupiter Swap API.
+Uses Swap V2 /order (requires JUPITER_API_KEY) when available, falling
+back to Swap V1 /quote. The private key is held only in server memory.
 
 Install into app.py like live_routes:
     import jupiter_bot
@@ -26,6 +27,7 @@ import nacl.signing
 import nacl.exceptions
 
 JUPITER_BASE = "https://api.jup.ag/swap/v1"
+JUPITER_BASE_V2 = "https://api.jup.ag/swap/v2"  # requires JUPITER_API_KEY
 SOLANA_RPC = "https://api.mainnet-beta.solana.com"
 WRAPPED_SOL_MINT = "So11111111111111111111111111111111111111112"
 USER_AGENT = "TradingBo-JupiterBot/0.1"
@@ -54,6 +56,7 @@ class JupiterClient:
         self._pubkey: Optional[str] = None
         self.rpc_url = rpc_url
         self.jupiter_base = jupiter_base
+        self.jupiter_base_v2 = JUPITER_BASE_V2
         self.slippage_bps = slippage_bps
         self._api_key: Optional[str] = (
             api_key or os.environ.get("JUPITER_API_KEY", "").strip() or None
@@ -91,9 +94,10 @@ class JupiterClient:
     def status(self) -> dict:
         with self._lock:
             return {
-                "broker": "jupiter_swap_v1",
+                "broker": "jupiter_swap_v2" if self._api_key else "jupiter_swap_v1",
                 "rpc": self.rpc_url,
                 "jupiter_api": self.jupiter_base,
+                "jupiter_api_v2": self.jupiter_base_v2,
                 "wallet_configured": self._private_key is not None,
                 "wallet_address": self._pubkey,
                 "slippage_bps": self.slippage_bps,
@@ -227,6 +231,33 @@ class JupiterClient:
                 time.sleep(0.5 * (2 ** attempt))
         return {"error": "Max retries exceeded"}
 
+    def _jup_get_v2(self, path: str, params: dict) -> dict:
+        """GET request to Jupiter Swap V2 API (requires JUPITER_API_KEY).
+        Always returns a dict — on HTTP error, returns the decoded error body.
+        """
+        query = urllib.parse.urlencode(params)
+        url = f"{self.jupiter_base_v2}{path}?{query}"
+        for attempt in range(3):
+            req = urllib.request.Request(url, headers=self._jup_headers())
+            try:
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    return json.loads(resp.read(2_000_000))
+            except urllib.error.HTTPError as exc:
+                body = exc.read(2_000_000)
+                try:
+                    error_data = json.loads(body)
+                except json.JSONDecodeError:
+                    error_data = {
+                        "error": f"HTTP {exc.code}",
+                        "detail": body.decode("utf-8", errors="replace")[:300],
+                    }
+                return error_data
+            except (urllib.error.URLError, TimeoutError):
+                if attempt >= 2:
+                    return {"error": "Network error after retries"}
+                time.sleep(0.5 * (2 ** attempt))
+        return {"error": "Max retries exceeded"}
+
     def quote(self, input_mint: str, output_mint: str, amount: int,
               slippage_bps: Optional[int] = None, restrict_intermediate_tokens: bool = True) -> dict:
         """Get a swap quote from Jupiter Swap V1. `amount` is in input token raw units.
@@ -246,6 +277,27 @@ class JupiterClient:
             return {"error": result.get("error", "Unknown error"), **result}
         return result
 
+    def quote_v2(self, input_mint: str, output_mint: str, amount: int,
+                 slippage_bps: Optional[int] = None) -> dict:
+        """Get a swap quote via Jupiter Swap V2 /order endpoint.
+        Requires JUPITER_API_KEY. `amount` is in input token raw units.
+        Returns a dict — on API error, returns {'error': '...', 'detail': ...}.
+        Does NOT include taker, so no transaction is returned — use for
+        quote-only checks. For the full swap, use get_quote_and_swap.
+        """
+        if not self._api_key:
+            return {"error": "JUPITER_API_KEY required for V2 API"}
+        params = {
+            "inputMint": input_mint,
+            "outputMint": output_mint,
+            "amount": str(amount),
+            "slippageBps": str(slippage_bps if slippage_bps is not None else int(self.slippage_bps)),
+        }
+        result = self._jup_get_v2("/order", params)
+        if "error" in result and "data" not in result:
+            return {"error": result.get("error", "Unknown V2 error"), **result}
+        return result
+
     def build_swap_tx(self, quote_response: dict, user_pubkey: str) -> dict:
         """Build the swap transaction from a quote response (Jupiter /swap endpoint)."""
         body = {
@@ -260,10 +312,11 @@ class JupiterClient:
         """Sign and submit the swap transaction.
 
         Handles both legacy and versioned Solana transactions.
+        Supports V1 swapTransaction field and V2 transaction field.
         """
-        swap_tx = swap_response.get("swapTransaction")
+        swap_tx = swap_response.get("swapTransaction") or swap_response.get("transaction", "")
         if not swap_tx:
-            return {"ok": False, "error": "No swapTransaction in swap response"}
+            return {"ok": False, "error": "No swapTransaction or transaction in response"}
 
         # Jupiter Swap V1 returns the transaction via /swap endpoint
         # ready for signing. Handle both legacy and versioned transactions.
@@ -340,11 +393,41 @@ class JupiterClient:
             return {"ok": False, "error": str(exc)}
 
     def get_quote_and_swap(self, output_mint: str, sol_amount: float) -> dict:
-        """Convenience: get a SOL to token swap quote and build the swap tx."""
+        """Convenience: get a SOL to token swap quote and build the swap tx.
+
+        Uses Jupiter Swap V2 /order (with taker) when JUPITER_API_KEY is set,
+        falling back to Swap V1 quote + swap when it is not or when V2 fails.
+        """
         with self._lock:
             if not self._pubkey:
                 return {"ok": False, "error": "Wallet not configured"}
         lamports = int(sol_amount * 1_000_000_000)
+
+        # --- V2 path: /order returns quote + transaction in one call ---
+        if self._api_key:
+            v2_params = {
+                "inputMint": WRAPPED_SOL_MINT,
+                "outputMint": output_mint,
+                "amount": str(lamports),
+                "slippageBps": str(int(self.slippage_bps)),
+                "taker": self._pubkey,
+            }
+            v2_result = self._jup_get_v2("/order", v2_params)
+            if "error" not in v2_result:
+                out_amount = int(v2_result.get("outAmount", "0"))
+                if out_amount > 0:
+                    return {
+                        "ok": True,
+                        "quote": v2_result,
+                        "swap": {"transaction": v2_result.get("transaction", "")},
+                        "out_amount": out_amount,
+                        "price_impact_pct": float(v2_result.get("priceImpactPct", 0)),
+                    }
+            # V2 failed — log and fall through to V1
+            print(f"Jupiter V2 API error, falling back to V1: "
+                  f"{v2_result.get('error', 'unknown')}", flush=True)
+
+        # --- V1 path (fallback) ---
         quote = self.quote(WRAPPED_SOL_MINT, output_mint, lamports)
         if "error" in quote:
             return {"ok": False, "error": quote.get("error", "Unknown API error"), "detail": quote}
