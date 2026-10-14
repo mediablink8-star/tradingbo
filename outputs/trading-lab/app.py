@@ -94,7 +94,9 @@ except Exception as _live_exc:
     print(f"Live risk gate not installed: {_live_exc}", flush=True)
 
 # Jupiter memecoin routes are installed for status/quote diagnostics only.
-# The server-side key/sign/broadcast endpoints are explicitly blocked here.
+# Never load a server-side wallet secret, even if it remains configured manually
+# in the hosting dashboard. The server-side key/sign/broadcast endpoints are blocked.
+os.environ.pop("SOLANA_PRIVATE_KEY", None)
 try:
     import jupiter_bot
     if "Handler" in globals():
