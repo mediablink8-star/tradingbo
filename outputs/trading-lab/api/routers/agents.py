@@ -1,13 +1,17 @@
 """Agent cycle endpoints — propose only; RiskGate decides execution."""
 from __future__ import annotations
 
+import os
+import time
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from agents.deliberation import run_scripted_deliberation
+from agents.deliberation import run_scripted_deliberation, Proposal
 from brokers.alpaca import AlpacaPaper
 from config import get_settings
 from risk.gate import GATE
+from llm_research import LLMResearchLayer
+from forex_market import snapshot, STOCKS, DEFAULT_PAIRS
 
 router = APIRouter(prefix="/api/agents", tags=["agents"])
 
@@ -22,19 +26,102 @@ class CycleBody(BaseModel):
         default=False,
         description="If true and proposal is buy/sell, attempt broker order behind RiskGate",
     )
+    use_llm: bool = Field(
+        default=True,
+        description="If true, use the six-agent LLM layer instead of scripted deliberation",
+    )
 
 
 @router.post("/cycle")
 async def agent_cycle(body: CycleBody):
     settings = get_settings()
-    snap = {
-        "symbols": [body.symbol],
-        "trend": body.trend,
-        "data_quality": body.data_quality,
-    }
-    deliberation = run_scripted_deliberation(
-        snap, book=body.book, default_symbol=body.symbol, default_notional=body.notional_usd
-    )
+
+    # Fetch live market data for the symbol
+    # forex_market uses pairs like "AAPL/USD", "EUR/USD", etc.
+    if "/" in body.symbol:
+        market_pairs = [body.symbol.upper()]
+    elif body.symbol.upper() in [s.split("/")[0] for s in STOCKS]:
+        market_pairs = [body.symbol.upper() + "/USD"]
+    else:
+        market_pairs = [body.symbol.upper().replace("USD", "/USD") if body.symbol.upper().endswith("USD") else body.symbol.upper()]
+    try:
+        market = snapshot(market_pairs)
+        market_pairs_dict = market.get("pairs", {})
+    except Exception:
+        market_pairs_dict = {body.symbol: {"price": 0, "observed": 0, "source": "fallback"}}
+
+    # Build context for LLM
+    account = {"equity": 100000, "exposure": 0, "daily_halted": False, "positions": []}
+    risk = {"max_trade_notional": body.notional_usd, "max_exposure": 100, "max_positions": 3, "max_daily_loss": 5}
+    history = {}
+    positions = []
+
+    # Try LLM-powered deliberation first
+    research = LLMResearchLayer(settings)
+    if body.use_llm and research.available():
+        llm_result = research.run(
+            {"pairs": market_pairs_dict},
+            account, risk, history, positions
+        )
+
+        # Build conversation from LLM stages
+        conversation = []
+        for stage in llm_result.get("stages", []):
+            conversation.append({
+                "role": stage["agent"],
+                "summary": stage["text"],
+                "concerns": stage.get("concerns", []),
+            })
+
+        # Extract final decision from coordinator
+        final = llm_result.get("final_decision", {})
+        decision = final.get("decision", "hold")
+
+        # Build proposal from LLM decision
+        if decision in ("buy", "sell") and final.get("pair_or_token"):
+            symbol = final["pair_or_token"].replace("/", "")
+            proposal = Proposal(
+                action=decision,
+                symbol=symbol,
+                notional_usd=min(body.notional_usd, settings.max_per_trade_usd),
+                confidence=0.7,
+                thesis=final.get("rationale", "LLM six-agent recommendation"),
+                book=body.book,
+            )
+        else:
+            proposal = Proposal(
+                action="hold",
+                symbol=body.symbol,
+                notional_usd=0.0,
+                confidence=0.0,
+                thesis=final.get("rationale", "LLM advised hold"),
+                book=body.book,
+            )
+
+        # Build mock deliberation result
+        from dataclasses import dataclass
+        @dataclass
+        class DeliberationResult:
+            conversation: list
+            proposal: Proposal | None
+            vetoed: bool
+            veto_reason: str
+
+        deliberation = DeliberationResult(
+            conversation=conversation,
+            proposal=proposal,
+            vetoed=False,
+            veto_reason="",
+        )
+    else:
+        snap = {
+            "symbols": [body.symbol],
+            "trend": body.trend,
+            "data_quality": body.data_quality,
+        }
+        deliberation = run_scripted_deliberation(
+            snap, book=body.book, default_symbol=body.symbol, default_notional=body.notional_usd
+        )
     proposal = deliberation.proposal
     out: dict = {
         "conversation": deliberation.conversation,
