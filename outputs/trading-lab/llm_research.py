@@ -14,11 +14,22 @@ import importlib.util
 import sys
 from pathlib import Path
 
-# --- Legacy symbols: the app imports these from llm_research ------------
-from llm_research_legacy import (
-    ResearchLayer,
-    ModelError,
-    verify_connection,
+# --- Re-export everything the app and tests use from the legacy module --
+# The app, multi_agent.py, and test_ai_*.py all reference llm_research
+# symbols (including private helpers like _parse_model_json, _validate,
+# _endpoint_and_headers, build_context, etc.) that live in
+# llm_research_legacy. We import them all so the bridge is a drop-in
+# replacement.
+from llm_research_legacy import *  # noqa: F401,F403  (public names)
+from llm_research_legacy import (  # noqa: F401  (private names)
+    _build_body,
+    _endpoint_and_headers,
+    _extract_text,
+    _first_object,
+    _finite,
+    _parse_model_json,
+    _spec,
+    _validate,
 )
 
 # --- Symbols that live in key_store -----------------------------------
