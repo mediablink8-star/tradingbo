@@ -185,6 +185,8 @@ nav a.on .ic{color:var(--accent)}
 .btn.go{background:var(--accent);border-color:var(--accent);color:#04101f;font-weight:700}
 .btn.go:hover{background:#6ba1ff;border-color:#6ba1ff}
 .btn:disabled{opacity:.55;cursor:not-allowed}
+#phantomConnect.wallet-connected{background:rgba(47,191,135,.12);border-color:#2fbf87;color:#7ee2b7}
+#phantomConnect{max-width:175px;overflow:hidden;text-overflow:ellipsis}
 .riskbox{border-top:1px solid var(--line);padding:11px 14px;
   font:400 10.5px/1.65 var(--mono);color:var(--dim)}
 .riskbox.halt{border-top-color:#e2555f55;color:#f0939a;background:#1a0e10}
@@ -841,6 +843,7 @@ body:before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:60
         <a href="company.html">Office</a>
       </nav>
       <button type="button" class="btn" id="themeToggle" title="Cycle visual theme: terminal → 2029 neon → unified desk" style="font:600 9.5px/1 var(--mono);letter-spacing:.1em;padding:5px 10px;border-radius:5px;margin-left:8px">2029</button>
+      <button type="button" class="btn go" id="phantomConnect" aria-label="Connect Phantom wallet" title="Connect your Phantom wallet; no transactions will be signed" style="font:600 9.5px/1 var(--mono);letter-spacing:.06em;padding:7px 10px;margin-left:6px;white-space:nowrap">CONNECT PHANTOM</button>
       <div class="btags">
         <span class="tag" id="clock" title="Coordinated Universal Time">--:--:--</span>
         <span class="tag" id="tagFeed">ECB REFERENCE</span>
@@ -2153,6 +2156,69 @@ tickClock();
 
   btn.addEventListener('click', function() {
     localStorage.setItem('tradinglab_theme', themes[current]);
+  });
+})();
+
+// Phantom wallet connection is client-side and read-only: no signing or transactions.
+(function initPhantomWallet(){
+  const btn=document.getElementById('phantomConnect');
+  if(!btn)return;
+  let provider=null;
+  let connectedAddress='';
+  const shortAddress=address=>address.length>12?address.slice(0,5)+'…'+address.slice(-5):address;
+  const setConnected=address=>{
+    connectedAddress=address||'';
+    btn.textContent=connectedAddress?shortAddress(connectedAddress):'CONNECT PHANTOM';
+    btn.title=connectedAddress
+      ?'Connected wallet: '+connectedAddress+' (click to disconnect)'
+      :'Connect your Phantom wallet; no transactions will be signed';
+    btn.setAttribute('aria-label',connectedAddress?'Disconnect Phantom wallet '+connectedAddress:'Connect Phantom wallet');
+    btn.classList.toggle('go',!connectedAddress);
+    btn.classList.toggle('wallet-connected',!!connectedAddress);
+  };
+  const findProvider=()=>{
+    if(window.phantom&&window.phantom.solana&&window.phantom.solana.isPhantom)return window.phantom.solana;
+    if(window.solana&&window.solana.isPhantom)return window.solana;
+    return null;
+  };
+  provider=findProvider();
+  if(provider&&provider.publicKey)setConnected(String(provider.publicKey));
+  if(provider&&provider.on){
+    provider.on('connect',publicKey=>setConnected(String(publicKey||provider.publicKey||'')));
+    provider.on('disconnect',()=>setConnected(''));
+    provider.on('accountChanged',publicKey=>setConnected(publicKey?String(publicKey):''));
+  }
+  btn.addEventListener('click',async()=>{
+    btn.disabled=true;
+    try{
+      provider=findProvider();
+      if(connectedAddress&&provider){
+        await provider.disconnect();
+        setConnected('');
+        return;
+      }
+      if(!provider){
+        btn.textContent='PHANTOM NOT FOUND';
+        btn.title='Install Phantom from https://phantom.app/ then reload Tradingbo';
+        const install=window.confirm('Phantom was not detected. Open the official Phantom website to install it?');
+        if(install)window.open('https://phantom.app/','_blank','noopener,noreferrer');
+        return;
+      }
+      const result=await provider.connect();
+      const address=String((result&&result.publicKey)||provider.publicKey||'');
+      if(!address)throw new Error('Phantom did not return a public wallet address.');
+      setConnected(address);
+    }catch(error){
+      if(error&&error.code===4001){
+        btn.title='Connection request was rejected in Phantom.';
+        btn.textContent='CONNECT PHANTOM';
+      }else{
+        btn.title=(error&&error.message)||'Unable to connect to Phantom.';
+        btn.textContent='CONNECT PHANTOM';
+      }
+    }finally{
+      btn.disabled=false;
+    }
   });
 })();
 
