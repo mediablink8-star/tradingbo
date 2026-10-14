@@ -55,7 +55,7 @@ _src = _src.replace(
     "renderMemeTrader(await api('/api/meme/trader'));}\n  catch(e)",
 )
 
-# Strip the `if __name__ == "__main__":` block so we can install route
+# Strip the `if __name__ == "__main__"` block so we can install route
 # extensions before starting the server.
 _main_marker = "\nif __name__ == \"__main__\""
 _cut = _src.rfind(_main_marker)
@@ -73,12 +73,29 @@ try:
 except Exception as _live_exc:
     print(f"Live risk gate not installed: {_live_exc}", flush=True)
 
-# Jupiter memecoin trading routes
+# Jupiter memecoin routes are installed for status/quote diagnostics only.
+# The server-side key/sign/broadcast endpoints are explicitly blocked here.
 try:
     import jupiter_bot
     if "Handler" in globals():
         jupiter_bot.install(Handler, globals())
-        print("Jupiter trading routes installed (/api/jupiter/*).", flush=True)
+        _jupiter_do_post = Handler.do_POST
+
+        def _paper_only_jupiter_post(self):
+            import urllib.parse
+            path = urllib.parse.urlsplit(self.path).path
+            if path in ("/api/jupiter/connect", "/api/jupiter/swap"):
+                if hasattr(self, "_require_auth") and not self._require_auth():
+                    return
+                self.send_json({
+                    "ok": False,
+                    "error": "Server-side wallet keys and live Solana execution are disabled in this deployment.",
+                }, 403)
+                return
+            return _jupiter_do_post(self)
+
+        Handler.do_POST = _paper_only_jupiter_post
+        print("Jupiter status/quote routes installed; server-side connect/swap disabled.", flush=True)
 except Exception as _jup_exc:
     print(f"Jupiter trading routes not installed: {_jup_exc}", flush=True)
 
