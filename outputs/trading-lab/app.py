@@ -10,6 +10,12 @@ _root = Path(__file__).resolve().parent
 
 
 def _load() -> str:
+    # Prefer the readable dashboard source so UI changes are deployed directly.
+    # Keep the compressed payloads below as a compatibility fallback.
+    html_path = _root / "index.html"
+    if html_path.exists() and html_path.stat().st_size > 1000:
+        return html_path.read_text(encoding="utf-8")
+
     # Primary: zlib body across zb_0..5 (small chunks survive git push)
     zparts = []
     for i in range(6):
