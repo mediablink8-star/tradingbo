@@ -844,6 +844,7 @@ body:before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:60
       </nav>
       <button type="button" class="btn" id="themeToggle" title="Cycle visual theme: terminal → 2029 neon → unified desk" style="font:600 9.5px/1 var(--mono);letter-spacing:.1em;padding:5px 10px;border-radius:5px;margin-left:8px">2029</button>
       <button type="button" class="btn go" id="phantomConnect" aria-label="Connect Phantom wallet" title="Connect your Phantom wallet; no transactions will be signed" style="font:600 9.5px/1 var(--mono);letter-spacing:.06em;padding:7px 10px;margin-left:6px;white-space:nowrap">CONNECT PHANTOM</button>
+      <span id="walletBalance" class="tag small" style="display:none;margin-left:6px">-- SOL</span>
       <div class="btags">
         <span class="tag" id="clock" title="Coordinated Universal Time">--:--:--</span>
         <span class="tag" id="tagFeed">ECB REFERENCE</span>
@@ -2175,6 +2176,17 @@ tickClock();
     btn.setAttribute('aria-label',connectedAddress?'Disconnect Phantom wallet '+connectedAddress:'Connect Phantom wallet');
     btn.classList.toggle('go',!connectedAddress);
     btn.classList.toggle('wallet-connected',!!connectedAddress);
+    fetchBalance(connectedAddress);
+  };
+  const fetchBalance=address=>{
+    const el=document.getElementById('walletBalance');
+    if(!el)return;
+    if(!address){el.style.display='none';return;}
+    el.style.display='inline-block';
+    fetch('/api/jupiter/balance?address='+address)
+      .then(r=>r.json())
+      .then(d=>{el.textContent=(d.sol_balance||0).toFixed(4)+' SOL';})
+      .catch(()=>{el.textContent='-- SOL';});
   };
   const findProvider=()=>{
     if(window.phantom&&window.phantom.solana&&window.phantom.solana.isPhantom)return window.phantom.solana;

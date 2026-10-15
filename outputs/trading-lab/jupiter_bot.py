@@ -126,12 +126,13 @@ class JupiterClient:
                     raise
                 time.sleep(0.5 * (2 ** attempt))
 
-    def sol_balance(self) -> float:
-        """Return SOL balance in lamports (as float SOL)."""
+    def sol_balance(self, address: str = None) -> float:
+        """Return SOL balance for _pubkey or a given address (as float SOL)."""
         with self._lock:
-            if not self._pubkey:
-                return 0.0
-        result = self._rpc("getBalance", [self._pubkey, {"commitment": "confirmed"}])
+            pubkey = address or self._pubkey
+        if not pubkey:
+            return 0.0
+        result = self._rpc("getBalance", [pubkey, {"commitment": "confirmed"}])
         lamports = int(result["value"])
         return lamports / 1_000_000_000
 
@@ -556,10 +557,11 @@ def install(handler_cls, g: dict):
             self.send_json({"jupiter": jupiter.status(), "risk": risk.status()})
             return
         if path == "/api/jupiter/balance":
-            if not jupiter.configured:
-                self.send_json({"configured": False, "error": "No wallet key"}, 400)
-                return
-            self.send_json({"sol_balance": jupiter.sol_balance(), "wallet": jupiter._pubkey})
+            import urllib.parse as _up
+            _params = _up.parse_qs(_up.urlparse(self.path).query)
+            _addr = _params.get("address", [None])[0]
+            _bal = jupiter.sol_balance(_addr) if (_addr or jupiter.configured) else 0.0
+            self.send_json({"sol_balance": _bal, "wallet": _addr or jupiter._pubkey, "configured": jupiter.configured})
             return
         return orig_get(self)
 

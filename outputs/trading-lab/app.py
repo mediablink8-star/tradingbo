@@ -50,7 +50,7 @@ _src = _load()
 # the readable index.html source. This only requests wallet connection/public key;
 # it never asks the wallet to sign or submit a transaction.
 _phantom_button_old = '<button type="button" class="btn" id="themeToggle" title="Cycle visual theme: terminal → 2029 neon → unified desk" style="font:600 9.5px/1 var(--mono);letter-spacing:.1em;padding:5px 10px;border-radius:5px;margin-left:8px">2029</button>'
-_phantom_button_new = _phantom_button_old + '\n      <button type="button" class="btn go" id="phantomConnect" aria-label="Connect Phantom wallet" title="Connect your Phantom wallet; no transactions will be signed" style="font:600 9.5px/1 var(--mono);letter-spacing:.06em;padding:7px 10px;margin-left:6px;white-space:nowrap">CONNECT PHANTOM</button>'
+_phantom_button_new = _phantom_button_old + '\n      <button type="button" class="btn go" id="phantomConnect" aria-label="Connect Phantom wallet" title="Connect your Phantom wallet; no transactions will be signed" style="font:600 9.5px/1 var(--mono);letter-spacing:.06em;padding:7px 10px;margin-left:6px;white-space:nowrap">CONNECT PHANTOM</button>\n      <span id="walletBalance" class="tag small" style="display:none;margin-left:6px">-- SOL</span>'
 if _phantom_button_old in _src:
     _src = _src.replace(_phantom_button_old, _phantom_button_new, 1)
 
@@ -67,6 +67,17 @@ _phantom_runtime_js = r"""
     btn.setAttribute('aria-label',connectedAddress?'Disconnect Phantom wallet '+connectedAddress:'Connect Phantom wallet');
     btn.classList.toggle('go',!connectedAddress);
     btn.classList.toggle('wallet-connected',!!connectedAddress);
+    fetchBalance(connectedAddress);
+  };
+  const fetchBalance=address=>{
+    const el=document.getElementById('walletBalance');
+    if(!el)return;
+    if(!address){el.style.display='none';return;}
+    el.style.display='inline-block';
+    fetch('/api/jupiter/balance?address='+address)
+      .then(r=>r.json())
+      .then(d=>{el.textContent=(d.sol_balance||0).toFixed(4)+' SOL';})
+      .catch(()=>{el.textContent='-- SOL';});
   };
   const findProvider=()=>{
     if(window.phantom&&window.phantom.solana&&window.phantom.solana.isPhantom)return window.phantom.solana;
@@ -130,14 +141,22 @@ _auth_guard_new = (
     "        # Only read-only paper/demo status is public; mutations and config stay protected.\n"
     "        public_dashboard_gets = {\n"
     "            \"/api/forex\", \"/api/forex/agents\", \"/api/forex/bars\",\n"
-    "            \"/api/meme/research\", \"/api/meme/paper\", \"/api/meme/trader\",\n"
-    "        }\n"
+    "            \"/api/meme/research\", \"/api/meme/paper\", \"/api/meme/trader\",\\n"
+    "        }\\n"
     "        if path.startswith(\"/api/\") and path not in public_dashboard_gets and not self._require_auth():"
 )
 if _auth_guard_old in _src:
     _src = _src.replace(_auth_guard_old, _auth_guard_new, 1)
 elif "public_dashboard_gets" not in _src:
     raise RuntimeError("Could not apply read-only dashboard auth fix: source guard not found.")
+# Add Jupiter read-only endpoints to the public dashboard allowlist.
+# The compressed source already has public_dashboard_gets from f24d8a3;
+# extend it so the Phantom-connected wallet balance can be queried without Basic Auth.
+_jup_allow_old = '"/api/meme/trader",\n        }'
+_jup_allow_new = '"/api/meme/trader",\n            "/api/jupiter/balance", "/api/jupiter/status",\n        }'
+if _jup_allow_old in _src:
+    _src = _src.replace(_jup_allow_old, _jup_allow_new, 1)
+
 
 # Strip the `if __name__ == "__main__"` block so we can install route
 # extensions before starting the server.
