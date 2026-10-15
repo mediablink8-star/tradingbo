@@ -134,9 +134,10 @@ _auth_guard_new = (
     "        }\n"
     "        if path.startswith(\"/api/\") and path not in public_dashboard_gets and not self._require_auth():"
 )
-if _auth_guard_old not in _src:
+if _auth_guard_old in _src:
+    _src = _src.replace(_auth_guard_old, _auth_guard_new, 1)
+elif "public_dashboard_gets" not in _src:
     raise RuntimeError("Could not apply read-only dashboard auth fix: source guard not found.")
-_src = _src.replace(_auth_guard_old, _auth_guard_new, 1)
 
 # Strip the `if __name__ == "__main__"` block so we can install route
 # extensions before starting the server.
