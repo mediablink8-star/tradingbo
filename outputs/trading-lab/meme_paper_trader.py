@@ -8,6 +8,7 @@ import json
 import math
 import sqlite3
 import time
+from contextlib import contextmanager
 from pathlib import Path
 
 
@@ -69,9 +70,26 @@ class MemePaperTrader:
         db.row_factory = sqlite3.Row
         return db
 
+    @contextmanager
+    def _transaction(self):
+        """Context manager that commits/rolls back and closes the SQLite connection.
+
+        Unlike the raw Connection context manager (which only commits/rolls back),
+        this ensures the connection is closed, preventing file locks on Windows.
+        """
+        db = self._connect()
+        try:
+            yield db
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            db.close()
+
     def _init_db(self):
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
-        with self._connect() as db:
+        with self._transaction() as db:
             db.execute("CREATE TABLE IF NOT EXISTS meme_trader_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
             db.execute("""CREATE TABLE IF NOT EXISTS meme_trader_positions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT, token_address TEXT NOT NULL,
@@ -212,7 +230,7 @@ class MemePaperTrader:
         """Refresh exits, then consider candidates. All buys are paper-only."""
         candidates = candidates if isinstance(candidates, list) else []
         decisions = []
-        with self._connect() as db:
+        with self._transaction() as db:
             self._daily_rollover(db)
             exit_actions = self._update_positions(db, price_lookup)
             decisions.extend(exit_actions)
@@ -358,13 +376,13 @@ class MemePaperTrader:
             return {"decisions": decisions, "risk_halted": False, "execution_enabled": False}
 
     def tick(self, price_lookup):
-        with self._connect() as db:
+        with self._transaction() as db:
             self._daily_rollover(db)
             actions = self._update_positions(db, price_lookup)
         return {"decisions": actions, "execution_enabled": False}
 
     def status(self):
-        with self._connect() as db:
+        with self._transaction() as db:
             self._daily_rollover(db)
             cash = float(self._meta(db, "cash"))
             positions = [dict(r) for r in db.execute(

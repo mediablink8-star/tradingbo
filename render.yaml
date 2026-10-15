@@ -2,16 +2,20 @@ services:
   - type: web
     name: tradingbo
     runtime: python
-    plan: free
+    plan: starter
     rootDir: outputs/trading-lab
     buildCommand: python -m compileall -q .
     startCommand: python app.py --host 0.0.0.0 --port $PORT
     healthCheckPath: /healthz
+    disk:
+      name: tradingbo-data
+      mountPath: /data/tradingbo
+      sizeGB: 1
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.4
       - key: TRADINGLAB_DATA_DIR
-        value: /tmp/tradingbo-data
+        value: /data/tradingbo
       - key: TRADINGLAB_AUTH_REQUIRED
         value: "1"
       - key: TRADINGLAB_USERNAME
@@ -25,7 +29,7 @@ services:
       - key: SOLANA_PRIVATE_KEY
         sync: false
       - key: JUPITER_AUTORUN
-        sync: false
+        value: "0"
       - key: JUPITER_AUTOTRADE_TOKENS
         sync: false
       - key: JUPITER_AUTOTRADE_SOL

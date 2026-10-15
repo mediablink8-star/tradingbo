@@ -36,20 +36,6 @@ class MemePaperTrackerTests(unittest.TestCase):
         )
 
     def tearDown(self):
-        # MemePaperTracker holds sqlite connections via `with` blocks, which
-        # commit but never close; on Windows the lingering lock breaks
-        # TemporaryDirectory cleanup, so collect first and retry briefly.
-        # Same workaround as test_forex_agents.py.
-        import gc
-        import time
-        gc.collect()
-        for _ in range(50):
-            try:
-                self.temp.cleanup()
-                return
-            except PermissionError:
-                time.sleep(0.02)
-                gc.collect()
         self.temp.cleanup()
 
     def test_records_only_watch_candidates_with_valid_price(self):

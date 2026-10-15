@@ -48,18 +48,6 @@ class ForexAgentRuntimeTests(unittest.TestCase):
         self.runtime = ForexAgentRuntime(self.path, self.lab)
 
     def tearDown(self):
-        # forex_agents opens sqlite connections via `with` blocks, which
-        # commit but never close; on Windows the lingering lock breaks
-        # TemporaryDirectory cleanup, so collect first and retry briefly.
-        import gc
-        gc.collect()
-        for _ in range(50):
-            try:
-                self.tmp.cleanup()
-                return
-            except PermissionError:
-                time.sleep(0.02)
-                gc.collect()
         self.tmp.cleanup()
 
     def test_insufficient_distinct_observations_abstains(self):

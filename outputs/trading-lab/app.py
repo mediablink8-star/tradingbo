@@ -3,6 +3,7 @@ import argparse
 import base64
 import os
 import threading
+import time
 import zlib
 from pathlib import Path
 
@@ -220,22 +221,36 @@ try:
         else:
             print("Jupiter trading routes installed (auto-run enabled).", flush=True)
             if "JUPITER" in _jup_globals and "JUPITER_RISK" in _jup_globals:
-                _jup_globals["JUPITER_RISK"].arm(float(os.environ.get("JUPITER_ARM_HOURS", "24")))
-                print("Jupiter risk gate auto-armed.", flush=True)
+                _jupiter_client = _jup_globals["JUPITER"]
+                # SAFETY: Only arm the risk gate and start the auto-trade loop
+                # when the wallet is actually configured. If SOLANA_PRIVATE_KEY is
+                # missing or invalid, fail-closed: no arming, no loop.
+                if not _jupiter_client.configured:
+                    print(
+                        "JUPITER_AUTORUN=1 but wallet is not configured "
+                        "(SOLANA_PRIVATE_KEY missing or invalid). "
+                        "Risk gate NOT armed; auto-trade loop will skip cycles.",
+                        flush=True,
+                    )
+                else:
+                    _jup_globals["JUPITER_RISK"].arm(
+                        float(os.environ.get("JUPITER_ARM_HOURS", "24"))
+                    )
+                    print("Jupiter risk gate auto-armed.", flush=True)
 
-                def _jupiter_loop():
-                    while True:
-                        try:
-                            jupiter_bot.run_jupiter_cycle(
-                                _jup_globals["JUPITER"],
-                                _jup_globals["JUPITER_RISK"],
-                            )
-                        except Exception as exc:
-                            print(f"[jupiter_loop] {exc}", flush=True)
-                        time.sleep(int(os.environ.get("JUPITER_CYCLE_INTERVAL", "300")))
+                    def _jupiter_loop():
+                        while True:
+                            try:
+                                jupiter_bot.run_jupiter_cycle(
+                                    _jup_globals["JUPITER"],
+                                    _jup_globals["JUPITER_RISK"],
+                                )
+                            except Exception as exc:
+                                print(f"[jupiter_loop] {exc}", flush=True)
+                            time.sleep(int(os.environ.get("JUPITER_CYCLE_INTERVAL", "300")))
 
-                threading.Thread(target=_jupiter_loop, daemon=True).start()
-                print("Jupiter auto-trade loop started.", flush=True)
+                    threading.Thread(target=_jupiter_loop, daemon=True).start()
+                    print("Jupiter auto-trade loop started.", flush=True)
 except Exception as _jup_exc:
     print(f"Jupiter trading routes not installed: {_jup_exc}", flush=True)
 

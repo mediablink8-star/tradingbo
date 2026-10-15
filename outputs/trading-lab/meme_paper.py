@@ -10,6 +10,7 @@ import math
 import sqlite3
 import time
 import urllib.parse
+from contextlib import contextmanager
 from pathlib import Path
 
 from meme_research import BASE_URL, _fetch_json, _positive
@@ -46,8 +47,25 @@ class MemePaperTracker:
         connection.row_factory = sqlite3.Row
         return connection
 
+    @contextmanager
+    def _transaction(self):
+        """Context manager that commits/rolls back and closes the SQLite connection.
+
+        Unlike the raw Connection context manager (which only commits/rolls back),
+        this ensures the connection is closed, preventing file locks on Windows.
+        """
+        conn = self._connect()
+        try:
+            yield conn
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
     def _init_db(self):
-        with self._connect() as db:
+        with self._transaction() as db:
             db.execute("""
                 CREATE TABLE IF NOT EXISTS meme_paper_entries (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -66,7 +84,7 @@ class MemePaperTracker:
         """Record valid WATCH candidates only; each scan is a separate sample."""
         now = float(self.clock())
         recorded = 0
-        with self._connect() as db:
+        with self._transaction() as db:
             for candidate in candidates if isinstance(candidates, list) else []:
                 if not isinstance(candidate, dict) or candidate.get("decision") != "WATCH":
                     continue
@@ -111,7 +129,7 @@ class MemePaperTracker:
     def update_due(self):
         """Sample outcomes near their target horizon; stale windows are excluded."""
         now = float(self.clock())
-        with self._connect() as db:
+        with self._transaction() as db:
             rows = db.execute("SELECT * FROM meme_paper_entries ORDER BY observed_at ASC").fetchall()
         pending_by_address = {}
         missed = 0
@@ -119,7 +137,7 @@ class MemePaperTracker:
         # A horizon is eligible for a price sample only within a grace window.
         # Older horizons are explicitly marked missed rather than assigned a
         # much later price or silently counted as a zero return.
-        with self._connect() as db:
+        with self._transaction() as db:
             for row in rows:
                 outcomes = json.loads(row["outcomes_json"] or "{}")
                 sample_due = []
@@ -145,7 +163,7 @@ class MemePaperTracker:
                     pending_by_address.setdefault(row["token_address"], []).append((row, outcomes, sample_due))
         prices = self._current_prices(list(pending_by_address))
         updated = 0
-        with self._connect() as db:
+        with self._transaction() as db:
             for address, items in pending_by_address.items():
                 current = prices.get(address.lower())
                 if current is None:
@@ -173,7 +191,7 @@ class MemePaperTracker:
                 "execution_enabled": False}
 
     def status(self):
-        with self._connect() as db:
+        with self._transaction() as db:
             rows = db.execute("SELECT * FROM meme_paper_entries ORDER BY observed_at DESC").fetchall()
         by_horizon = {}
         for horizon in HORIZONS_SECONDS:
