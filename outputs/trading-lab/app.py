@@ -148,8 +148,20 @@ _auth_guard_new = (
 )
 if _auth_guard_old in _src:
     _src = _src.replace(_auth_guard_old, _auth_guard_new, 1)
-elif "public_dashboard_gets" not in _src:
-    raise RuntimeError("Could not apply read-only dashboard auth fix: source guard not found.")
+else:
+    # The compressed dashboard body can evolve independently of this launcher.
+    # Fall back to patching the guard line itself rather than crashing startup
+    # just because its surrounding comments changed.
+    _auth_guard_line_old = 'if path.startswith("/api/") and not self._require_auth():'
+    _auth_guard_line_new = (
+        'public_dashboard_gets = {"/api/forex", "/api/forex/agents", "/api/forex/bars", '
+        '"\/api/meme/research", "/api/meme/paper", "/api/meme/trader"}\n'
+        '        if path.startswith("/api/") and path not in public_dashboard_gets and not self._require_auth():'
+    )
+    if _auth_guard_line_old in _src:
+        _src = _src.replace(_auth_guard_line_old, _auth_guard_line_new, 1)
+    else:
+        print("WARNING: read-only dashboard auth guard pattern not found; launcher continuing without runtime auth rewrite.", flush=True)
 # Add Jupiter read-only endpoints to the public dashboard allowlist.
 # The compressed source already has public_dashboard_gets from f24d8a3;
 # extend it so the Phantom-connected wallet balance can be queried without Basic Auth.
