@@ -309,6 +309,123 @@ class JupiterClient:
         }
         return self._jup_post("/swap", body)
 
+    # ── Transaction validation ─────────────────────────────────
+
+    @staticmethod
+    def _read_compact_u16(data: bytes, offset: int) -> tuple:
+        """Read a compact-u16 from *data* starting at *offset*.
+
+        Returns (value, new_offset). Raises ValueError on truncation.
+        """
+        value = 0
+        shift = 0
+        while True:
+            if offset >= len(data):
+                raise ValueError("truncated compact-u16")
+            b = data[offset]
+            offset += 1
+            value |= (b & 0x7F) << shift
+            if not (b & 0x80):
+                break
+            shift += 7
+            if shift >= 16:
+                raise ValueError("compact-u16 exceeds 16 bits")
+        return value, offset
+
+    def _verify_fee_payer(self, message_bytes: bytes, expected_pubkey_b58: str) -> tuple:
+        """Verify that the fee payer (first account key) in *message_bytes*
+        matches *expected_pubkey_b58*.
+
+        Returns (True, None) on success, (False, reason_str) on failure.
+        """
+        if not message_bytes or len(message_bytes) < 4:
+            return False, "message too short"
+
+        offset = 0
+        if message_bytes[0] & 0x80:
+            version = message_bytes[0] & 0x7F
+            if version != 0:
+                return False, f"unsupported message version v{version}"
+            offset = 1
+        else:
+            if len(message_bytes) < 3:
+                return False, "legacy message too short for header"
+
+        num_required = message_bytes[offset]
+        offset += 3
+        if offset > len(message_bytes):
+            return False, "message truncated before account keys"
+
+        try:
+            count, offset = self._read_compact_u16(message_bytes, offset)
+        except ValueError:
+            return False, "truncated account count"
+
+        if num_required != 1:
+            return False, f"expected exactly 1 required signer, got {num_required}"
+        if count < 1:
+            return False, "no accounts in message"
+
+        if offset + 32 > len(message_bytes):
+            return False, "missing fee payer pubkey"
+
+        fee_payer_bytes = bytes(message_bytes[offset:offset + 32])
+        fee_payer_b58 = base58.b58encode(fee_payer_bytes).decode()
+
+        if fee_payer_b58 != expected_pubkey_b58:
+            return False, (
+                f"fee payer mismatch: transaction fee payer does not match wallet"
+            )
+        return True, None
+
+    def _verify_transaction_structure(self, decoded: bytes) -> tuple:
+        """Verify the transaction structure before signing.
+
+        Checks:
+        - Transaction is not empty
+        - Signature count is exactly 1 (fee payer only)
+        - Version prefix (if present) is v0 only
+        - Address lookup tables are NOT accepted (cannot be independently validated)
+
+        Returns (ok, message_bytes_or_reason, version_prefix, sig_count).
+        """
+        if not decoded or len(decoded) < 64:
+            return False, "transaction too short", None, 0
+
+        idx = 0
+        version_prefix = None
+        if decoded[0] & 0x80:
+            version_prefix = decoded[0]
+            version = version_prefix & 0x7F
+            if version != 0:
+                return False, f"unsupported transaction version v{version}", None, 0
+            idx = 1
+
+        try:
+            sig_count, idx = self._read_compact_u16(decoded, idx)
+        except ValueError:
+            return False, "truncated signature count", None, 0
+
+        if sig_count != 1:
+            return False, (
+                f"expected exactly 1 signature in the transaction, got {sig_count}"
+            ), version_prefix, sig_count
+
+        msg_start = idx + sig_count * 64
+        message_bytes = decoded[msg_start:]
+        if not message_bytes:
+            return False, "empty message in transaction", version_prefix, sig_count
+
+        # Reject versioned messages — the signing code does not resolve or
+        # validate address lookup tables, so v0 messages with ALTs are unsafe.
+        if message_bytes[0] & 0x80:
+            return False, (
+                "versioned message with address lookup tables is unsupported; "
+                "refusing to sign"
+            ), version_prefix, sig_count
+
+        return True, message_bytes, version_prefix, sig_count
+
     def sign_and_send(self, swap_response: dict, private_key: bytes) -> dict:
         """Sign and submit the swap transaction.
 
@@ -322,30 +439,30 @@ class JupiterClient:
         # Jupiter Swap V1 returns the transaction via /swap endpoint
         # ready for signing. Handle both legacy and versioned transactions.
         decoded = base64.b64decode(swap_tx)
-        idx = 0
 
-        # Check for versioned transaction (first byte has high bit set)
-        version_prefix = None
-        if decoded[0] & 0x80:
-            version_prefix = decoded[0]
-            idx = 1
+        # SECURITY: Validate transaction structure before signing.
+        # Verifies signature count is exactly 1 (fee payer only),
+        # rejects versioned messages with address lookup tables
+        # that cannot be independently validated.
+        ok, message_bytes_or_reason, version_prefix, sig_count = \
+            self._verify_transaction_structure(decoded)
+        if not ok:
+            return {"ok": False, "error": f"Transaction validation failed: {message_bytes_or_reason}"}
 
-        # Parse compact-u16 for signature count
-        sig_count = 0
-        for shift in range(0, 16, 7):
-            if idx >= len(decoded):
-                return {"ok": False, "error": "Truncated signature count"}
-            b = decoded[idx]
-            idx += 1
-            sig_count |= (b & 0x7F) << shift
-            if not (b & 0x80):
-                break
-
-        sig_offset = idx
-        msg_start = idx + sig_count * 64  # each signature is 64 bytes
-        message_bytes = decoded[msg_start:]
-
+        # SECURITY: Verify the fee payer in the message matches the wallet
+        # derived from the private key being used to sign.
         signing_key = nacl.signing.SigningKey(private_key)
+        derived_pubkey = base58.b58encode(
+            bytes(signing_key.verify_key.encode())
+        ).decode()
+
+        ok, reason = self._verify_fee_payer(message_bytes_or_reason, derived_pubkey)
+        if not ok:
+            return {"ok": False, "error": f"Transaction validation failed: {reason}"}
+
+        message_bytes = message_bytes_or_reason
+
+        # signing_key was already created above for fee payer verification
         msg_hash = hashlib.sha256(message_bytes).digest()
         signed = signing_key.sign(msg_hash)
         signature = bytes(signed.signature)[:64]
@@ -354,23 +471,10 @@ class JupiterClient:
         signed_tx = bytearray()
         if version_prefix is not None:
             signed_tx.append(version_prefix)
-        # Re-encode sig_count as compact-u16
-        sc = sig_count
-        while True:
-            b = sc & 0x7F
-            sc >>= 7
-            if sc:
-                signed_tx.append(b | 0x80)
-            else:
-                signed_tx.append(b)
-                break
-        # Write signatures
-        for i in range(sig_count):
-            if i == 0:
-                signed_tx.extend(signature)  # our signature
-            else:
-                start = sig_offset + i * 64
-                signed_tx.extend(decoded[start:start + 64])
+        # Re-encode sig_count as compact-u16 (always 1 after validation)
+        signed_tx.append(1)
+        # Our signature (index 0; sig_count is validated as exactly 1)
+        signed_tx.extend(signature)
         # Append the message
         signed_tx.extend(message_bytes)
         tx_b64 = base64.b64encode(bytes(signed_tx)).decode()

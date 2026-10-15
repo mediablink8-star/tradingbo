@@ -9,6 +9,7 @@ import sqlite3
 import threading
 import time
 import uuid
+from contextlib import contextmanager
 
 MAX_HISTORY = 5
 MIN_OBSERVATIONS = 3
@@ -38,8 +39,25 @@ class ForexAgentRuntime:
     def _db(self):
         return sqlite3.connect(self.path, timeout=15)
 
+    @contextmanager
+    def _transaction(self):
+        """Context manager that commits/rolls back and closes the SQLite connection.
+
+        Unlike the raw Connection context manager (which only commits/rolls back),
+        this ensures the connection is closed, preventing file locks on Windows.
+        """
+        conn = self._db()
+        try:
+            yield conn
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
     def _init_db(self):
-        with self._db() as db:
+        with self._transaction() as db:
             db.execute("""CREATE TABLE IF NOT EXISTS fx_agent_samples(
                 pair TEXT NOT NULL, observed REAL NOT NULL, price REAL NOT NULL,
                 provider_date TEXT NOT NULL, stored REAL NOT NULL,
@@ -55,7 +73,7 @@ class ForexAgentRuntime:
 
     def get_config(self):
         """Per-agent enable flags. Missing rows default to enabled."""
-        with self._db() as db:
+        with self._transaction() as db:
             rows = db.execute(
                 "SELECT agent_key,enabled FROM fx_agent_config"
             ).fetchall()
@@ -88,7 +106,7 @@ class ForexAgentRuntime:
                 "Macro analyst has no deterministic execution path; "
                 "it reports through AI advisory only, so there is nothing "
                 "to disable.")
-        with self._db() as db:
+        with self._transaction() as db:
             db.execute(
                 "INSERT INTO fx_agent_config(agent_key,enabled,updated)"
                 " VALUES(?,?,?) ON CONFLICT(agent_key) DO UPDATE SET"
@@ -172,7 +190,7 @@ class ForexAgentRuntime:
         events = []
         proposals = []
         cfg = self.get_config()
-        with self._db() as db:
+        with self._transaction() as db:
             if not cfg["market"]:
                 fresh_rows = {}
                 events.append(self._event(
@@ -316,7 +334,7 @@ class ForexAgentRuntime:
         )
         cycle_id = uuid.uuid4().hex[:12]
         now = time.time()
-        with self._db() as db:
+        with self._transaction() as db:
             for stage in result.get("stages", []):
                 status = "AI report" if stage.get("ok") else "AI unavailable"
                 summary = (stage.get("text") or
@@ -335,7 +353,7 @@ class ForexAgentRuntime:
     def histories(self):
         """Recent observed closes per pair, for AI context."""
         out = {}
-        with self._db() as db:
+        with self._transaction() as db:
             rows = db.execute(
                 "SELECT pair,observed,price FROM fx_agent_samples"
                 " ORDER BY observed ASC"
@@ -345,7 +363,7 @@ class ForexAgentRuntime:
         return {p: v[-MAX_HISTORY:] for p, v in out.items()}
 
     def status(self):
-        with self._db() as db:
+        with self._transaction() as db:
             rows = db.execute(
                 "SELECT id,cycle_id,timestamp,agent,status,summary,approve_json,concerns_json,kind "
                 "FROM fx_agent_events ORDER BY timestamp DESC LIMIT 50"
@@ -395,7 +413,7 @@ class ForexAgentRuntime:
         now = time.time()
         events = []
 
-        with self._db() as db:
+        with self._transaction() as db:
             for agent_rec in deliberation.get("agents", []):
                 report = agent_rec.get("report") or {}
                 status = "Deliberation" if agent_rec.get("ok") else "Unavailable"
@@ -435,7 +453,7 @@ class ForexAgentRuntime:
                 account=self.lab.status().get("account", {}),
                 max_notional=PAPER_NOTIONAL,
             )
-            with self._db() as db:
+            with self._transaction() as db:
                 events.append(self._event(
                     db, cycle_id, "Paper execution gate",
                     paper_result.get("action", "hold").upper(),

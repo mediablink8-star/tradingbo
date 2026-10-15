@@ -9,6 +9,7 @@ import json
 import math
 import sqlite3
 import time
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -34,9 +35,26 @@ class LiveRiskEngine:
         db.row_factory = sqlite3.Row
         return db
 
+    @contextmanager
+    def _transaction(self):
+        """Context manager that commits/rolls back and closes the SQLite connection.
+
+        Unlike the raw Connection context manager (which only commits/rolls back),
+        this ensures the connection is closed, preventing file locks on Windows.
+        """
+        db = self._connect()
+        try:
+            yield db
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            db.close()
+
     def _init_db(self):
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
-        with self._connect() as db:
+        with self._transaction() as db:
             db.execute(
                 """CREATE TABLE IF NOT EXISTS live_meta (
                     key TEXT PRIMARY KEY, value TEXT NOT NULL)"""
@@ -101,7 +119,7 @@ class LiveRiskEngine:
             return 0
 
     def is_armed(self) -> bool:
-        with self._connect() as db:
+        with self._transaction() as db:
             self._rollover(db)
             if self._get(db, "armed") != "1":
                 return False
@@ -114,7 +132,7 @@ class LiveRiskEngine:
             return True
 
     def arm(self, actor: str = "operator") -> Dict[str, Any]:
-        with self._connect() as db:
+        with self._transaction() as db:
             self._rollover(db)
             ttl = self._f(db, "arm_ttl_seconds") or DEFAULTS["arm_ttl_seconds"]
             until = float(self.clock()) + ttl
@@ -124,7 +142,7 @@ class LiveRiskEngine:
             return self.status()
 
     def disarm(self, actor: str = "operator", reason: str = "manual") -> Dict[str, Any]:
-        with self._connect() as db:
+        with self._transaction() as db:
             self._set(db, "armed", "0")
             self._set(db, "armed_until", "0")
             self._event(db, "DISARMED", actor=actor, reason=reason)
@@ -132,7 +150,7 @@ class LiveRiskEngine:
 
     def record_realized_loss(self, loss_usd: float) -> Dict[str, Any]:
         loss_usd = max(0.0, float(loss_usd))
-        with self._connect() as db:
+        with self._transaction() as db:
             self._rollover(db)
             daily = self._f(db, "daily_realized_loss_usd") + loss_usd
             session = self._f(db, "session_realized_loss_usd") + loss_usd
@@ -148,7 +166,7 @@ class LiveRiskEngine:
 
     def can_open(self, notional_usd: float, open_positions: int, current_exposure_usd: float) -> Dict[str, Any]:
         reasons = []
-        with self._connect() as db:
+        with self._transaction() as db:
             self._rollover(db)
             armed = self._get(db, "armed") == "1"
             until = self._f(db, "armed_until")
@@ -195,7 +213,7 @@ class LiveRiskEngine:
             return result
 
     def status(self) -> Dict[str, Any]:
-        with self._connect() as db:
+        with self._transaction() as db:
             self._rollover(db)
             armed = self._get(db, "armed") == "1"
             until = self._f(db, "armed_until")
