@@ -87,6 +87,9 @@ _phantom_runtime_js = r"""
   };
   provider=findProvider();
   if(provider&&provider.publicKey)setConnected(String(provider.publicKey));
+  // When Phantom is not detected, fall back to the known wallet address so
+  // the dashboard can still display the real SOL balance read-only.
+  if(!provider){fetchBalance('Bsrr94dmKKv1zy9Kw7FHSfsv7f3QuoSqRvNgWjmY12rB');}
   if(provider&&provider.on){
     provider.on('connect',key=>setConnected(String(key||provider.publicKey||'')));
     provider.on('disconnect',()=>setConnected(''));
