@@ -1,0 +1,72 @@
+      <section class="sec" id="command-deck"><i class="hud tl"></i><i class="hud tr"></i><i class="hud bl"></i><i class="hud br"></i>
+        <div class="sechd">
+          <h2>Command Deck</h2>
+          <span class="sub">SIX-AGENT DESK · LIVE GATE · PAPER UNTIL ARMED EXECUTION</span>
+        </div>
+        <div class="secbd">
+          <div class="deck-top">
+            <div class="deck-brand">
+              <div class="logo">◈</div>
+              <div>
+                TradingLab Bot
+                <small>MANUAL ARM REQUIRED FOR LIVE · AGENTS CANNOT BYPASS</small>
+              </div>
+            </div>
+            <div class="deck-meta">
+              <span class="chip" id="deckTasks">0 TASKS</span>
+              <span class="chip ghost" id="deckCombo">COMBO ×1</span>
+              <span class="chip live" id="deckLive">STANDBY</span>
+            </div>
+          </div>
+
+          <div class="deck-kpis">
+            <div class="dkpi">
+              <div class="lab">Balance</div>
+              <div class="bal-val" id="deckBal">$—</div>
+              <div class="sub" id="deckBalSub">paper equity</div>
+            </div>
+            <div class="dkpi">
+              <div class="lab">Total PnL</div>
+              <div class="pnl-val up" id="deckPnl">—</div>
+              <div class="sub" id="deckPnlSub">realized + unrealized</div>
+            </div>
+            <div class="dkpi win">
+              <div class="win-ring"><span class="win-pct" id="deckWin">—</span></div>
+              <div>
+                <div class="lab">Win rate</div>
+                <div class="sub" id="deckWinSub">closed trades</div>
+              </div>
+            </div>
+            <div class="dkpi">
+              <div class="lab">Largest win</div>
+              <div class="bal-val" style="font-size:1.1rem" id="deckBig">—</div>
+              <div class="sub" id="deckBigSub">best closed</div>
+            </div>
+          </div>
+
+          <canvas id="deckChart" class="deck-chart" height="220"></canvas>
+
+          <div class="agent-rail" id="agentGrid"></div>
+
+          <div class="deck-actions">
+            <button type="button" class="btn go" id="deckPaper">Run paper cycle</button>
+            <button type="button" class="btn" id="deckMeme">Six-agent meme</button>
+            <button type="button" class="btn" id="deckFx">Six-agent forex</button>
+          </div>
+
+          <div class="deck-log" id="deckLog"></div>
+          <div class="notes" id="deckLogCount">0 resolved</div>
+
+          <div id="decisionBox" class="decision-box">
+            <div class="label">COORDINATOR DECISION</div>
+            <div class="val hold">STANDBY</div>
+            <div class="rationale">Arm the live gate from your phone when ready. Paper cycles stay available anytime.</div>
+          </div>
+
+          <div id="termBody" class="term-body">
+            <div class="term-empty">Agent transcript appears after deliberation.</div>
+          </div>
+        </div>
+      </section>
+<script src="boot-live.js"></script>
+<script src="live-control.js" data-live-control="1"></script>

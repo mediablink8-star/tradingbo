@@ -1,0 +1,38 @@
+name: FX research study
+
+on:
+  push:
+    branches: [forex-migration]
+  workflow_dispatch:
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build ECB historical dataset
+        working-directory: outputs/trading-lab
+        run: |
+          mkdir -p research-data
+          python - <<'PY'
+          from historical import load_pairs, save_json
+          pairs = ("EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CHF")
+          datasets = load_pairs(pairs, "2015-01-01", provider="ecb")
+          for pair, candles in datasets.items():
+              save_json(candles, "research-data/" + pair.replace("/", "_") + ".json")
+              print(pair, len(candles), candles[0].timestamp, candles[-1].timestamp)
+          PY
+      - name: Run full walk-forward and holdout study
+        working-directory: outputs/trading-lab
+        run: |
+          python research_runner.py research-data --train-size 750 --test-size 125 --gap 5 --holdout-size 250 --output research-report.json
+      - name: Upload research artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: fx-research-study
+          path: |
+            outputs/trading-lab/research-report.json
+            outputs/trading-lab/research-data/*.json

@@ -1,114 +1,2251 @@
-<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ember · Agent Trading Lab</title>
-<style>body{margin:0;background:#0c1422;color:#e4ebf4;font:15px system-ui}main{max-width:1200px;margin:auto;padding:32px}h1{font-size:32px}h2{font-size:19px}.muted{color:#9aaec6}.tag{color:#ffc969}.panel{background:#152238;border:1px solid #2a3b53;border-radius:12px;padding:20px;margin:18px 0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}label{display:block;color:#a8bad0;font-size:13px}input,select,button{background:#0c1422;color:white;border:1px solid #3f5878;padding:10px;border-radius:6px;max-width:100%;box-sizing:border-box}input{width:100%;margin:6px 0}button{cursor:pointer;background:#237a75;margin:8px 8px 0 0}button:disabled{opacity:.4}.number{font-size:26px;margin-top:6px}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:8px;border-bottom:1px solid #2a3b53}svg{width:100%;height:220px}pre{white-space:pre-wrap;max-height:300px;overflow:auto}#events{max-height:350px;overflow:auto}.error{color:#ff9a9a}small{color:#a8bad0}#company-dialog::backdrop{background:#020812d9}#company-expanded iframe{height:calc(94vh - 100px)!important}@media(max-width:760px){main{padding:14px}.panel{padding:14px;min-width:0}.grid{grid-template-columns:1fr}.grid>section{min-width:0}#company-dock iframe{height:1200px!important}}
-</style><link rel="stylesheet" href="product.css">
-<aside class="sidebar"><a class="brand" href="#overview"><span class="brand-icon">E</span> EMBER<small>AGENT TRADING LAB</small></a><nav aria-label="Main navigation"><button class="nav-item" data-route="overview"><span>◈</span>Overview</button><button class="nav-item" data-route="agents"><span>◎</span>Agent company</button><button class="nav-item" data-route="market"><span>↗</span>Live market</button><button class="nav-item" data-route="risk"><span>◇</span>Risk controls</button><button class="nav-item" data-route="execution"><span>⇄</span>Wallet execution</button><button class="nav-item" data-route="research"><span>⌁</span>Research</button><button class="nav-item" data-route="settings"><span>⚙</span>Connections & setup</button></nav><div class="sidebar-foot"><span class="signal-dot"></span> LOCAL WORKSPACE<p>AI paper team<br>Real swaps require wallet approval</p></div></aside><main><header class="product-header"><div><span class="eyebrow">TRADING OPERATIONS</span><h1 id="page-title">Overview</h1></div><span class="mode-badge">PAPER ACCOUNT</span></header><section class="route-view" id="view-overview"><div class="overview-heading"><div><h2>Your capital. Every observation.</h2><p class="muted">A clear view of the $100 live paper trial and its operating limits.</p></div><button data-go="settings">Configure your team ↗</button></div><div class="capital-stats" id="capital-stats"></div><section class="panel capital-panel"><div class="chart-heading"><div><span class="eyebrow">CAPITAL HISTORY</span><h2 id="capital-current">Waiting for account data</h2><p class="muted" id="capital-change">Saved paper valuations · USD</p></div><div class="chart-controls" role="group" aria-label="Capital history range"><button data-range="3600">1H</button><button data-range="86400">24H</button><button data-range="0" class="selected">Available</button></div></div><div class="legend"><span><i class="red-line"></i>AI paper equity</span><span><i class="gray-line"></i>Comparison baseline</span><span><i class="dashed-line"></i>$100 starting capital</span></div><div id="capital-chart-wrap"><svg id="capital-chart" viewBox="0 0 1000 300" role="img" aria-label="Saved live paper capital history"></svg></div><p id="capital-tooltip" class="chart-caption" aria-live="polite">Waiting for saved observations.</p><label class="chart-slider-label">Inspect an observation<input id="capital-inspect" type="range" min="0" max="0" value="0" disabled></label><p class="muted chart-caption">Paper equity uses quote thresholds and declared costs. It is separate from your wallet balance. Gaps in observations remain gaps; up to 10,000 saved valuations are shown.</p></section><div class="overview-bottom"><section class="panel"><span class="eyebrow">OPERATING STATUS</span><h2 id="operation-status">Connecting to local server…</h2><p id="operation-detail" class="muted"></p><div id="operation-facts"></div></section><section class="panel"><span class="eyebrow">NEXT STEPS</span><h2>Ready for the next decision</h2><p id="setup-blockers" class="muted"></p><div class="quick-actions"><button data-go="settings">Connect model & wallet</button><button data-go="risk">Inspect a token</button><button data-go="agents">Watch the agents</button></div><p class="muted">The AI team runs the paper account. Wallet execution is a separate approval flow.</p></section></div></section><section class="route-view" id="view-agents" hidden></section><section class="route-view" id="view-market" hidden></section><section class="route-view" id="view-risk" hidden></section><section class="route-view" id="view-execution" hidden></section><section class="route-view" id="view-research" hidden></section><section class="route-view" id="view-settings" hidden></section><section class="panel"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><h2 style="margin-bottom:5px">Your agent company</h2><p class="muted" style="margin-top:0">Watch the office, inspect agent reports, or try the game-like demo.</p></div><button id="company-open">Open company window ↗</button></div><div id="company-dock"><iframe id="company-frame" title="Agent company simulation" sandbox="allow-scripts" style="width:100%;height:840px;border:0;border-radius:12px;background:#0b1524"></iframe></div></section><dialog id="company-dialog" style="width:96vw;max-width:1500px;height:94vh;max-height:94vh;padding:14px;background:#0c1422;color:#e4ebf4;border:1px solid #466279;border-radius:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><strong>Agent company · office view</strong><button id="company-close">Close window</button></div><div id="company-expanded"></div></dialog>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TradingLab · Autonomous Paper Trading Terminal</title>
+<style>
+/* ============================================================
+   TRADINGLAB — terminal stylesheet
+   Single source of truth. Density and legibility over decoration.
+   Colour is used only to carry meaning: up, down, halted, selected.
+   ============================================================ */
+:root{
+  --bg:#080a0d; --surface:#0e1218; --surface-2:#12171f; --surface-3:#171d26;
+  --line:#1d242e; --line-2:#2a323e;
+  --ink:#e4ebf2; --ink-2:#aeb9c6; --dim:#78838f; --faint:#4d565f;
+  --up:#2fbf87; --down:#e2555f; --warn:#d9a441; --accent:#4c8dff; --accent-dim:#1d3a63;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --r:6px; --r-lg:10px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:13px/1.45 var(--sans);
+  -webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+::selection{background:#4c8dff44}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 
-<div class="panel"><h2>Connect your model and wallet</h2><div class="grid"><section><h3>1. Model · OpenAI API</h3><label>API key<input id="connection-key" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your API key here" maxlength="512"></label><label>Model ID<input id="connection-model" list="connection-models" placeholder="Exact model ID" maxlength="100"><datalist id="connection-models"></datalist></label><button id="connection-save">Connect model key</button><button id="connection-check">Check connection</button><button id="connection-forget">Forget entered key</button><p id="connection-status" aria-live="polite">Checking model connection…</p><small>Your key stays in this local server's memory and is forgotten on restart. No key is saved in exports or browser storage. Checking lists models; it does not run the agents. Choose costs below, pause the trial, then start it with your model. Live AI entries also require a fresh token-risk pass.</small></section><section><h3>2. Solana wallet · Phantom</h3><button id="wallet-connect">Connect Phantom</button><button id="wallet-disconnect">Disconnect wallet</button><p id="wallet-status" aria-live="polite">Wallet disconnected.</p><label>Public address · watch only if entered manually<input id="wallet-address" placeholder="Solana public address — never a seed phrase"></label><button id="wallet-watch">Watch public address</button><button id="wallet-refresh">Refresh SOL balance</button><p id="wallet-balance" aria-live="polite">No balance loaded.</p><small>Mainnet SOL balance only. Connecting reads your address only. Real swaps in Wallet execution require a separate Phantom approval. No seed phrase or private key is needed. If Phantom is unavailable in this browser, open <a href="http://127.0.0.1:8765/" target="_blank" rel="noopener" style="color:#ef5454">this dashboard</a> in Chrome or Edge with Phantom installed.</small></section></div></div>
+/* ── shell ─────────────────────────────────────────────── */
+.shell{display:grid;grid-template-columns:212px minmax(0,1fr);min-height:100vh}
+.rail{border-right:1px solid var(--line);background:var(--surface);
+  display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:9px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.brand .mk{width:26px;height:26px;border-radius:var(--r);background:var(--surface-3);
+  border:1px solid var(--line-2);display:grid;place-items:center;
+  font:700 12px/1 var(--mono);color:var(--accent)}
+.brand b{font-size:13.5px;font-weight:650;letter-spacing:-.01em}
+.brand small{display:block;font:500 9px/1.4 var(--mono);color:var(--faint);letter-spacing:.14em}
 
-<section class="panel" id="rug-risk-panel"><h2>Token risk screen</h2><p>Check a token before considering a buy. Required evidence must pass the fixed rules; missing or stale data blocks entry. The AI cannot override these rules.</p><div class="grid"><label>Exact Solana token mint<input id="risk-mint" placeholder="Paste the mint address"></label><div><button id="risk-scan">Check token risk</button></div></div><p id="risk-status" role="status">No token checked yet.</p><div id="risk-reasons"></div><details><summary>Evidence, thresholds and remaining unknowns</summary><pre id="risk-report"></pre></details><ul><li>No active or unknown mint/freeze authority; legacy SPL tokens only.</li><li>Pool liquidity at least $100,000 and pool age at least 24 hours.</li><li>Among the 20 largest accounts: no sampled owner above 20% of total supply; top ten sampled owners no more than 50%.</li><li>Reject a liquidity drop of 30% or more versus the last observation of the same pool within 24 hours.</li><li>Real buys must use the screened pool directly and still pass reverse-quote and transaction checks.</li></ul><p class="muted">These are conservative starter rules, not universal safety thresholds. Pool vaults are included and can cause false rejections. LP locks, creator history, hidden related wallets and future selling remain unverified. Passing means basic checks passed—not safe or rug-proof. Sells are not blocked by this entry screen.</p></section>
+nav{display:grid;gap:1px;padding:10px 8px;flex:1;align-content:start}
+nav a{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:var(--r);
+  color:var(--ink-2);text-decoration:none;font-size:12.5px;border:1px solid transparent;
+  transition:background .12s,color .12s,border-color .12s}
+nav a:hover{background:var(--surface-2);color:var(--ink)}
+nav a.on{background:var(--surface-3);color:var(--ink);border-color:var(--line-2)}
+nav a .ic{width:16px;text-align:center;font:600 11px/1 var(--mono);color:var(--faint)}
+nav a.on .ic{color:var(--accent)}
 
-<section class="panel" id="real-swap-panel"><h2>Real swaps · approve in Phantom</h2><p>Prepare a mainnet buy or sell, inspect the checks, then approve that exact swap in your wallet. This is a separate wallet-approved pilot; the AI paper team does not submit real trades.</p><div class="grid"><label>Jupiter API key<input id="swap-key" type="password" autocomplete="off" placeholder="Jupiter API key — session only"><button id="swap-connect">Connect swap provider</button><a href="https://developers.jup.ag/portal" target="_blank" rel="noopener noreferrer" style="color:#ef5454">Get a Jupiter API key</a></label><label>Token mint<input id="swap-mint" placeholder="Token mint address"></label><label>Action<select id="swap-side"><option value="buy">Buy with SOL</option><option value="sell">Sell token for SOL</option></select></label><label>Buy allocation · USDC-equivalent<input id="swap-usd" type="number" min="0.01" max="10" value="10" step="0.01"></label><label>Sell amount · integer token base units<input id="swap-amount" placeholder="Example: 1000000 for 1 token with 6 decimals"></label></div><button id="swap-prepare">Prepare and simulate swap</button><button id="swap-halt" style="background:#833945">Emergency stop real buys</button><p id="swap-status" role="status">Loading swap readiness…</p><pre id="swap-review">No swap prepared.</pre><label style="display:flex;align-items:center;gap:8px"><input id="swap-consent" type="checkbox" style="width:auto">I approve requesting this exact real mainnet swap in Phantom.</label><button id="swap-send" disabled>Review and approve in Phantom</button><button id="swap-check" disabled>Check transaction result</button><div id="swap-result"></div><details><summary>Persistent real-swap history</summary><pre id="swap-history"></pre></details><p class="muted">Legacy SPL tokens only. Buys require a fresh token-risk pass, the screened direct pool, bounded slippage and impact, a reverse quote, and successful simulation. These checks do not establish full token safety. Keep 0.01 SOL for fees/rent. A conservative 100 USDC-equivalent reservation budget per wallet includes prepared attempts and estimated costs; reservations are not recycled automatically. Emergency stop blocks new buy handoffs; an already-approved wallet transaction can still land. Sells remain available. Real swap attempts are never retried automatically.</p></section>
+.railfoot{padding:12px;border-top:1px solid var(--line);display:grid;gap:6px}
+.sysline{display:flex;align-items:center;gap:7px;font:500 10.5px/1 var(--mono);letter-spacing:.06em}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--faint);flex:none}
+.dot.ok{background:var(--up)}
+.dot.warn{background:var(--warn)}
+.dot.bad{background:var(--down)}
+.sysline .t{color:var(--dim)}
+.railfoot small{font:400 10px/1.5 var(--mono);color:var(--faint)}
 
-<div class="panel"><h2>Continuous $100 live paper trial</h2><span class="tag">SIMULATED MONEY · REAL PRICE OBSERVATIONS · NO WALLET</span><p>Fixed $100 starting balance; $10 allocations, at most three positions / $30 allocated exposure, and a latched shutdown at $90 liquidation equity. New fills use conservative read-only Jupiter quotes after a delayed signal. Quote thresholds include route costs and slippage; declared network-cost scenarios are additional. Actual fills, infrastructure charges and chain fees are unmeasured. These are illustrative limits and do not guarantee a maximum loss.</p><div class="grid"><label>AI provider<select id="live-provider"><option value="none">Observe only — waiting for AI setup</option><option value="ollama">Local Ollama</option><option value="openai">OpenAI API</option></select></label><label>Model<input id="live-model" placeholder="Configured model name"></label><label>Conservative reserve per AI call ($)<input id="live-cost" type="number" value="0" min="0" step="any"></label><label>Maximum AI calls per UTC day<input id="live-calls" type="number" value="20" min="5" max="100"></label></div><div class="grid"><label>Input price · USD / million tokens<input id="live-input-rate" type="number" min="0" step="0.01" placeholder="Current price for your exact model"></label><label>Cached input price · USD / million tokens<input id="live-cached-rate" type="number" min="0" step="0.01" placeholder="Current cached-token price"></label><label>Output price · USD / million tokens<input id="live-output-rate" type="number" min="0" step="0.01" placeholder="Current output-token price"></label><label>Network-cost scenario · USD / paper fill<input id="live-network-cost" type="number" min="0" max="1" step="0.001" value="0"></label></div><p class="muted">New paper entries require a Jupiter key connected in Wallet execution. Quotes use USDC as the paper account denomination; they do not reproduce a SOL-funded wallet trade. Model costs use reported usage and the prices you enter, not verified invoices. Unknown usage retains the per-call reserve. Infrastructure is unmeasured and excluded. Network cost is an explicit scenario, not a measured fee; zero excludes it.</p><details><summary>Cost accounting and execution evidence</summary><pre id="live-cost-ledger">Waiting for accounting data.</pre></details><button id="live-start">Start / resume $100 paper trial</button><button id="live-stop">Pause paper trial</button><button id="live-export">Export current trial state</button><p id="live-status">Loading…</p><div class="grid" id="live-metrics"></div><div id="live-readiness" class="panel"></div><details><summary>Persistent positions, decisions and recent observations</summary><pre id="live-log"></pre></details><p class="muted">Samples up to 20 discovered tokens, prioritizing held positions and migrations; fetches prices in one batch and prioritizes held tokens. Needs six fresh observations, a pool at least 24 hours old, $100,000 liquidity and positive momentum before asking the AI team. At most one candidate per review also receives the on-chain token-risk screen. Unknown or missing data causes abstention; unavailable positions are valued at zero and retained for exit retries. Model errors stop new approvals. Stop preserves balances; Resume never adds capital. This local server and machine must stay running.</p></div>
-<div class="panel"><h2>Agent control room</h2><p>Researcher → token screener → strategy analyst → risk critic → portfolio coordinator. Each receives the earlier reports. Entry requires unanimous approval plus the fixed hypothesis and hard risk checks. The accounting reviewer reports performance after the run.</p><div class="grid"><label>Agent provider<select id="provider"><option value="scripted">Scripted workflow demo — no AI</option><option value="ollama">Local AI · Ollama</option><option value="openai">OpenAI API · configured server key</option></select></label><label>Model name<input id="model" placeholder="Exact model available from your provider"></label><label>Maximum team rounds (1–12)<input id="rounds" type="number" min="1" max="12" value="3"></label><label>Estimated cost per attempted call ($)<input id="ai-cost" type="number" step="any" min="0" value="0"></label></div><p id="provider-status" class="muted">Checking configuration…</p><button id="team-start">Start bounded paper autopilot</button><button id="team-stop" disabled>Stop team</button><p id="team-status">No team running. Each round makes up to five model calls. OpenAI mode requires a positive cost estimate; actual billing may differ.</p><div class="grid" id="agent-cards"></div><details open><summary>Agent handoffs and decision rationales</summary><div id="team-feed" style="max-height:400px;overflow:auto"></div></details><p class="muted">The experiment advances a synthetic clock, not wall-clock trading. Team reviews occur every ten observations. When the round limit is reached or a provider fails, new approvals cease; hard exits continue. Real AI needs a configured model; scripted mode demonstrates mechanics only.</p></div>
-<div class="panel"><h2>Live Pump.fun discovery</h2><span class="tag">REAL PROVIDER EVENTS · READ ONLY · PUMPPORTAL THIRD-PARTY FEED</span><p>New token creations and migrations from Pump.fun, delivered by PumpPortal. Free discovery subscriptions only. These observations do not trigger trades or enter the synthetic experiments.</p><button id="pump-start">Start real discovery feed</button><button id="pump-stop" disabled>Stop discovery feed</button><button id="pump-export">Export recorded events</button><p id="pump-status" class="muted">Loading collector status…</p><div style="max-height:400px;overflow:auto"><table><thead><tr><th>Received (Athens)</th><th>Event</th><th>Token</th><th>Market cap (SOL)</th><th>Mint</th></tr></thead><tbody id="pump-events"></tbody></table></div><p class="muted">Receive time is not on-chain time. SOL market cap and virtual bonding-curve reserves are provider-reported estimates, not executable quotes or actual liquidity. Metadata is unverified. Reconnects create recorded data gaps. Closing this tab leaves the collector running while the local server remains open.</p></div>
-<div class="panel"><h2>One testable hypothesis</h2><p>In pools at least 24 hours old with liquidity above the threshold, a price rise of at least 3% over the previous five one-minute observations predicts enough continuation to cover costs. Buy after a delayed observation; exit at +8%, −5%, or 12 observations. These thresholds are illustrative and configurable.</p><p class="muted">Baseline: same liquidity screen, capital, costs and risk limits; enter without momentum and hold 12 observations. Synthetic returns demonstrate mechanics only.</p></div>
-<div class="panel"><h2>Experiment settings</h2><small>Illustrative demo defaults, not financial recommendations. Changes create a new isolated run; never revise deployed logic.</small><div class="grid" id="settings"></div><label>Data partition</label><select id="partition"><option value="development">Development · synthetic seed 41</option><option value="evaluation">Evaluation · synthetic seed 871</option></select><button id="run">Run 120 observations</button><button id="export" disabled>Export complete run</button><p id="status" class="muted">Ready. Synthetic clock starts at t+0; each observation is one minute.</p></div>
-<div id="results" hidden><div class="grid" id="metrics"></div><div class="panel"><h2>Conservative liquidation equity</h2><p class="muted">Red: strategy · amber: baseline. Open positions marked after modeled exit costs. Missing or failed routes valued at zero and retained for retries.</p><svg id="chart" viewBox="0 0 1100 220" role="img" aria-label="Strategy and baseline equity curves"></svg></div><div class="panel"><h2>Strategy vs baseline</h2><table id="comparison"></table></div><div class="panel"><h2>Timestamped decisions</h2><select id="filter"><option value="all">All agents</option><option>screening</option><option>strategy</option><option>risk</option><option>execution</option></select><div id="events"></div></div></div>
-<div class="panel"><h2>Read-only Solana watchlist capture</h2><p class="muted">Paste a mint to record current DEX Screener pools. Live captures never enter the synthetic experiment. Token authorities, holder concentration and source freshness are unverified; live paper entries are disabled.</p><input id="mint" placeholder="Solana token mint" aria-label="Solana token mint"><button id="observe">Capture observation</button><pre id="live"></pre></div>
-<div class="panel"><h2>Research discipline</h2><p>Keep evaluation data unseen until settings are frozen. Repeatedly inspecting this fixed synthetic evaluation seed turns it into development data. Real evaluation needs a prospective, timestamped universe including disappearing pools, token safety screening, executable two-sided quotes, measured latency and route failures.</p><p class="muted">Default costs: modeled 30 bps fee + 50 bps adverse slippage per side, size impact, $0.02 per fill, $0.005 per observation. Buy and exit latency: one observation. These models do not reproduce MEV or chain execution.</p><p id="history"></p></div></main>
+/* ── main ──────────────────────────────────────────────── */
+.main{padding:0 0 40px;min-width:0}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:11px 18px;border-bottom:1px solid var(--line);background:var(--surface);
+  position:sticky;top:0;z-index:20;flex-wrap:wrap}
+.bar .path{font:500 12px/1 var(--mono);color:var(--dim)}
+.bar .path b{color:var(--ink);font-weight:600}
+.btags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{font:600 9.5px/1 var(--mono);letter-spacing:.13em;padding:5px 8px;border-radius:4px;
+  border:1px solid var(--line-2);color:var(--ink-2);background:var(--surface-2);white-space:nowrap}
+.tag.ok{border-color:#2fbf8755;color:#7fd8b4;background:#12301f}
+.tag.bad{border-color:#e2555f55;color:#f0939a;background:#31161a}
+.tag.warn{border-color:#d9a44155;color:#e8c583;background:#2e2413}
+.tag.acc{border-color:#4c8dff55;color:#9dc0ff;background:#111e36}
+
+.wrap{padding:18px;display:grid;gap:16px;max-width:1720px}
+
+/* ── section ───────────────────────────────────────────── */
+.sec{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface);overflow:hidden}
+.sechd{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:10px 14px;border-bottom:1px solid var(--line);background:var(--surface-2);flex-wrap:wrap}
+.sechd h2{margin:0;font-size:12px;font-weight:650;letter-spacing:.06em;text-transform:uppercase}
+.sechd .sub{font:500 10px/1 var(--mono);letter-spacing:.09em;color:var(--faint)}
+.secbd{padding:14px}
+
+/* ── KPI strip ────────────────────────────────────────── */
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:1px;background:var(--line)}
+.kpi{background:var(--surface);padding:13px 15px}
+.kpi .k{font:600 9.5px/1 var(--mono);letter-spacing:.15em;color:var(--faint);text-transform:uppercase}
+.kpi .v{font:600 25px/1.1 var(--mono);letter-spacing:-.02em;margin-top:9px;color:var(--ink)}
+.kpi .s{font:500 10px/1 var(--mono);letter-spacing:.08em;color:var(--dim);margin-top:7px}
+.kpi .v.up{color:var(--up)} .kpi .v.down{color:var(--down)} .kpi .v.warn{color:var(--warn)}
+
+/* ── tape ──────────────────────────────────────────────── */
+.tape{display:flex;gap:1px;background:var(--line);overflow:hidden}
+.tape .q{flex:1 1 0;min-width:0;background:var(--surface);padding:9px 13px}
+.tape .q .s{font:600 9.5px/1 var(--mono);letter-spacing:.13em;color:var(--faint)}
+.tape .q .p{font:600 15px/1 var(--mono);margin-top:6px;color:var(--ink)}
+.tape .q .c{font:500 9.5px/1 var(--mono);letter-spacing:.06em;margin-top:5px}
+.tape .q .c.up{color:var(--up)} .tape .q .c.dn{color:var(--down)} .tape .q .c.fl{color:var(--faint)}
+
+/* ── chart ─────────────────────────────────────────────── */
+.chartwrap{display:grid;grid-template-columns:minmax(0,1fr) 300px}
+.chartbox{padding:14px;border-right:1px solid var(--line);min-width:0}
+.charttop{display:flex;align-items:baseline;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+.charttop .sym{font:600 14px/1 var(--mono);letter-spacing:.1em}
+.charttop .px{font:600 22px/1 var(--mono);color:var(--accent)}
+.charttop .mt{font:500 10px/1 var(--mono);color:var(--faint);letter-spacing:.08em}
+#spark{display:block;width:100%;height:230px;cursor:crosshair;position:relative}
+.chartbox{position:relative}
+.chartempty{position:absolute;inset:56px 12px 12px 12px;display:grid;place-items:center;
+  font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:#aeb9c6;
+  background:rgba(10,14,19,.82);border:1px dashed var(--line);border-radius:6px;
+  pointer-events:none;text-align:center;padding:0 18px}
+.chartempty[hidden]{display:none}
+.qbtn{border:1px solid var(--line-2);border-radius:6px;padding:5px 13px;font:600 11px var(--mono);
+  letter-spacing:.06em;cursor:pointer;color:var(--ink);background:var(--surface-3)}
+.qbtn:disabled{opacity:.55;cursor:wait}
+.qbtn.buy{border-color:#2fbf8766;color:#7fe3b4}
+.qbtn.buy:hover:not(:disabled){background:#0d2b1f;border-color:#2fbf87}
+.qbtn.sell{border-color:#e2555f66;color:#f0939a}
+.qbtn.sell:hover:not(:disabled){background:#2b0f13;border-color:#e2555f}
+.ivsel{background:var(--bg);border:1px solid var(--line-2);border-radius:var(--r);
+  padding:5px 8px;font:600 10px/1 var(--mono);letter-spacing:.08em;color:var(--ink-2);
+  cursor:pointer}
+.ivsel:hover{border-color:#3a4453}
+.warn{margin:9px 0 0;padding:8px 10px;border:1px solid #d9a44144;border-radius:var(--r);
+  background:#1e1809;color:#e8c583;font:400 10.5px/1.55 var(--mono)}
+.warn[hidden]{display:none}
+.notes{padding:12px 14px;font:400 10.5px/1.6 var(--mono);color:var(--faint)}
+
+/* ── quote table ───────────────────────────────────────── */
+.qt{width:100%;border-collapse:collapse;font:500 11.5px/1 var(--mono)}
+.qt th{text-align:right;padding:8px 10px;font-size:9px;letter-spacing:.13em;font-weight:600;
+  color:var(--faint);border-bottom:1px solid var(--line);white-space:nowrap;background:var(--surface-2)}
+.qt th:first-child{text-align:left}
+.qt td{padding:9px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+.qt tbody tr{cursor:pointer;transition:background .1s}
+.qt tbody tr:hover{background:var(--surface-2)}
+.qt tbody tr.sel{background:#14213a}
+.qt tbody tr.sel td:first-child{box-shadow:inset 2px 0 var(--accent)}
+.qt tbody tr.stale td.p{color:#e8c583}
+.qt tbody tr.stale td.p::after{content:" STALE";font-size:8px;letter-spacing:.1em;color:#d9a441}
+.qt tbody tr.stale .n{color:#a3aeb9}
+.qt td:first-child{text-align:left;color:var(--ink);font-weight:600;letter-spacing:.08em}
+.qt td.dim{color:var(--dim)} .qt td.mut{color:var(--faint);font-size:10px}
+.qt .kind{font-size:8px;letter-spacing:.1em;color:var(--faint);border:1px solid var(--line);
+  border-radius:3px;padding:1px 4px;margin-left:5px;white-space:nowrap}
+
+/* ── pipeline ──────────────────────────────────────────── */
+.pipe{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:var(--line)}
+.pn{background:var(--surface);padding:13px 14px;position:relative}
+.pn .top{display:flex;align-items:center;gap:7px}
+.pn .ix{font:700 10px/1 var(--mono);color:var(--faint);letter-spacing:.1em}
+.pn .nm{font-size:12.5px;font-weight:600;margin-left:auto}
+.pn .st{font:600 9px/1 var(--mono);letter-spacing:.13em;margin-top:9px}
+.pn .st.live{color:var(--up)} .pn .st.idle{color:var(--warn)} .pn .st.off{color:var(--faint)}
+.pn .tx{font-size:11.5px;line-height:1.5;color:var(--ink-2);margin-top:8px;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.pn .mt{font:500 9.5px/1 var(--mono);letter-spacing:.08em;color:var(--faint);margin-top:9px;
+  padding-top:9px;border-top:1px solid var(--line)}
+.pn .bar2{height:2px;background:var(--line-2);margin-top:10px;overflow:hidden;border-radius:2px}
+.pn .bar2 i{display:block;height:100%;background:var(--up)}
+
+/* ── split ─────────────────────────────────────────────── */
+.split{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+.stack{display:grid;gap:16px}
+
+/* ── ticket ────────────────────────────────────────────── */
+.frm{display:grid;gap:10px;padding:14px}
+.fld{display:grid;gap:5px}
+.fld label{font:600 9.5px/1 var(--mono);letter-spacing:.14em;color:var(--faint);text-transform:uppercase}
+.fld[hidden]{display:none}
+.fld .hint{display:block;margin-top:4px;font:400 9.5px/1.5 var(--mono);color:var(--faint)}
+.fld .hint:empty{display:none}
+.chk{display:flex;align-items:flex-start;gap:8px;margin-top:11px;cursor:pointer}
+.chk input{margin:1px 0 0;accent-color:var(--accent);width:13px;height:13px;flex:none}
+.chk span{font:500 11px/1.5 var(--sans);color:var(--ink-2)}
+.chk em{display:block;font:400 9.5px/1.5 var(--mono);color:var(--faint);font-style:normal}
+.fld select,.fld input{width:100%;background:var(--bg);border:1px solid var(--line-2);
+  border-radius:var(--r);padding:8px 10px;font:500 12px/1.2 var(--mono)}
+.fld select:hover,.fld input:hover{border-color:#3a4453}
+.btn{border:1px solid var(--line-2);background:var(--surface-3);border-radius:var(--r);
+  padding:9px 14px;font-size:12px;font-weight:600;cursor:pointer;
+  transition:background .12s,border-color .12s,color .12s}
+.btn:hover{background:#1d242e;border-color:#3a4453}
+.btn.go{background:var(--accent);border-color:var(--accent);color:#04101f;font-weight:700}
+.btn.go:hover{background:#6ba1ff;border-color:#6ba1ff}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+#phantomConnect.wallet-connected{background:rgba(47,191,135,.12);border-color:#2fbf87;color:#7ee2b7}
+#phantomConnect{max-width:175px;overflow:hidden;text-overflow:ellipsis}
+.riskbox{border-top:1px solid var(--line);padding:11px 14px;
+  font:400 10.5px/1.65 var(--mono);color:var(--dim)}
+.riskbox.halt{border-top-color:#e2555f55;color:#f0939a;background:#1a0e10}
+
+/* ── tables / feed ─────────────────────────────────────── */
+.dt{width:100%;border-collapse:collapse;font-size:12px}
+.dt th{text-align:left;padding:8px 12px;font:600 9px/1 var(--mono);letter-spacing:.13em;
+  color:var(--faint);border-bottom:1px solid var(--line);background:var(--surface-2);white-space:nowrap}
+.dt th.r,.dt td.r{text-align:right}
+.dt td{padding:9px 12px;border-bottom:1px solid var(--line)}
+.dt tbody tr:last-child td{border-bottom:0}
+.dt tbody tr:hover{background:var(--surface-2)}
+.dt .mono{font-family:var(--mono);font-size:11.5px}
+.dt .sub2{display:block;font:500 10px/1.4 var(--mono);color:var(--faint);margin-top:3px}
+.pos{color:var(--up)} .neg{color:var(--down)}
+.xbtn{background:transparent;border:1px solid var(--line-2);border-radius:4px;
+  padding:3px 8px;font:600 10px/1.4 var(--mono);color:var(--dim);cursor:pointer}
+.xbtn:hover{border-color:var(--down);color:#f0939a}
+.empty{padding:22px 14px;text-align:center;font:400 11.5px/1.6 var(--mono);color:var(--faint)}
+.feed{display:grid;max-height:430px;overflow-y:auto}
+.feed .row{display:grid;grid-template-columns:8px minmax(0,1fr) auto;gap:10px;align-items:start;
+  padding:10px 14px;border-bottom:1px solid var(--line)}
+.feed .row:last-child{border-bottom:0}
+.feed .row:hover{background:var(--surface-2)}
+.feed .tx{font-size:11.5px;line-height:1.5;color:var(--ink-2)}
+.feed .tx b{color:var(--ink);font-weight:600}
+.feed .ts{font:500 9.5px/1 var(--mono);letter-spacing:.08em;color:var(--faint);white-space:nowrap}
+.msg{padding:10px 12px;border-radius:var(--r);font:500 11.5px/1.5 var(--mono);
+  border:1px solid var(--line-2);background:var(--surface-2);margin:0 14px 12px}
+.msg.ok{border-color:#2fbf8750;color:#7fd8b4;background:#0f2419}
+.msg.bad{border-color:#e2555f50;color:#f0939a;background:#241114}
+.msg:empty{display:none}
+.kv{display:grid;gap:1px;background:var(--line);margin-top:12px;
+  border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.kv div{background:var(--surface);padding:8px 11px;display:flex;
+  justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}
+.kv div>*{min-width:0}
+.kv span{overflow-wrap:anywhere}
+.kv b{font:600 9.5px/1.4 var(--mono);letter-spacing:.12em;color:var(--faint)}
+.kv span{font:600 11.5px/1.4 var(--mono);color:var(--ink);text-align:right;
+  font-variant-numeric:tabular-nums}
+.aigrid{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:18px}
+.row-btns{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}
+.row-btns .btn{padding:7px 11px;font-size:11.5px}
+.fine{margin:10px 0 0;font:400 10.5px/1.6 var(--mono);color:var(--faint)}
+.stagerow{display:grid;gap:9px;max-height:430px;overflow-y:auto}
+.stage{border:1px solid var(--line);border-radius:var(--r);padding:11px 13px;background:var(--surface-2)}
+.stage .sh{display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap}
+.stage .sh b{font-size:12px}
+.stage p{margin:0;font-size:12px;line-height:1.6;color:var(--ink-2);white-space:pre-wrap}
+.stage ul{margin:8px 0 0;padding-left:16px}
+.stage li{font:400 11px/1.55 var(--mono);color:#e8c583;margin-bottom:3px}
+.stage.bad{border-color:#e2555f44}
+/* Responsive integrity.
+   Grid and flex children default to min-width:auto, so a wide non-wrapping
+   table inside one refuses to shrink and forces the entire page wider than the
+   viewport. Every content-bearing grid child is pinned to min-width:0, and
+   the tables get their own scroll containers. */
+.wrap>*,.split>*,.stack>*,.aigrid>*,.termgrid>*,.chartwrap>*{min-width:0}
+.qtscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.qtscroll .qt{min-width:430px}
+.dtscroll{overflow-x:auto}
+.dtscroll .dt{min-width:420px}
+.tape{overflow-x:auto}
+.pn{min-width:0}
+.pn .nm{min-width:0;overflow-wrap:anywhere;text-align:right}
+.pn .tx{overflow-wrap:anywhere}
+.stage p,.detail,.chartfoot,.notes,.fine{overflow-wrap:anywhere}
+.bar .btags{min-width:0}
+@media(max-width:1240px){.aigrid{grid-template-columns:1fr}}
+@media(max-width:860px){
+  .wrap{padding:12px}
+  .sechd{align-items:flex-start}
+  .sechd .sub{max-width:60%;overflow-wrap:anywhere;text-align:right}
+  .qt,.dt{font-size:10.5px}
+  .qt th,.qt td,.dt th,.dt td{padding:8px 7px}
+  #spark{height:210px}
+}
+@media(max-width:560px){
+  .kpi .v{font-size:21px}
+  .kpi{padding:11px 12px}
+  .charttop{gap:8px}
+  .charttop .px{font-size:18px}
+  .ivsel{flex:1 1 100%}
+  .bar{padding:10px 12px}
+  .bar .path{width:100%}
+  .btags{width:100%}
+  .tag{font-size:9px;padding:4px 7px}
+  .row-btns .btn{flex:1 1 44%}
+  .kv div{padding:7px 9px}
+}
+
+/* ── responsive ────────────────────────────────────────── */
+@media(max-width:1240px){
+  .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .split{grid-template-columns:1fr}
+  .chartwrap{grid-template-columns:1fr}
+  .chartbox{border-right:0;border-bottom:1px solid var(--line)}
+  .pipe{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:860px){
+  .shell{grid-template-columns:1fr}
+  .rail{position:static;height:auto;flex-direction:row;align-items:center;overflow-x:auto}
+  .rail nav{display:flex;padding:8px;gap:4px}
+  .rail nav a{white-space:nowrap}
+  .railfoot{border-top:0;border-left:1px solid var(--line);padding:8px 12px}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .tape{flex-wrap:wrap}.tape .q{flex:1 1 40%}
+  .pipe{grid-template-columns:1fr}
+  .wrap{padding:12px}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TERMINAL THEME — dense, near-black institutional console
+   Modelled on professional trading terminals: flat near-black surfaces,
+   green as the system/live accent, red reserved for loss, amber for
+   caution. Information density over decoration. No glow without meaning.
+   ═══════════════════════════════════════════════════════════════════ */
+:root{
+  --void:#08090a; --bg:#0a0b0d; --panel:#0f1013; --panel-2:#131519;
+  --edge:#1d1f24; --edge-2:#2a2d33;
+  --acc:#00d97e; --acc-dim:#00a862; --acc-soft:rgba(0,217,126,.12);
+  --gain:#00d97e; --loss:#ff4d4f; --warn:#f0a92b; --idle:#7b828c;
+  --ink:#e9ecef; --ink-2:#a8b0ba; --dim:#7b828c; --faint:#545b64;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+}
+
+html,body{background:var(--void)}
+body{background:var(--void);color:var(--ink)}
+
+/* Flat instrument grid, barely present. */
+body:before{opacity:1;background-image:
+  linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px);
+  background-size:56px 56px;mask-image:none}
+body:after{opacity:1;inset:0;filter:none;animation:none;
+  background:radial-gradient(60rem 30rem at 78% -8%,rgba(0,217,126,.05),transparent 62%)}
+
+/* ── surfaces ───────────────────────────────────────────── */
+.sec{background:var(--panel);border:1px solid var(--edge);border-radius:8px;
+  box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+.sec>.hud{position:absolute;width:11px;height:11px;pointer-events:none;z-index:3;
+  border:1.5px solid var(--acc);opacity:.9}
+.sec{position:relative}
+.sec>.hud.tl{top:0;left:0;border-right:0;border-bottom:0}
+.sec>.hud.tr{top:0;right:0;border-left:0;border-bottom:0}
+.sec>.hud.bl{bottom:0;left:0;border-right:0;border-top:0}
+.sec>.hud.br{bottom:0;right:0;border-left:0;border-top:0}
+
+.sechd{background:var(--panel-2);border-bottom:1px solid var(--edge);padding:7px 12px}
+.sechd:after{display:none}
+.sechd h2{color:var(--ink);font-size:10.5px;letter-spacing:.13em;text-shadow:none}
+.sechd .sub{color:var(--faint);font-size:9px}
+.secbd{padding:10px 12px}
+
+/* ── rail ───────────────────────────────────────────────── */
+.rail{background:#0c0d10;border-right:1px solid var(--edge)}
+.rail:after{display:none}
+.brandmark{background:var(--acc);color:#04150d;border:0;border-radius:5px;
+  box-shadow:none;font-weight:800}
+.brand b{color:var(--ink);text-shadow:none;font-size:13.5px}
+.brand small{color:var(--faint);font-size:8.5px;letter-spacing:.12em}
+.nav{gap:1px;padding:8px}
+.nav a{color:var(--ink-2);padding:7px 9px;font-size:12.5px;border-radius:5px}
+.nav a:hover{background:#15171b;color:var(--ink);border-color:transparent}
+.nav a.on{background:var(--acc-soft);color:var(--ink);border-color:rgba(0,217,126,.3);
+  box-shadow:inset 2px 0 var(--acc)}
+.nav a .ic{color:var(--faint);text-shadow:none;font-size:10px}
+.nav a.on .ic{color:var(--acc)}
+.sidefoot{background:#0f1013;border:1px solid var(--edge);border-radius:6px;padding:9px}
+.sidefoot .online{color:var(--acc);text-shadow:none;font-family:var(--mono);
+  font-size:9.5px;letter-spacing:.12em}
+.dot.ok{background:var(--acc);box-shadow:0 0 6px var(--acc);
+  animation:beacon 2.6s ease-in-out infinite}
+@keyframes beacon{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── header ─────────────────────────────────────────────── */
+.bar{background:#0c0d10;border-bottom:1px solid var(--edge);padding:9px 16px}
+.bar .path{color:var(--faint);font-size:11.5px}
+.bar .path b{color:var(--ink);font-weight:600}
+.pill{background:#0f1013;border:1px solid var(--edge);border-radius:4px;
+  color:var(--ink-2);padding:4px 8px;font-size:9.5px}
+.tag{background:#121418;border:1px solid var(--edge-2);border-radius:3px;
+  color:var(--ink-2);padding:3px 6px;font-size:8.5px;letter-spacing:.12em}
+.tag.ok{border-color:rgba(0,217,126,.35);color:var(--acc);background:rgba(0,217,126,.08)}
+.tag.bad{border-color:rgba(255,77,79,.4);color:#ff8080;background:rgba(255,77,79,.08)}
+.tag.warn{border-color:rgba(240,169,43,.4);color:#f5c46b;background:rgba(240,169,43,.08)}
+.tag.acc{border-color:rgba(0,217,126,.35);color:var(--acc);background:rgba(0,217,126,.08)}
+
+/* ── KPI: dense instrument strip ────────────────────────── */
+.kpis{background:var(--edge);gap:1px;border:1px solid var(--edge);border-radius:8px;
+  overflow:hidden;box-shadow:none}
+.kpi{background:var(--panel);padding:10px 13px;position:relative;overflow:hidden}
+.kpi:before{background:linear-gradient(90deg,transparent,var(--acc),transparent);opacity:.35}
+.kpi:after{display:none}
+.kpi:hover{background:var(--panel-2)}
+.kpi .k{color:var(--faint);font-size:9px;letter-spacing:.14em}
+.kpi .v{color:var(--ink);font-size:clamp(19px,1.9vw,26px);font-weight:650;
+  text-shadow:none;margin-top:6px;letter-spacing:-.01em}
+.kpi .v.up{color:var(--gain);text-shadow:none}
+.kpi .v.down{color:var(--loss);text-shadow:none}
+.kpi .v.warn{color:var(--warn);text-shadow:none}
+.kpi .s{color:var(--faint);font-size:9px;margin-top:5px}
+
+/* ── market terminal ────────────────────────────────────── */
+.tape{background:var(--edge);border:1px solid var(--edge);border-radius:0;
+  border-left:0;border-right:0}
+.tape .q{background:#0d0e11;padding:8px 13px;border-radius:0}
+.tape .q:hover{background:#111316}
+.tape .q .s{color:var(--faint);font-size:9px;letter-spacing:.12em}
+.tape .q .p{color:var(--ink);font-size:15px;font-weight:650;text-shadow:none;margin-top:5px}
+.tape .q .c{font-size:9.5px;margin-top:4px}
+.tape .q .c.up{color:var(--gain)} .tape .q .c.dn{color:var(--loss)}
+.tape .q .c.fl{color:var(--faint)}
+
+.chartbox,.termtable{background:#0b0c0e;padding:10px 12px}
+.termtable{padding:6px 8px}
+.charttop{gap:11px;margin-bottom:8px}
+.charttop .sym{color:var(--ink);letter-spacing:.12em;font-size:12.5px;text-shadow:none}
+.charttop .px{color:var(--acc);font-size:20px;text-shadow:none;font-weight:650}
+.charttop .mt{color:var(--faint);font-size:9.5px}
+.ivsel{background:#0b0c0e;border:1px solid var(--edge-2);border-radius:4px;
+  color:var(--ink-2);padding:4px 7px;font-size:9.5px}
+#spark{border-color:var(--edge);box-shadow:none;border-radius:4px}
+.notes{color:var(--faint);font-size:10px;padding:8px 12px;line-height:1.55}
+
+.qt{font-size:11px}
+.qt th{background:#101216;color:var(--faint);border-bottom-color:var(--edge);
+  padding:7px 9px;font-size:8.5px;letter-spacing:.12em}
+.qt td{padding:7px 9px;border-bottom-color:#17191d}
+.qt tbody tr:hover{background:#14161a}
+.qt tbody tr.sel{background:rgba(0,217,126,.09);box-shadow:inset 2px 0 var(--acc)}
+.qt td:first-child{color:var(--ink);font-weight:600}
+.qt tbody tr.stale td.p{color:var(--warn)}
+.qt tbody tr.stale td.p::after{content:" STALE";font-size:8px;color:var(--warn)}
+.qt tbody tr.stale .n{color:var(--dim)}
+
+/* ── agent pipeline ─────────────────────────────────────── */
+.pipe{background:var(--edge);gap:1px}
+.pn{background:var(--panel);padding:10px 12px}
+.pn:hover{background:var(--panel-2)}
+.pn .ix{color:var(--faint);font-size:9px}
+.pn .nm{font-size:12.5px;font-weight:600}
+.pn .st{font-size:8.5px;letter-spacing:.12em;margin-top:7px;text-shadow:none}
+.pn .st.live{color:var(--gain)}
+.pn .st.idle{color:var(--warn)}
+.pn .st.off{color:var(--faint)}
+.pn .tx{color:var(--ink-2);font-size:11.5px;line-height:1.5;margin-top:7px}
+.pn .bar2{background:#1e2126;margin-top:9px}
+.pn .bar2 i{background:var(--acc)}
+.pn[data-hue="#f0a92b"] .bar2 i{background:var(--warn)}
+.pn .nm{color:var(--ink);font-size:12.5px;font-weight:600}
+.pn .mt{color:var(--faint);font-size:9px;margin-top:8px;padding-top:8px;
+  border-top-color:#17191d}
+
+/* ── forms ──────────────────────────────────────────────── */
+.fld label,.field label{color:var(--faint);font-size:9px;letter-spacing:.13em}
+.fld select,.fld input,.field select,.field input{
+  background:#0b0c0e;border-color:var(--edge-2);color:var(--ink);
+  border-radius:4px;padding:7px 9px;font-size:12px}
+.fld select:focus,.fld input:focus,.field select:focus,.field input:focus{
+  border-color:var(--acc);box-shadow:0 0 0 2px rgba(0,217,126,.16)}
+.frm{padding:12px;gap:9px}
+.btn{background:#14161a;border:1px solid var(--edge-2);color:var(--ink);
+  border-radius:4px;padding:7px 12px;font-size:11.5px;font-weight:500}
+.btn:hover{background:#1a1d22;border-color:#3a3e45;color:#fff}
+.btn.go{background:var(--acc);border-color:var(--acc);color:#04150d;font-weight:650}
+.btn.go:hover{background:#1fe892;border-color:#1fe892}
+.msg{border-radius:4px;font-size:11px;padding:8px 10px;margin:0 12px 10px}
+.msg.ok{border-color:rgba(0,217,126,.35);color:#5fe3ab;background:rgba(0,217,126,.07)}
+.msg.bad{border-color:rgba(255,77,79,.4);color:#ff8f8f;background:rgba(255,77,79,.07)}
+.riskbox{border-top-color:var(--edge);color:var(--ink-2);padding:9px 12px;
+  font-size:10px;line-height:1.6}
+.riskbox.halt{border-top-color:rgba(255,77,79,.45);color:#ff8f8f;background:rgba(255,77,79,.06)}
+.fine{color:var(--faint);font-size:9.5px;line-height:1.5;margin-top:8px}
+.chk{margin-top:9px}
+.chk span{font-size:11px;color:var(--ink-2)}
+.chk em{font-size:9px;color:var(--faint)}
+
+/* ── AI desk ────────────────────────────────────────────── */
+.aigrid{grid-template-columns:minmax(0,320px) minmax(0,1fr);align-items:stretch}
+.aigrid>*{display:flex;flex-direction:column;min-height:0}
+.kv{background:var(--edge);border-color:var(--edge);border-radius:4px;margin-top:10px}
+.kv div{background:#0f1013;padding:6px 10px}
+.kv b{color:var(--faint);font-size:9px;letter-spacing:.12em}
+.kv span{color:var(--ink);font-size:11px}
+.stagerow{gap:7px;align-content:start;flex:1;min-height:0}
+.aigrid>div:last-child{min-height:0;display:flex}
+.stagerow>.empty{grid-column:1/-1;align-self:stretch;color:var(--faint);
+  border:1px dashed var(--edge-2);border-radius:6px;background:#0d0e11;
+  padding:28px 16px;display:grid;place-content:center;text-align:center;
+  min-height:200px;flex:1}
+.stage{background:#0d0e11;border-color:var(--edge);border-radius:5px;padding:9px 11px}
+.stage:hover{border-color:var(--edge-2)}
+.stage .sh b{color:var(--ink);font-size:12px}
+.stage p{color:var(--ink-2);font-size:11.5px;line-height:1.55}
+.stage li{color:var(--warn);font-size:10.5px}
+.stage.bad{border-color:rgba(255,77,79,.35)}
+
+/* ── tables and feed ────────────────────────────────────── */
+.dt{font-size:11.5px}
+.dt th{background:#101216;color:var(--faint);border-bottom-color:var(--edge);
+  padding:7px 12px;font-size:8.5px;letter-spacing:.12em}
+.dt td{padding:7px 12px;border-bottom-color:#17191d}
+.dt .sub2{color:var(--faint);font-size:9.5px}
+.empty{color:var(--faint);padding:18px 12px;font-size:11px}
+.pos{color:var(--gain)} .neg{color:var(--loss)}
+.xbtn{background:transparent;border:1px solid var(--edge-2);border-radius:3px;
+  color:var(--ink-2);padding:2px 7px;font-size:9.5px}
+.xbtn:hover{border-color:var(--loss);color:#ff8f8f;background:rgba(255,77,79,.07)}
+.pos-row:hover,.dt tbody tr:hover{background:#14161a}
+.feed{max-height:420px}
+.feed .row{gap:9px;padding:8px 12px;border-bottom-color:#17191d}
+.feed .tx{font-size:11.5px;color:var(--ink-2);line-height:1.5}
+.feed .tx b{color:var(--ink)}
+.feed .ts{color:var(--faint);font-size:9px;letter-spacing:.1em}
+.warn{border-color:rgba(240,169,43,.35);background:rgba(240,169,43,.07);
+  color:#f5c46b;border-radius:4px;font-size:10.5px;padding:7px 10px}
+
+.split{grid-template-columns:minmax(0,1fr) 330px;align-items:start}
+.stack{gap:14px}
+.wrap{gap:14px}
+.main{padding-bottom:36px}
+.topbar{margin-bottom:0}
+
+@media(max-width:1240px){.aigrid{grid-template-columns:1fr}}
+@media(max-width:860px){
+  .secbd{padding:9px 10px}
+  .kpi{padding:9px 11px}
+  .kpi .v{font-size:19px}
+  .qt,.dt{font-size:10.5px}
+  .qt th,.qt td,.dt th,.dt td{padding:7px 7px}
+  #spark{height:210px}
+  .feed{max-height:320px}
+}
+@media(prefers-reduced-motion:reduce){
+  .dot.ok{animation:none}
+  .stagerow>.empty:before{animation:none}
+}
+
+/* ═══ TOP BAR NAV + LIVE TICKER ═══
+   The left rail is gone; navigation lives in the sticky header. The ticker
+   strip is duplicated by renderTicker() and translated -50%, so the loop is
+   seamless. Stale quotes are labelled with their age, never scrolled past as
+   though current. */
+.shell{display:block}
+.main{padding-bottom:36px}
+
+.bar{position:sticky;top:0;z-index:30;display:flex;align-items:center;
+  gap:14px;flex-wrap:wrap;background:#0c0d10;border-bottom:1px solid var(--edge);
+  padding:8px 16px}
+.bar .path{font-size:11.5px;flex:none}
+.topnav{display:flex !important;gap:2px;flex-wrap:wrap;min-width:0;
+  padding:0 !important;flex:none}
+.topnav a{padding:5px 10px !important;border-radius:4px;font-size:12px;
+  color:var(--ink-2);text-decoration:none;border:1px solid transparent;
+  white-space:nowrap;transition:background .12s,color .12s}
+.topnav a:hover{background:#15171b;color:var(--ink)}
+.topnav a.on{background:var(--acc-soft);color:var(--ink);
+  border-color:rgba(0,217,126,.3)}
+.bar .btags{margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.tag.live{display:inline-flex;align-items:center;gap:6px}
+
+.tickerbar{border-bottom:1px solid var(--edge);background:#0b0c0e;
+  overflow:hidden;position:relative}
+.tickerbar:before{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;
+  background:linear-gradient(90deg,#0b0c0e 0,transparent 60px,
+             transparent calc(100% - 60px),#0b0c0e 100%)}
+.ticker{display:flex;width:max-content;animation:tickerRun 44s linear infinite}
+.ticker:hover{animation-play-state:paused}
+@keyframes tickerRun{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.tk{display:inline-flex;align-items:center;gap:7px;padding:7px 15px;
+  border-right:1px solid #141619;white-space:nowrap;font-family:var(--mono);
+  font-size:11px}
+.tk .s{color:var(--faint);font-size:9.5px;letter-spacing:.12em}
+.tk .p{color:var(--ink);font-weight:600}
+.tk .d{font-size:9.5px}
+.tk .d.up{color:var(--gain)} .tk .d.dn{color:var(--loss)}
+.tk .d.fl{color:var(--faint)}
+.tk .age{font-size:9px;color:#3f454c}
+.tk .age.stale{color:var(--warn)}
+
+@media(max-width:860px){
+  .bar{gap:8px;padding:8px 12px}
+  .bar .path{width:100%}
+  .bar .btags{margin-left:0;width:100%}
+  .topnav{width:100%;overflow-x:auto;flex-wrap:nowrap}
+  .topnav a{flex:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .ticker{animation:none;flex-wrap:wrap;width:100%}
+  .tickerbar{overflow:visible}
+}
+
+/* ═══ FLEET COMMAND LAYER ═══
+   Command-center fleet cards over the terminal base. Every number derives
+   from recorded events, account state or policy — shares, counts and
+   timestamps only. Anything uncomputable (e.g. per-agent win rates, which
+   have no attribution data) renders as an em dash, never a guess. */
+#clock{font-variant-numeric:tabular-nums;min-width:74px;text-align:center}
+
+.fleetbar{display:flex;align-items:center;gap:10px;padding:9px 14px;
+  border-bottom:1px solid var(--line);background:var(--surface-2)}
+.fleetbar .fl{font:600 9.5px/1 var(--mono);letter-spacing:.16em;color:var(--faint)}
+.fleetbar .fmeter{flex:1;height:5px;border-radius:3px;background:var(--line-2);
+  overflow:hidden}
+.fleetbar .fmeter i{display:block;height:100%;width:0;border-radius:3px;
+  background:linear-gradient(90deg,var(--acc-dim),var(--acc));
+  transition:width .5s ease}
+.fleetbar .fp{font:600 10.5px/1 var(--mono);color:var(--ink);
+  font-variant-numeric:tabular-nums}
+.fleetbar .fn{font:500 9.5px/1 var(--mono);color:var(--dim);letter-spacing:.06em}
+.sechd .sub.err{color:var(--loss)}
+
+.pn{animation:fleetIn .45s ease both;animation-delay:var(--d,0ms)}
+@keyframes fleetIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.pn{transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.pipe .pn:hover{transform:translateY(-3px);border-color:var(--acc);
+  box-shadow:0 14px 34px -12px #000,0 0 22px -8px var(--acc-soft)}
+.pipe .pn{box-shadow:inset 2px 0 var(--hue,transparent)}
+.ahead{display:flex;align-items:center;gap:10px}
+.ava{position:relative;width:40px;height:40px;flex:none}
+.ava svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.ava .ring-bg{fill:none;stroke:var(--line-2);stroke-width:3}
+.ava .ring-fg{fill:none;stroke:var(--acc);stroke-width:3;stroke-linecap:round;
+  transition:stroke-dasharray .5s ease}
+.ava .mo{position:absolute;inset:0;display:grid;place-items:center;
+  font:700 13px/1 var(--mono);color:var(--ink)}
+.ava .lm{position:absolute;right:-2px;bottom:-2px;width:9px;height:9px;
+  border-radius:50%;background:var(--faint);border:2px solid var(--surface)}
+.ava .lm.on{background:var(--acc);box-shadow:0 0 8px var(--acc)}
+.ava .lm.warn{background:var(--warn)}
+.anm{min-width:0}
+.anm .nm{font-size:13px;font-weight:650;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis}
+.anm .rl{font:500 8.5px/1.4 var(--mono);letter-spacing:.1em;color:var(--faint)}
+.pn .stats{display:flex;gap:12px;margin-top:10px;padding-top:9px;
+  border-top:1px solid var(--line)}
+.pn .stats div{display:grid;gap:3px}
+.pn .stats b{font:650 12.5px/1 var(--mono);color:var(--ink);
+  font-variant-numeric:tabular-nums}
+.pn .stats span{font:500 8px/1 var(--mono);letter-spacing:.12em;color:var(--faint)}
+.hb{display:flex;gap:2px;margin-top:9px}
+.hb i{flex:1;height:9px;border-radius:1px;background:var(--line-2)}
+.hb i.hit{background:var(--acc)}
+.hb i.ai{background:var(--acc-dim)}
+.hb i.miss{background:transparent;border:1px solid var(--line-2)}
+.pn details.rep{margin-top:9px;border-top:1px solid var(--line);padding-top:8px}
+.pn details.rep summary{cursor:pointer;font:600 9px/1.6 var(--mono);
+  letter-spacing:.12em;color:var(--dim);list-style:none}
+.pn details.rep summary::-webkit-details-marker{display:none}
+.pn details.rep summary:hover{color:var(--ink)}
+.pn details.rep .re{padding:7px 0;border-bottom:1px dashed var(--line)}
+.pn details.rep .re:last-child{border-bottom:0}
+.pn details.rep .rt{font:600 9px/1.6 var(--mono);color:var(--faint)}
+.pn details.rep .rs{font:600 9px/1.6 var(--mono)}
+.pn details.rep .rs.ok{color:var(--acc)} .pn details.rep .rs.bad{color:var(--warn)}
+.pn details.rep .rx{font-size:11px;line-height:1.5;color:var(--ink-2);margin-top:3px}
+.agctl{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:9px;
+  border-top:1px solid var(--line)}
+.switch{position:relative;display:inline-flex;flex:none;cursor:pointer}
+.switch input{position:absolute;opacity:0;inset:0;cursor:pointer}
+.switch .tr{width:32px;height:17px;border-radius:10px;background:var(--line-2);
+  border:1px solid var(--edge-2);transition:background .15s,border-color .15s;
+  position:relative}
+.switch .tr:after{content:"";position:absolute;top:2px;left:2px;width:11px;height:11px;
+  border-radius:50%;background:var(--dim);transition:left .15s,background .15s}
+.switch input:checked+.tr{background:rgba(0,217,126,.25);border-color:var(--acc)}
+.switch input:checked+.tr:after{left:16px;background:var(--acc)}
+.switch input:focus-visible+.tr{outline:2px solid var(--acc);outline-offset:2px}
+.switch input:disabled+.tr{opacity:.45;cursor:not-allowed}
+.agctl .lb{font:600 9px/1.5 var(--mono);letter-spacing:.1em;color:var(--dim)}
+.agctl .lk{font:500 9px/1.5 var(--mono);color:var(--faint)}
+@media(max-width:860px){
+  .fleetbar{flex-wrap:wrap}
+  .fleetbar .fmeter{flex:1 1 100%;order:3}
+}
+@media(prefers-reduced-motion:reduce){
+  .pn{animation:none}
+  .pipe .pn:hover{transform:none}
+  .ava .ring-fg,.fleetbar .fmeter i{transition:none}
+}
+
+/* ═══ NEON COMMAND THEME ═══
+   Purple/cyan command identity over the terminal base, modelled on pro
+   trading-desk references: a neon top edge, glowing panel rims, gradient
+   display numerals, and a bright ticker. All figures stay real data. */
+:root{
+  --neon:#b366ff; --neon-dim:#7c3aed; --cy:#22d3ee;
+  --neon-soft:rgba(150,80,255,.14); --cy-soft:rgba(34,211,238,.12);
+}
+body:before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:60;
+  background:linear-gradient(90deg,var(--neon),var(--cy),var(--gain),var(--neon));
+  box-shadow:0 0 18px rgba(150,80,255,.65)}
+.brandmark{background:linear-gradient(135deg,#3b1470,#0d1525)!important;
+  color:#d9b8ff!important;box-shadow:0 0 26px #a855ff44!important}
+.nav a.active{background:linear-gradient(90deg,#2a1650,#101827)!important;
+  box-shadow:inset 2px 0 var(--neon),0 0 18px #a855ff22!important}
+.nav .ico{color:#c4a4ff!important}
+.sec{border-color:#ffffff10!important;
+  box-shadow:0 24px 80px rgba(0,0,0,.42),0 0 0 1px #a855ff14,0 0 34px -18px #a855ff55!important}
+.floor,.hero{border-color:#a855ff26!important}
+.hero:after{background:#a855ff14!important}
+.eyebrow{color:#c4a4ff!important}
+.metric strong,.hero h1{
+  background:linear-gradient(180deg,#ffffff,#9be8c3)!important;
+  -webkit-background-clip:text!important;background-clip:text!important;
+  -webkit-text-fill-color:transparent!important}
+.metric .up{color:var(--gain)!important;text-shadow:0 0 12px #00ff8866}
+.floor-dot{background:var(--gain)!important;box-shadow:0 0 16px var(--gain)!important}
+.agent{border-color:#c5dcff22!important}
+.agent:hover{border-color:#a855ff66!important;
+  box-shadow:0 22px 50px #0009,0 0 30px -6px #a855ff55!important}
+.agent:after{background:linear-gradient(90deg,transparent,var(--neon),var(--cy),transparent)!important;
+  box-shadow:0 0 16px #a855ff88!important}
+.avatar{border-color:#a855ff66!important;box-shadow:0 0 22px #a855ff33!important}
+.screen{border-color:#a855ff1e!important}
+.tickerbar{border-bottom-color:#a855ff33!important}
+.tk{color:#e8f3ff!important}
+.tk .s{color:var(--cy)!important;text-shadow:0 0 10px #22d3ee55}
+.tk .d.up{color:var(--gain)!important;text-shadow:0 0 10px #00ff8866}
+.tk .d.dn{color:var(--loss)!important;text-shadow:0 0 10px #ff4d6a66}
+.tk .age.stale{color:var(--warn)!important}
+.event:hover{border-color:#a855ff33!important}
+.event[data-recorded="true"] .edot{background:var(--cy)!important;
+  box-shadow:0 0 10px var(--cy)!important}
+#floorStatus{border-color:#a855ff33!important;color:#d9b8ff!important}
+.btn.primary,.tradebtn{background:linear-gradient(135deg,#6d28d9,#3b1470)!important;
+  border-color:#a855ff66!important;box-shadow:0 0 22px -6px #a855ff88!important}
+.agent[data-observed="true"] .status{background:var(--gain)!important;
+  box-shadow:0 0 11px var(--gain)!important}
+.roster button[aria-pressed=true]{border-color:var(--neon)!important;
+  box-shadow:0 0 22px #a855ff33!important}
+
+/* ═══ NEON INTENSITY PASS ═══
+   Push separation, saturation and glow decisively: brighter panels, larger
+   luminous numerals, per-agent edge light, vivid ticker. Form follows the
+   same data; only the light changes. */
+.sec{background:linear-gradient(180deg,#11141a,#0b0d11)!important;
+  border-color:#ffffff1f!important;
+  box-shadow:0 24px 80px rgba(0,0,0,.5),0 0 0 1px #a855ff22,0 0 52px -10px #a855ff77!important}
+.sechd h2{color:#f1eaff!important;text-shadow:0 0 14px #a855ff55}
+.metric strong{font-size:clamp(27px,2.7vw,40px)!important;
+  text-shadow:0 0 30px rgba(0,255,136,.35)!important}
+.metric .up{text-shadow:0 0 18px #00ff8899!important}
+.tick,.tk{font-size:12px!important}
+.tk .p{color:#ffffff!important;text-shadow:0 0 14px rgba(255,255,255,.3)}
+.tk .d{font-weight:700!important}
+.pipe .pn{box-shadow:inset 3px 0 var(--hue,transparent),0 0 30px -12px var(--hue,transparent)!important}
+.pipe .pn:hover{box-shadow:inset 3px 0 var(--hue,transparent),0 18px 44px -12px #000,0 0 34px -8px var(--hue,transparent)!important}
+.pn .nm{font-size:13.5px!important;color:#ffffff!important}
+.ava{width:46px!important;height:46px!important}
+.ava .mo{font-size:15px!important;font-weight:800!important}
+.ava .ring-fg{stroke-width:3.5!important}
+.hb i.hit{filter:brightness(1.3) saturate(1.2)}
+.fleetbar .fmeter i{box-shadow:0 0 12px #00ff88aa}
+.event b{color:#fff!important}
+/* Mobile-only usability pass. Desktop layout and existing components remain unchanged. */
+@media(max-width:640px){
+  html,body{min-height:100%;height:auto;overflow-x:hidden}
+  .wrap{padding:10px;gap:12px}
+  .bar{gap:8px;padding:9px 10px}
+  .bar .path{font-size:10.5px}
+  .topnav{gap:4px;scrollbar-width:thin;overscroll-behavior-x:contain;
+    -webkit-overflow-scrolling:touch;padding-bottom:3px!important}
+  .topnav a{min-height:38px;display:inline-flex;align-items:center;padding:8px 10px!important}
+  .bar .btags{gap:5px}
+  .tag{min-height:26px;display:inline-flex;align-items:center}
+  .tickerbar{-webkit-mask-image:linear-gradient(90deg,transparent,#000 10px,#000 calc(100% - 10px),transparent);
+    mask-image:linear-gradient(90deg,transparent,#000 10px,#000 calc(100% - 10px),transparent)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpi{padding:10px}
+  .kpi .k{font-size:8.5px;letter-spacing:.1em;line-height:1.35}
+  .kpi .v{font-size:clamp(17px,5.4vw,22px);overflow-wrap:anywhere}
+  .kpi .s{font-size:9px;line-height:1.35;letter-spacing:.03em}
+  .secbd{padding:10px}
+  .sechd{padding:10px;gap:7px}
+  .sechd .sub{max-width:58%;font-size:9px;line-height:1.35}
+  .tape{flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x proximity;
+    -webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+  .tape .q{flex:0 0 42%;scroll-snap-align:start;padding:9px 10px}
+  .chartbox{padding:10px}
+  .charttop{align-items:center;gap:8px}
+  .charttop .sym{font-size:12px}
+  .charttop .px{font-size:18px}
+  .charttop .mt{font-size:9px}
+  #spark{height:190px;touch-action:pan-y}
+  .qtscroll,.dtscroll{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;
+    -webkit-overflow-scrolling:touch}
+  .qtscroll .qt{min-width:440px}
+  .dtscroll .dt{min-width:460px}
+  .qt th,.qt td,.dt th,.dt td{padding:9px 8px;white-space:nowrap}
+  .row-btns{gap:7px}
+  .row-btns .btn{min-height:42px;flex:1 1 44%}
+  button,.btn,select,input{min-height:40px}
+  input,select,textarea{font-size:16px}
+  .pipe{gap:8px}
+  .pn{padding:11px}
+  .kv div{gap:7px}
+  .kv div>*{min-width:0;overflow-wrap:anywhere}
+  .feed{max-height:280px;overscroll-behavior:contain}
+}
+@media(max-width:380px){
+  .wrap{padding:8px;gap:10px}
+  .kpi{padding:9px}
+  .kpi .v{font-size:17px}
+  .tape .q{flex-basis:55%}
+  .charttop .mt{max-width:100%;overflow-wrap:anywhere}
+  .tag{letter-spacing:.06em;padding:4px 6px}
+}
+
+</style>
+<link rel="stylesheet" href="terminal-2029.css">
+<link rel="stylesheet" href="desk-unify-a.css">
+<style id="bootStyles">
+#bootOverlay{position:fixed;inset:0;background:#05070a;z-index:9999;display:flex;
+  flex-direction:column;gap:4px;padding:24px;font:400 11px/1.35 "SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  color:#2fbf87;overflow-y:auto}
+#bootOverlay:after{content:"";display:block;width:1em;height:1em;margin-top:2px}
+#bootLines .line{display:flex;align-items:center;gap:8px;margin:3px 0}
+#bootLines .line .p{color:#5a7a6a;min-width:180px}
+#bootLines .line.ok .p{color:var(--accent,#00d4ff)}
+#bootLines .line.ok .dot{width:4px;height:4px;border-radius:50%;background:#00d97e;box-shadow:0 0 6px #00d97e}
+#bootLines .line.err .dot{width:4px;height:4px;border-radius:50%;background:#ff4d6a}
+#bootLines .line.warn .dot{width:4px;height:4px;border-radius:50%;background:#f0a92b}
+#bootLines .line .txt{color:#a8b8c8;white-space:pre-wrap;word-break:break-word}
+#bootCursor{display:inline-block;width:10px;height:13px;background:#00e891;animation:blink .9s step-end infinite;margin-left:2px}
+@keyframes blink{50%{opacity:0}}
+#themeToggle{transition:box-shadow .2s}
+#themeToggle.active{box-shadow:0 0 14px rgba(0,245,160,.6)}
+.kpi .v.fresh{animation:pulseIn .5s ease-out;box-shadow:0 0 12px rgba(0,245,160,.5)}
+@keyframes pulseIn{0%,100%{box-shadow:0 0 0 0 rgba(0,245,160,.5)}50%{box-shadow:0 0 0 6px rgba(0,245,160,0)}}
+.thinking{color:#22d3ee;text-shadow:0 0 10px rgba(34,211,238,.5)}
+.dots{display:inline-block;animation:bounceDots 1.4s infinite;vertical-align:bottom}
+@keyframes bounceDots{0%,100%{opacity:1}48%{opacity:.3}49%{opacity:.3;transform:translateY(-2px)}50%{opacity:.3;transform:translateY(-3px)}51%{opacity:.3}70%{opacity:.8}}
+</style>
+</head>
+<body>
+<div id="bootOverlay"><div id="bootLines"></div><div id="bootCursor">▌</div></div>
+<div class="shell">
+
+  <main class="main">
+    <div class="bar">
+      <div class="path">TradingLab / <b>Overview</b></div>
+      <nav class="topnav" aria-label="Sections">
+        <a class="on" href="#overview">Overview</a>
+        <a href="#markets">Markets</a>
+        <a href="#pipeline">Agents</a>
+        <a href="#meme-research">Meme</a>
+        <a href="#ai">AI Desk</a>
+        <a href="#positions">Positions</a>
+        <a href="#activity">Events</a>
+        <a href="company.html">Office</a>
+      </nav>
+      <button type="button" class="btn" id="themeToggle" title="Cycle visual theme: terminal → 2029 neon → unified desk" style="font:600 9.5px/1 var(--mono);letter-spacing:.1em;padding:5px 10px;border-radius:5px;margin-left:8px">2029</button>
+      <button type="button" class="btn go" id="phantomConnect" aria-label="Connect Phantom wallet" title="Connect your Phantom wallet; no transactions will be signed" style="font:600 9.5px/1 var(--mono);letter-spacing:.06em;padding:7px 10px;margin-left:6px;white-space:nowrap">CONNECT PHANTOM</button>
+      <span id="walletBalance" class="tag small" style="display:none;margin-left:6px">-- SOL</span>
+      <div class="btags">
+        <span class="tag" id="clock" title="Coordinated Universal Time">--:--:--</span>
+        <span class="tag" id="tagFeed">ECB REFERENCE</span>
+        <span class="tag" id="tagDate">DATE —</span>
+        <span class="tag" id="tagGate">RISK ARMED</span>
+        <span class="tag live"><i class="dot ok" id="sysDot"></i><span class="t" id="sysTxt">LIVE</span></span>
+      </div>
+    </div>
+
+    <div class="tickerbar" aria-live="off">
+      <div class="ticker" id="ticker"></div>
+    </div>
+
+<div class="wrap">
+
+      <section class="kpis" id="kpis"></section>
+
+      <section class="sec" id="markets"><i class="hud tl"></i><i class="hud tr"></i><i class="hud bl"></i><i class="hud br"></i>
+        <div class="sechd">
+          <h2>Market Terminal</h2>
+          <span class="sub" id="feedSrc">—</span>
+        </div>
+        <div class="tape" id="tape"></div>
+        <div class="chartwrap">
+          <div class="chartbox">
+            <div class="charttop">
+              <span class="sym" id="cSym">EUR/USD</span>
+              <span class="px" id="cPx">—</span>
+              <span class="mt" id="cMeta">—</span>
+              <span class="mt" id="chartSrc" style="margin-left:auto">—</span>
+              <select id="interval" class="ivsel" aria-label="Bar interval">
+                <option value="5m">5 min</option>
+                <option value="15m" selected>15 min</option>
+                <option value="30m">30 min</option>
+                <option value="1h">1 hour</option>
+                <option value="1d">1 day</option>
+              </select>
+              <button id="qbuy" class="qbtn buy" title="One-click paper buy at the ticket notional">Buy</button>
+              <button id="qsell" class="qbtn sell" title="One-click paper sell at the ticket notional">Sell</button>
+            </div>
+            <div id="spark"></div>
+            <div id="chartEmpty" class="chartempty" hidden></div>
+            <p class="warn" id="cWarn" hidden></p>
+          </div>
+          <div>
+            <div class="qtscroll"><table class="qt"><thead><tr>
+              <th>PAIR</th><th>LAST</th><th>BID</th><th>ASK</th><th>SPR</th><th>DATE</th>
+            </tr></thead><tbody id="quotes"></tbody></table></div>
+            <div class="notes" id="quoteNote">Prices are reference mid rates. Click a row to load the pair.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="sec" id="pipeline"><i class="hud tl"></i><i class="hud tr"></i><i class="hud bl"></i><i class="hud br"></i>
+        <div class="sechd">
+          <h2>Trading Fleet</h2>
+          <span class="sub" id="pipeMeta">—</span>
+          <span class="sub err" id="pipeErr" role="status"></span>
+        </div>
+        <div class="fleetbar" aria-label="Fleet reporting share">
+          <span class="fl">FLEET SIGNAL</span>
+          <div class="fmeter"><i id="fleetFill"></i></div>
+          <span class="fp" id="fleetPct">—</span>
+          <span class="fn" id="fleetNote">—</span>
+        </div>
+        <div class="pipe" id="pipe"></div>
+      </section>
+
+      <section class="sec" id="meme-research">
+        <div class="sechd">
+          <h2>Solana Meme-Coin Research</h2>
+          <span class="sub" id="memeMeta">READ-ONLY · NOT A BUY SIGNAL</span>
+          <button class="btn go" id="memeScan">Scan candidates</button>
+        </div>
+        <div class="secbd">
+          <p class="fine" style="margin-top:0">Screens public DEX market data for liquidity, turnover, activity and short-term momentum. This does not check contract safety, holder concentration or sellability. No wallet or transaction execution is connected.</p>
+          <div class="msg" id="memeMsg"></div>
+          <div id="memeResults"><div class="empty">No scan yet. Press “Scan candidates” to run the read-only Solana research pass.</div></div>
+          <div class="sechd" style="margin-top:18px">
+            <h3>Paper Outcome Tracking</h3>
+            <span class="sub" id="memePaperMeta">LOADING</span>
+            <button class="btn" id="memePaperUpdate">Update outcomes</button>
+          </div>
+          <div id="memePaperStatus"><div class="empty">Loading stored paper outcomes…</div></div>
+          <div class="sechd" style="margin-top:18px">
+            <h3>Autonomous Paper Trader</h3>
+            <span class="sub" id="memeTraderMeta">PAPER ONLY · LOADING</span>
+            <button class="btn go" id="memeTraderRun">Run paper cycle</button>
+            <button class="btn" id="memeTraderRefresh">Refresh</button>
+          </div>
+          <div class="msg" id="memeTraderMsg">No wallet or live orders. A cycle scans candidates, applies deterministic entry rules and independent safety gates, then records simulated positions.</div>
+          <div id="memeTraderStatus"><div class="empty">Loading paper portfolio…</div></div>
+        </div>
+      </section>
+
+      <div class="split">
+        <div class="stack">
+          <section class="sec" id="ai"><i class="hud tl"></i><i class="hud tr"></i><i class="hud bl"></i><i class="hud br"></i>
+        <div class="sechd">
+          <h2>AI Research Desk</h2>
+          <span class="sub" id="aiState">NOT CONFIGURED</span>
+        </div>
+        <div class="secbd">
+          <div class="aigrid">
+            <div>
+              <div class="fld">
+                <label for="aiProvider">Provider</label>
+                <select id="aiProvider"></select>
+              </div>
+              <div class="fld">
+                <label for="aiBase">Base URL</label>
+                <input id="aiBase" type="text" placeholder="provider default" autocomplete="off">
+                <small class="hint" id="aiBaseHint"></small>
+              </div>
+              <div class="fld">
+                <label for="aiModel">Model id</label>
+                <input id="aiModel" type="text" placeholder="model id" autocomplete="off">
+              </div>
+              <div class="fld" id="aiKeyWrap">
+                <label for="aiKey">API key</label>
+                <input id="aiKey" type="password" placeholder="sk-..." autocomplete="off">
+              </div>
+              <label class="chk"><input type="checkbox" id="aiJson" checked>
+                <span>Enforce JSON output <em>turn off if the gateway rejects it</em></span></label>
+              <div class="row-btns">
+                <button class="btn go" id="aiConnect">Connect</button>
+                <button class="btn" id="aiVerify">Check key</button>
+                <button class="btn" id="aiForget">Forget</button>
+                <button class="btn" id="aiRun">Run research</button>
+              </div>
+              <p class="msg" id="aiMsg" role="status"></p>
+              <div class="kv" id="aiBudget"></div>
+              <p class="fine secondary">The key is held in the server process only. It is never written
+                to the database, a log, an export or browser storage, and restarting the
+                server forgets it. The model reads observed prices and writes research,
+                macro views, strategy hypotheses and critique. It has no order tool: it
+                cannot size an entry, approve one, or alter a risk limit. Those stay
+                deterministic.</p>
+            </div>
+            <div>
+              <div class="stagerow" id="aiStages">
+                <div class="empty">No research run yet. Connect a key, then press Run research.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="sec" id="positions"><i class="hud tl"></i><i class="hud tr"></i><i class="hud bl"></i><i class="hud br"></i>
+            <div class="sechd">
+              <h2>Open Positions</h2>
+              <span class="sub" id="posMeta">0 OPEN</span>
+            </div>
+            <div id="posBody"></div>
+          </section>
+        </div>
+        <div class="stack">
+          <section class="sec" id="activity"><i class="hud tl"></i><i class="hud tr"></i><i class="hud bl"></i><i class="hud br"></i>
+            <div class="sechd">
+              <h2>Event Log</h2>
+              <span class="sub">RECORDED REPORTS</span>
+            </div>
+            <div class="feed" id="feed"></div>
+            <div class="notes" style="padding:10px 14px">
+              Entries are recorded runtime events. Office animation is presentation only and is
+              not evidence of agent activity.
+            </div>
+          </section>
+
+          <section class="sec" id="ticket"><i class="hud tl"></i><i class="hud tr"></i><i class="hud bl"></i><i class="hud br"></i>
+            <div class="sechd"><h2>Order Ticket</h2><span class="sub">RISK GATED</span></div>
+            <div class="frm">
+              <div class="fld">
+                <label for="pair">Instrument</label>
+                <select id="pair">
+                  <option>EUR/USD</option><option>GBP/USD</option><option>USD/JPY</option>
+                  <option>AUD/USD</option><option>USD/CHF</option>
+                  <option>XAU/USD</option>
+                  <option>AAPL/USD</option><option>MSFT/USD</option><option>NVDA/USD</option>
+                  <option>TSLA/USD</option><option>AMZN/USD</option><option>META/USD</option>
+                </select>
+              </div>
+              <div class="fld">
+                <label for="side">Direction</label>
+                <select id="side"><option value="buy">Buy / Long</option><option value="sell">Sell / Short</option></select>
+              </div>
+              <div class="fld">
+                <label for="notional">Notional (USD)</label>
+                <input id="notional" type="number" min="1" max="1000" step="10" value="500">
+              </div>
+              <button class="btn go" id="submit">Submit paper order</button>
+              <p class="msg" id="msg" role="status"></p>
+            </div>
+            <div class="riskbox" id="risk">Loading risk parameters…</div>
+          </section>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script src="vendor-lightweight-charts.js"></script>
 <script>
-const defaults={capital:1000,ticket:100,max_positions:3,max_exposure:.3,max_loss:.1,min_liquidity:100000,momentum:.03,stop_loss:.05,take_profit:.08,hold_steps:12,stale_seconds:90,fee_bps:30,slippage_bps:50,latency_steps:1,network_cost:.02,operating_cost_step:.005};
-const labels={capital:'Capital ($)',ticket:'Position allocation ($)',max_positions:'Maximum positions',max_exposure:'Maximum exposure (fraction)',max_loss:'Loss shutdown (fraction)',min_liquidity:'Minimum liquidity ($)',momentum:'Momentum threshold (fraction)',stop_loss:'Stop loss (fraction)',take_profit:'Take profit (fraction)',hold_steps:'Maximum holding observations',stale_seconds:'Stale after seconds',fee_bps:'Fee per side (bps)',slippage_bps:'Slippage per side (bps)',latency_steps:'Buy latency observations',network_cost:'Network cost per fill ($)',operating_cost_step:'Operating cost / observation ($)'};
-const $=id=>document.getElementById(id);let result;
-let teamJob=null,teamTimer=null;
-let liveTimer;
-async function liveRefresh(){clearTimeout(liveTimer);try{const response=await fetch('/api/live');const state=await response.json();if(!response.ok)throw Error(state.error||'Live trial unavailable');$('live-status').textContent=state.status+' · '+state.ticks+' observation cycles · '+(state.valid_price_snapshots||0)+' usable prices / '+state.watch.length+' tracked · '+state.calls_today+' AI calls today · '+(state.worker_running?'worker running':'worker stopped');const readiness=state.readiness;$('live-readiness').textContent=readiness?readiness.blockers.join(' ')+' Screening: '+JSON.stringify(readiness.screening_counts)+'. Observation charge: $'+readiness.modeled_operating_cost_per_day.toFixed(2)+'/day; five-agent cost reserve: $'+readiness.estimated_ai_cost_per_decision.toFixed(2)+'. '+readiness.performance+' '+readiness.real_money:'Readiness details pending server update.';window.companyLiveUpdate?.(state);window.productLiveUpdate?.(state);if(!window.paperPricesLoaded){for(const [id,key] of [['live-input-rate','input'],['live-cached-rate','cached'],['live-output-rate','output']]){if(state.config.token_rates?.[key]!=null)$(id).value=state.config.token_rates[key]}$('live-network-cost').value=state.config.network_cost||0;window.paperPricesLoaded=true;}$('live-cost-ledger').textContent=JSON.stringify({execution:state.execution_mode,valuation:state.valuation,accounting:state.cost_accounting,configuration:{token_rates:state.config.token_rates,network_cost:state.config.network_cost},recent_costs:state.events.filter(e=>e.kind==='ai_usage_cost'||e.kind==='ai_cost_unresolved'||e.kind==='accounting_transition')},null,2);const strategy=state.strategy,baseline=state.baseline;const values=[['AI paper equity','$'+strategy.equity.toFixed(2)],['AI net P&L','$'+strategy.pnl.toFixed(2)],['Baseline net P&L','$'+baseline.pnl.toFixed(2)],['Drawdown',(strategy.drawdown*100).toFixed(2)+'%'],['Risk status',strategy.halted?'SHUTDOWN':'within limits'],['Positions',String(Object.keys(strategy.positions).length)]];$('live-metrics').replaceChildren();for(const [label,value] of values){const card=document.createElement('div');card.className='panel';const title=document.createElement('label');title.textContent=label;const number=document.createElement('div');number.className='number';number.textContent=value;card.append(title,number);$('live-metrics').append(card)}$('live-log').textContent=JSON.stringify({positions:strategy.positions,baseline_positions:baseline.positions,last_tick:state.last_tick,watch:state.watch,cost:strategy.cost,valuation:state.valuation,events:state.events},null,2)}catch(e){$('live-status').textContent=e.message}finally{liveTimer=setTimeout(liveRefresh,5000)}}
-$('live-start').onclick=async()=>{try{await api('/api/live/start',{provider:$('live-provider').value,model:$('live-model').value.trim(),cost_per_call:Number($('live-cost').value),daily_calls:Number($('live-calls').value),token_rates:{input:$('live-input-rate').value===''?null:Number($('live-input-rate').value),cached:$('live-cached-rate').value===''?null:Number($('live-cached-rate').value),output:$('live-output-rate').value===''?null:Number($('live-output-rate').value)},network_cost:Number($('live-network-cost').value)});liveRefresh()}catch(e){$('live-status').textContent=e.message}};
-$('live-stop').onclick=async()=>{try{const result=await api('/api/live/stop',{});$('live-status').textContent=result.message}catch(e){$('live-status').textContent=e.message}};
-$('live-export').onclick=async()=>{const response=await fetch('/api/live');downloadJSON(await response.json(),'live-paper-trial-state.json')};liveRefresh();
+const PAIRS=['EUR/USD','GBP/USD','USD/JPY','AUD/USD','USD/CHF','XAU/USD',
+  'AAPL/USD','MSFT/USD','NVDA/USD','TSLA/USD','AMZN/USD','META/USD'];
+/* Metals quote per troy ounce, equities per share: two decimals. JPY carries
+   three; spot FX five. */
+const decimals=p=>(p==='USD/JPY'?3:(isMetal(p)||isStock(p))?2:5);
+const isMetal=p=>['XAU','XAG'].includes(String(p).split('/')[0]);
+const isStock=p=>['AAPL','MSFT','NVDA','TSLA','AMZN','META'].includes(String(p).split('/')[0]);
+const MAX_QUOTE_AGE=300;
+const px=(p,v)=>Number(v).toFixed(decimals(p));
+const money=v=>Number(v||0).toFixed(2);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const cls=v=>Number(v)>0?'pos':Number(v)<0?'neg':'';
 
-let pumpTimer=null;
-function downloadJSON(value,name){const link=document.createElement('a');link.href=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)],{type:'application/json'}));link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000)}
-async function pumpRefresh(){clearTimeout(pumpTimer);try{const response=await fetch('/api/pump');const state=await response.json();if(!response.ok)throw Error(state.error||'Collector unavailable');$('pump-status').textContent=`${state.status.toUpperCase()} · ${state.total_events} saved events · ${state.stale?'collector heartbeat stale':'collector status recent'} · ${state.message}`;$('pump-start').disabled=state.running;$('pump-stop').disabled=!state.running;const rows=[];for(const event of state.events){const row=document.createElement('tr');for(const value of [new Date(event.received_at*1000).toLocaleString('en-GB',{timeZone:'Europe/Athens'}),event.kind,(event.symbol||event.name||'Unnamed'),event.market_cap_sol===null?'unknown':event.market_cap_sol.toFixed(2)]){const td=document.createElement('td');td.textContent=value;row.append(td)}const td=document.createElement('td');const link=document.createElement('a');link.textContent=event.mint;link.href='https://pump.fun/coin/'+encodeURIComponent(event.mint);link.target='_blank';link.rel='noopener noreferrer';link.style.color='#ef5454';td.append(link);row.append(td);rows.push(row)}$('pump-events').replaceChildren(...rows);if(!rows.length){const row=document.createElement('tr');const td=document.createElement('td');td.colSpan=5;td.textContent='No live events recorded yet. No synthetic fallback.';row.append(td);$('pump-events').append(row)}}catch(e){$('pump-status').textContent='Feed unavailable: '+e.message}finally{pumpTimer=setTimeout(pumpRefresh,3000)}}
-$('pump-start').onclick=async()=>{try{await api('/api/pump/start',{});await pumpRefresh()}catch(e){$('pump-status').textContent=e.message}};
-$('pump-stop').onclick=async()=>{try{await api('/api/pump/stop',{});await pumpRefresh()}catch(e){$('pump-status').textContent=e.message}};
-$('pump-export').onclick=async()=>{try{const response=await fetch('/api/pump/export');if(!response.ok)throw Error('Export failed');downloadJSON(await response.json(),'pumpfun-live-events.json')}catch(e){$('pump-status').textContent=e.message}};pumpRefresh();
-const agentNames=['Market researcher','Token screener','Strategy analyst','Risk critic','Portfolio coordinator','Performance reviewer'];
-for(const name of agentNames){const card=document.createElement('div');card.className='panel';const title=document.createElement('strong');title.textContent=name;const status=document.createElement('p');status.textContent='Idle';card.append(title,status);card.dataset.agent=name;$('agent-cards').append(card)}
-function teamFeed(records){window.companyTeamUpdate?.(records);$('team-feed').replaceChildren();for(const card of $('agent-cards').children)card.lastChild.textContent='Idle';for(const e of records){const p=document.createElement('p');p.textContent=`t+${(e.step||0)*60}s · ${e.agent} · ${e.status}: ${e.summary||''}`;if(e.approve)p.textContent+=' | Approve: '+(e.approve.join(', ')||'none');if(e.concerns?.length)p.textContent+=' | Concerns: '+e.concerns.join('; ');$('team-feed').append(p);for(const card of $('agent-cards').children)if(card.dataset.agent===e.agent)card.lastChild.textContent=e.status} }
-async function pollTeam(){teamTimer=null;try{const r=await fetch('/api/team/'+teamJob);const j=await r.json();if(!r.ok)throw Error(j.error);teamFeed(j.events||[]);window.companyTeamUpdate?.(j.events||[],j.status);$('team-status').textContent=`Team ${j.status}. Provider: ${$('provider').value}.`;if(j.status==='running'){teamTimer=setTimeout(pollTeam,1000);return}if(j.result){result=j.result;render();$('team-status').textContent=`Saved paper run #${result.run_id} · ${result.team.provider} · ${result.team.calls} calls · ${result.team.error||'completed'}`;await history()}else if(j.error)$('team-status').textContent=j.error}catch(e){$('team-status').textContent=e.message}finally{if(!teamTimer){$('team-start').disabled=false;$('team-stop').disabled=true}}}
-$('team-start').onclick=async()=>{clearTimeout(teamTimer);teamTimer=null;$('team-start').disabled=true;try{const settings=Object.fromEntries(Object.keys(defaults).map(k=>[k,Number($(k).value)]));const j=await api('/api/team/start',{settings,partition:$('partition').value,provider:$('provider').value,model:$('model').value.trim(),max_rounds:Number($('rounds').value),cost_per_call:Number($('ai-cost').value)});teamJob=j.job_id;$('team-stop').disabled=false;pollTeam()}catch(e){$('team-status').textContent=e.message;$('team-start').disabled=false}};
-$('team-stop').onclick=async()=>{try{const j=await api('/api/team/stop',{job_id:teamJob});$('team-status').textContent=j.message;$('team-stop').disabled=true}catch(e){$('team-status').textContent=e.message}};
-fetch('/api/agents').then(r=>r.json()).then(j=>{$('provider-status').textContent=`OpenAI server key: ${j.openai_configured?'configured':'not configured'}. Local AI endpoint: ${j.local_endpoint}. Use the model connection panel to enter a session key.`}).catch(()=>{$('provider-status').textContent='Restart the server to load agent support.'});
-for(const [k,v] of Object.entries(defaults)){const l=document.createElement('label');l.textContent=labels[k];const i=document.createElement('input');i.type='number';i.step='any';i.value=v;i.id=k;l.append(i);$('settings').append(l)}
-const money=v=>'$'+v.toFixed(2),pct=v=>(v*100).toFixed(2)+'%';
-async function api(path,data){const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});const j=await r.json();if(!r.ok)throw Error(j.error);return j}
-async function history(){const h=await(await fetch('/api/history')).json();$('history').textContent='Reopen saved runs: ';for(const x of h){const btn=document.createElement('button');btn.textContent=`#${x.id} ${x.partition}`;btn.onclick=async()=>{result=await(await fetch('/api/run/'+x.id)).json();render();$('status').textContent=`Reopened synthetic run #${x.id}. Metrics use saved settings; edit settings to create a new experiment.`};$('history').append(btn)}}
-function events(){const list=result.strategy.events.filter(e=>$('filter').value==='all'||e.agent===$('filter').value);const table=document.createElement('table');for(const e of list){const tr=document.createElement('tr');for(const v of [`t+${e.timestamp}s`,e.agent,e.token,e.action,e.reason]){const td=document.createElement('td');td.textContent=v;tr.append(td)}table.append(tr)}$('events').replaceChildren(table)}
-function render(){if(result.team)teamFeed(result.team.transcript);const a=result.strategy,b=result.baseline;$('results').hidden=false;$('metrics').innerHTML=[['Net P&L',money(a.net_pnl)],['Maximum drawdown',pct(a.drawdown)],['Allocated exposure',money(a.exposure)],['Risk status',a.halted?'SHUTDOWN':'Within limits']].map(([l,v])=>`<div class="panel"><label>${l}</label><div class="number">${v}</div></div>`).join('');
-const metrics=[['Net liquidation P&L',money(a.net_pnl),money(b.net_pnl)],['Cash',money(a.cash),money(b.cash)],['Max drawdown',pct(a.drawdown),pct(b.drawdown)],['Closed trades',a.closed_trades,b.closed_trades],['Open positions',Object.keys(a.positions).length,Object.keys(b.positions).length],['Operating cost',money(a.operating_cost),money(b.operating_cost)],['Estimated AI cost',money(a.ai_cost_estimate||0),money(b.ai_cost_estimate||0)]];$('comparison').innerHTML='<tr><th>Metric</th><th>Strategy</th><th>Baseline</th></tr>'+metrics.map(r=>'<tr>'+r.map(v=>`<td>${v}</td>`).join('')+'</tr>').join('');
-const values=[...a.curve,...b.curve].map(x=>x.equity);let lo=Math.min(...values),hi=Math.max(...values);if(hi===lo)hi++;const points=c=>c.map((p,i)=>`${30+i/(c.length-1)*1040},${185-(p.equity-lo)/(hi-lo)*155}`).join(' ');$('chart').innerHTML=`<text x="30" y="18" fill="#9aaec6">${money(hi)}</text><text x="30" y="215" fill="#9aaec6">${money(lo)} · t+0 → t+7140s</text><polyline points="${points(a.curve)}" fill="none" stroke="#ef5454" stroke-width="2"/><polyline points="${points(b.curve)}" fill="none" stroke="#ffc969" stroke-width="2"/>`;events();$('export').disabled=false}
-$('run').onclick=async()=>{$('run').disabled=true;try{const settings=Object.fromEntries(Object.keys(defaults).map(k=>[k,Number($(k).value)]));result=await api('/api/run',{settings,partition:$('partition').value});render();$('status').textContent=`Saved synthetic run #${result.run_id} · ${result.partition} · No actual market results`;await history()}catch(e){$('status').textContent=e.message}finally{$('run').disabled=false}};
-$('filter').onchange=events;$('export').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(result,null,2)],{type:'application/json'}));a.download=`synthetic-run-${result.run_id}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
-$('observe').onclick=async()=>{$('observe').disabled=true;try{$('live').textContent=JSON.stringify(await api('/api/observe',{mint:$('mint').value.trim()}),null,2)}catch(e){$('live').textContent='Capture failed: '+e.message}finally{$('observe').disabled=false}};history();
+let apiAuth=null,apiAuthPrompt=null;
+const api=async(path,opts={})=>{
+  const send=()=>fetch(path,{...opts,headers:{...(opts.headers||{}),...(apiAuth?{Authorization:'Basic '+apiAuth}:{})}});
+  let r=await send(),j=null;try{j=await r.json()}catch(_){}
+  if(r.status===401&&!apiAuth&&String(opts.method||'GET').toUpperCase()==='POST'){
+    if(!apiAuthPrompt){
+      apiAuthPrompt=(async()=>{
+        const user=window.prompt('Tradingbo requires the username configured for this Render service.');
+        if(!user)return null;
+        const pass=window.prompt('Enter the matching Tradingbo dashboard password.');
+        if(pass===null)return null;
+        return btoa(unescape(encodeURIComponent(user.trim()+':'+pass)));
+      })().finally(()=>{apiAuthPrompt=null});
+    }
+    apiAuth=await apiAuthPrompt;
+    if(apiAuth){r=await send();j=null;try{j=await r.json()}catch(_){}}
+  }
+  if(r.status===401){apiAuth=null;throw Error('Authentication required. Use the username and password configured in Render.')}
+  if(!r.ok)throw Error(j?.error||('HTTP '+r.status));
+  return j;
+};
 
-let walletProvider=null,walletAddress='',walletGeneration=0;
-async function connectionRefresh(){try{const response=await fetch('/api/connections');const state=await response.json();if(!response.ok)throw Error(state.error||'Setup unavailable');$('connection-status').textContent=state.configured?'Model key connected'+(state.verified?' · selected model listed.':' · not checked yet.'):'No model API key connected.';if(state.model&&!$('connection-model').value)$('connection-model').value=state.model;}catch(e){$('connection-status').textContent=e.message}}
-$('connection-save').onclick=async()=>{const key=$('connection-key').value.trim();const model=$('connection-model').value.trim();try{await api('/api/connections/model',{key,model});$('live-provider').value='openai';$('live-model').value=model;$('provider').value='openai';$('model').value=model;await connectionRefresh();$('provider-status').textContent='OpenAI key connected for this server session.'}catch(e){$('connection-status').textContent=e.message}finally{$('connection-key').value=''}};
-$('connection-check').onclick=async()=>{const button=$('connection-check');button.disabled=true;$('connection-status').textContent='Checking model access…';try{const result=await api('/api/connections/verify',{});$('connection-status').textContent=result.message;$('connection-models').replaceChildren(...result.available_models.map(model=>{const option=document.createElement('option');option.value=model;return option}))}catch(e){$('connection-status').textContent=e.message}finally{button.disabled=false}};
-$('connection-forget').onclick=async()=>{try{await api('/api/connections/forget',{});$('connection-key').value='';await connectionRefresh();$('provider-status').textContent='Entered key forgotten. An existing server environment key, if configured, remains available. An in-flight request may still finish.'}catch(e){$('connection-status').textContent=e.message}};
-function showWallet(address,mode){window.invalidateSwap?.();walletAddress=address;walletGeneration++;$('wallet-address').value=address;$('wallet-status').textContent=address?mode+' · '+address:'Wallet disconnected.';$('wallet-balance').textContent='No balance loaded.'}
-async function walletRefresh(){if(!walletAddress){$('wallet-balance').textContent='Connect a wallet or enter its public address first.';return}const generation=walletGeneration;const address=walletAddress;$('wallet-balance').textContent='Fetching finalized mainnet SOL balance…';try{const result=await api('/api/wallet/balance',{address});if(generation!==walletGeneration)return;$('wallet-balance').textContent=result.sol.toFixed(6)+' SOL · mainnet · observed '+new Date(result.received*1000).toLocaleTimeString()+' · funds stay in your wallet'}catch(e){if(generation===walletGeneration)$('wallet-balance').textContent=e.message}}
-$('wallet-connect').onclick=async()=>{const provider=window.phantom?.solana;if(!provider?.isPhantom){$('wallet-status').textContent='Phantom not found. Open this dashboard in Chrome or Edge with Phantom installed, or watch a public address below.';return}try{if(walletProvider&&walletProvider!==provider)await walletProvider.disconnect();if(walletProvider!==provider){provider.on('disconnect',()=>showWallet('',''));provider.on('accountChanged',key=>{showWallet(key?key.toString():'',key?'Phantom connected':'');if(key)walletRefresh()});walletProvider=provider}const result=await provider.connect();showWallet(result.publicKey.toString(),'Phantom connected · public address permission');await walletRefresh()}catch(e){$('wallet-status').textContent='Wallet connection declined or unavailable. No funds moved.'}};
-$('wallet-disconnect').onclick=async()=>{try{if(walletProvider)await walletProvider.disconnect();showWallet('','')}catch(e){$('wallet-status').textContent='Wallet disconnect failed; use Phantom to revoke this connection.'}};
-$('wallet-watch').onclick=async()=>{const address=$('wallet-address').value.trim();if(!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address)){$('wallet-status').textContent='Enter a Solana public address. Never enter private keys or a seed phrase.';return}try{if(walletProvider?.isConnected)await walletProvider.disconnect();showWallet(address,'Watching public address · wallet ownership not verified');await walletRefresh()}catch(e){$('wallet-status').textContent='Disconnect Phantom before switching to watch-only mode.'}};
-$('wallet-refresh').onclick=walletRefresh;
-connectionRefresh();
+/* Five deterministic specialists plus a deterministic accounting reviewer. */
+const AGENTS=[
+  {key:'market',     ix:'01',name:'Market Researcher', hue:'#22d3ee',
+   role:'Feeds and data quality',
+   task:'Reads observed quotes, checks timestamp and freshness of every price row.'},
+  {key:'macro',      ix:'02',name:'Macro Analyst',     hue:'#a78bfa',
+   role:'Regime and context',
+   task:'Frames the regime from supplied macro context without inventing inputs.'},
+  {key:'strategy',   ix:'03',name:'Strategy Analyst',  hue:'#00d97e',
+   role:'Signal construction',
+   task:'Requires distinct fresh observations beyond a conservative momentum threshold.'},
+  {key:'risk',       ix:'04',name:'Risk Critic',       hue:'#f0a92b',
+   role:'Veto authority',
+   task:'Independent gate over exposure, drawdown and concentration. Can veto only.'},
+  {key:'portfolio',  ix:'05',name:'Portfolio Coord.',  hue:'#f472b6',
+   role:'Allocation',
+   task:'Sizes entries within the deterministic limits set by the risk critic.'}
+];
+
+let state=null,chartPair='EUR/USD',quotes={};
+const $id=s=>document.getElementById(s);
+
+/* Historical OHLC from the server. Loaded once per pair per interval and then
+   refreshed on a timer, so the chart shows real intraday bars instead of a
+   single daily print. Nothing is synthesised client-side. */
+const series={},barsState={};
+PAIRS.forEach(p=>series[p]=[]);
+let interval='15m';
+
+async function loadSeries(pair){
+  try{
+    const r=await api('/api/forex/bars?pair='+encodeURIComponent(pair)+
+      '&interval='+encodeURIComponent(interval)+'&limit=400');
+    let bars=(r.bars||[]).map(b=>({t:b.t,o:b.o,h:b.h,l:b.l,c:b.c}));
+    // A metal quote is spot, but the only free intraday series is the futures
+    // contract, which sits a basis away from spot. Plotting the raw futures
+    // bars next to a spot price would put the chart tens of dollars away from
+    // the number quoted above it. Shift the series by the current basis so the
+    // final close lands on the spot price. This preserves the futures *shape*
+    // and intraday ranges while agreeing with the quoted instrument. The shift
+    // is disclosed in the chart caption and is not a claim that the history is
+    // spot trades.
+    const q=quotes[pair];
+    if(isMetal(pair)&&bars.length&&q&&typeof q.basis_vs_futures==='number'){
+      const off=q.basis_vs_futures;
+      bars=bars.map(b=>({t:b.t,o:b.o+off,h:b.h+off,l:b.l+off,c:b.c+off}));
+      barsState[pair]={src:'futures rebased to spot',rebased:off,err:null};
+    }else{
+      barsState[pair]={src:r.source,rebased:0,err:null};
+    }
+    series[pair]=bars;
+  }catch(e){
+    series[pair]=[];
+    barsState[pair]={src:null,rebased:0,err:e.message};
+  }
+  if(pair===chartPair){loadPair(pair);paintChartNote()}
+}
+
+async function refreshSeries(){
+  await Promise.all(PAIRS.map(loadSeries));
+  paintChartNote();
+}
+
+function paintChartNote(){
+  const st=barsState[chartPair]||{},q=quotes[chartPair];
+  const el=$id('chartSrc');if(!el)return;
+  if(st.err){el.textContent='bars unavailable — '+st.err;el.style.color='#f0939a';return}
+  const n=(series[chartPair]||[]).length;
+  el.textContent=n+' '+interval+' bars · '+(st.rebased
+    ?'GC=F futures shape, shifted by '+st.rebased.toFixed(2)+' to land on spot'
+    :(st.src||'feed'))+(q?' · '+q.provider_date:'');
+  el.style.color=st.rebased?'#d9a441':'';
+}
+
+/* ── KPI strip ─────────────────────────────────────────── */
+function renderKpis(s){
+  const a=s.account||{},r=s.risk||{},pos=(a.positions||[]).length;
+  const gates=r.halted
+    ? {v:'HALTED',c:'warn',s:'NEW ENTRIES BLOCKED'}
+    : {v:'ARMED',c:'',s:'DETERMINISTIC LIMITS'};
+  const start=r.starting_cash??a.starting_cash??0;
+  const rows=[
+    ['Equity',        '$'+money(a.equity),       '', !start?'—':a.equity>=start?'ABOVE START':'BELOW START'],
+    ['Realised P/L',  '$'+money(a.realized_pnl), Number(a.realized_pnl)>0?'up':Number(a.realized_pnl)<0?'down':'', 'SESSION'],
+    ['Unrealised P/L','$'+money(a.unrealized_pnl),Number(a.unrealized_pnl)>0?'up':Number(a.unrealized_pnl)<0?'down':'','MARK-TO-MARKET'],
+    ['Exposure',      '$'+money(a.exposure),     '', a.exposure?'DEPLOYED':'FLAT'],
+    ['Risk gate',     gates.v, gates.c,          gates.s],
+    ['Positions',     String(pos)+' / '+(r.max_positions??'—'), pos?'up':'', 'MAX '+((r.max_positions??'—'))]
+  ];
+  $id('kpis').innerHTML=rows.map(([k,v,c,s])=>
+    '<div class="kpi"><div class="k">'+k+'</div><div class="v '+c+' fresh">'+v+
+    '</div><div class="s">'+s+'</div></div>').join('');
+  setTimeout(()=>{document.querySelectorAll('.kpi .v.fresh').forEach(el=>el.classList.remove('fresh'))},600);
+}
+
+/* ── tape + quotes ─────────────────────────────────────── */
+/* ── live scrolling ticker ────────────────────────────────
+   The strip is duplicated and translated -50%, so the loop is seamless. A
+   stale quote is labelled with its age instead of scrolling past as though it
+   were current. */
+function renderTicker(){
+  const el=$id('ticker');
+  if(!el)return;
+  const now=Date.now()/1000;
+  const items=PAIRS.map(p=>{
+    const q=quotes[p];
+    if(!q)return '<span class="tk"><span class="s">'+p+'</span>'+
+      '<span class="p">—</span></span>';
+    const h=series[p]||[];
+    const prev=h.length>1?h[h.length-2].c:q.price;
+    const ch=prev?(q.price-prev)/prev*10000:0;
+    let move;
+    if(isMetal(p)){
+      const b=typeof q.basis_vs_futures==='number'?q.basis_vs_futures:null;
+      move='<span class="d fl">'+(b===null?'spot':'basis '+(b>0?'+':'')+b.toFixed(1))+'</span>';
+    }else{
+      const c=Math.abs(ch)<0.01?'fl':ch>0?'up':'dn';
+      move='<span class="d '+c+'">'+(c==='fl'?'·':ch>0?'▲':'▼')+
+        ' '+Math.abs(ch).toFixed(1)+'</span>';
+    }
+    const age=Math.max(0,now-Number(q.observed||0));
+    const stale=age>MAX_QUOTE_AGE;
+    return '<span class="tk"><span class="s">'+p+'</span>'+
+      '<span class="p">'+px(p,q.price)+'</span>'+move+
+      '<span class="age'+(stale?' stale':'')+'">'+
+      (stale?Math.round(age/60)+'m stale':Math.round(age)+'s')+'</span></span>';
+  });
+  // Two identical halves make the -50% translate loop with no visible seam.
+  el.innerHTML=items.join('')+items.join('');
+}
+
+function renderTape(){
+  $id('tape').innerHTML=PAIRS.map(p=>{
+    const q=quotes[p];if(!q)return '';
+    // For metals the bar history is a futures series, so differencing it against
+    // a spot price would invent a move. Report the basis instead of a fake change.
+    if(isMetal(p)){
+      const b=typeof q.basis_vs_futures==='number'?q.basis_vs_futures:null;
+      return '<div class="q"><div class="s">'+p+'</div><div class="p">'+px(p,q.price)+
+        '</div><div class="c '+(b===null?'fl':b<0?'dn':'up')+'">'+
+        (b===null?'spot':'basis '+(b>0?'+':'')+b.toFixed(2))+'</div></div>';
+    }
+    const h=series[p]||[],prev=h.length>1?h[h.length-2].c:q.price;
+    const ch=prev?(q.price-prev)/prev*10000:0;
+    const c=Math.abs(ch)<0.01?'fl':ch>0?'up':'dn';
+    const arrow=c==='fl'?'·':ch>0?'▲':'▼';
+    return '<div class="q"><div class="s">'+p+'</div><div class="p">'+px(p,q.price)+
+      '</div><div class="c '+c+'">'+arrow+' '+Math.abs(ch).toFixed(1)+
+      ' pt</div></div>';
+  }).join('');
+}
+
+function renderQuotes(){
+  const body=$id('quotes');
+  body.innerHTML=PAIRS.filter(p=>quotes[p]).map(p=>{
+    const q=quotes[p];
+    const held=(state?.account?.positions||[]).some(x=>x.pair===p);
+    const kind=q.instrument==='stock'?'EQ':q.instrument==='metal'?'METAL':'FX';
+    return '<tr data-p="'+p+'" class="'+(p===chartPair?'sel':'')+'">'+
+      '<td>'+p+(held?' <span style="color:#d9a441">●</span>':'')+
+      ' <span class="kind">'+kind+'</span></td>'+
+      '<td>'+px(p,q.price)+'</td>'+
+      '<td class="dim">'+px(p,q.bid)+'</td>'+
+      '<td class="dim">'+px(p,q.ask)+'</td>'+
+      '<td class="dim">'+(Number(q.spread_bps||0).toFixed(1))+'</td>'+
+      '<td class="mut">'+(q.provider_date||'—')+'</td></tr>';
+  }).join('');
+  // The risk controller refuses entries older than MAX_QUOTE_AGE. Surface that
+  // per row so a rejected order is explained rather than mysterious.
+  const now=Date.now()/1000;
+  [...document.querySelectorAll('#quotes tr[data-p]')].forEach(tr=>{
+    const q=quotes[tr.dataset.p];if(!q)return;
+    const age=now-Number(q.observed||0);
+    if(age>MAX_QUOTE_AGE){
+      tr.classList.add('stale');
+      tr.title='Quote is '+Math.round(age)+'s old. Entries are rejected until it is under '+MAX_QUOTE_AGE+'s.';
+    }
+  });
+}
+
+/* ── session chart (TradingView Lightweight Charts, vendored locally) ──
+   The series fed in is the same real OHLC (metal bars still carry the
+   disclosed futures-to-spot shift from loadSeries). Gaps stay gaps: the
+   library spaces bars by index, so weekends draw no dead runs. */
+let lwChart=null,lwSeries=null,lwKey='';
+function drawChart(){
+  const el=$id('spark'),empty=$id('chartEmpty');
+  const h=series[chartPair]||[];
+  if(!window.LightweightCharts){
+    if(empty){empty.hidden=false;empty.textContent='Chart library unavailable (vendor file missing).';}
+    return;
+  }
+  if(!lwChart){
+    lwChart=LightweightCharts.createChart(el,{
+      width:Math.max(50,el.clientWidth||800),height:230,
+      layout:{background:{color:'#0a0e13'},textColor:'#4d565f',
+        fontFamily:'ui-monospace,monospace',fontSize:10},
+      grid:{vertLines:{color:'#161c24'},horzLines:{color:'#161c24'}},
+      crosshair:{vertLine:{color:'#3a4550',labelBackgroundColor:'#1c232c'},
+        horzLine:{color:'#3a4550',labelBackgroundColor:'#1c232c'}},
+      rightPriceScale:{borderColor:'#1c232c'},
+      timeScale:{borderColor:'#1c232c',timeVisible:true,secondsVisible:false},
+    });
+    lwSeries=lwChart.addSeries(LightweightCharts.CandlestickSeries,{
+      upColor:'#2fbf87',downColor:'#e2555f',
+      wickUpColor:'#2fbf87',wickDownColor:'#e2555f',borderVisible:false,
+    });
+  }else{
+    lwChart.resize(Math.max(50,el.clientWidth||800),230);
+  }
+  if(!h.length){
+    const st=barsState[chartPair]||{};
+    if(empty){empty.hidden=false;
+      empty.textContent=st.err?('BARS UNAVAILABLE — '+String(st.err).slice(0,64))
+        :('LOADING '+interval+' BARS');}
+    try{lwSeries.setData([])}catch(_){}
+    return;
+  }
+  if(empty)empty.hidden=true;
+  const seen=new Set(),rows=[];
+  for(const b of h){
+    const t=Math.floor(Number(b.t));
+    if(!Number.isFinite(t)||seen.has(t))continue;
+    seen.add(t);
+    const o=+b.o,hh=+b.h,l=+b.l,c=+b.c;
+    if(![o,hh,l,c].every(Number.isFinite)||o<=0||hh<=0||l<=0||c<=0)continue;
+    rows.push({time:t,open:o,high:hh,low:l,close:c});
+  }
+  lwSeries.setData(rows);
+  const key=chartPair+'|'+interval;
+  if(key!==lwKey){lwKey=key;try{lwChart.timeScale().fitContent()}catch(_){}}
+}
+
+function loadPair(p){
+  if(!p)return;
+  chartPair=p;
+  if(!series[p])series[p]=[];
+  const q=quotes[p];
+  $id('cSym').textContent=p;
+  $id('cPx').textContent=q?px(p,q.price):'—';
+  $id('cMeta').textContent=q?('bid '+px(p,q.bid)+'  ask '+px(p,q.ask)+'  spread '+Number(q.spread_bps||0).toFixed(2)+'bp'):'no quote';
+  const warn=$id('cWarn');
+  // A metal quote is spot, but its intraday bars come from the futures contract.
+  // Say so and quantify the gap rather than implying the two are interchangeable.
+  if(warn){
+    if(isMetal(p)&&q&&typeof q.basis_vs_futures==='number'){
+      warn.hidden=false;
+      warn.textContent='Quote is true spot per troy ounce. Intraday bars come from '+
+        (q.futures_symbol||'GC=F')+' COMEX futures because no free intraday spot '+
+        'feed exists, so the chart keeps the futures shape but is shifted by '+
+        q.basis_vs_futures.toFixed(2)+' USD/oz to end on the spot price. The '+
+        'history is a futures proxy, not recorded spot trades.';
+    }else{warn.hidden=true}
+  }
+  renderQuotes();drawChart();
+  if(!series[p]||!series[p].length){
+    loadSeries(p);
+  }
+}
+document.addEventListener('click',e=>{
+  const tr=e.target.closest?.('#quotes tr[data-p]');
+  if(tr)loadPair(tr.dataset.p);
+});
+
+/* ── agent pipeline ────────────────────────────────────── */
+/* Toggleable deterministic stations. Mirrors TOGGLEABLE_AGENTS in
+   forex_agents.py: risk is the locked-on safety interlock, macro has no
+   deterministic execution path. */
+const TOGGLEABLE=['market','strategy','portfolio'];
+function agentKey(name){
+  return String(name||'').replace(/\s*\(AI\)\s*/i,'').trim().split(' ')[0].toLowerCase();
+}
+function relTime(ts){
+  if(!ts||ts<=0)return '—';
+  const s=Math.max(0,Date.now()/1000-ts);
+  if(s<60)return Math.floor(s)+'s ago';
+  if(s<3600)return Math.floor(s/60)+'m ago';
+  if(s<86400)return Math.floor(s/3600)+'h ago';
+  return Math.floor(s/86400)+'d ago';
+}
+function utcTime(ts){
+  if(!ts||ts<=0)return '—';
+  const d=new Date(ts*1000);
+  const p=n=>String(n).padStart(2,'0');
+  return p(d.getUTCHours())+':'+p(d.getUTCMinutes())+':'+p(d.getUTCSeconds());
+}
+async function toggleAgent(key,on,box){
+  box.disabled=true;
+  $id('pipeErr').textContent='';
+  try{
+    await api('/api/forex/agents/config',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({agent:key,enabled:on})});
+    await refresh();
+  }catch(e){
+    $id('pipeErr').textContent='Station update failed: '+e.message;
+    await refresh();
+  }finally{box.disabled=false}
+}
+function renderPipeline(s){
+  const events=(s.events||[]).filter(e=>e.agent);
+  const cfg=(s.agentState&&s.agentState.agent_config)||{};
+  const total=events.length;
+  const cycles=[];
+  for(const e of events){
+    if(e.cycle_id&&!cycles.includes(e.cycle_id)){
+      cycles.push(e.cycle_id);
+      if(cycles.length>=12)break;
+    }
+  }
+  const reporting=new Set();
+  const entries=events.filter(e=>e.status==='Paper order recorded').length;
+  $id('pipe').innerHTML=AGENTS.map((a,i)=>{
+    const mine=events.filter(e=>agentKey(e.agent)===a.key);
+    const det=mine.filter(e=>!/\(AI\)/i.test(String(e.agent||'')));
+    const ai=mine.filter(e=>/\(AI\)/i.test(String(e.agent||'')));
+    const aiOk=ai.filter(e=>!/unavailable|error|fail/i.test(String(e.status||'')));
+    const detLive=det.length>0;
+    if(detLive)reporting.add(a.key);
+    const approvals=mine.reduce((t,e)=>t+(Array.isArray(e.approve)?e.approve.length:0),0);
+    const lastTs=mine.reduce((t,e)=>Math.max(t,Number(e.timestamp)||0),0);
+    const share=total?Math.round(mine.length/total*100):0;
+    const label=detLive?'REPORT RECEIVED':aiOk.length?'AI ADVISORY ONLY'
+      :(ai.length?'AI CALL FAILED':'AWAITING REPORT');
+    const tone=detLive?'live':(aiOk.length?'idle':'off');
+    const lamp=detLive?'on':(aiOk.length?'warn':'');
+    const detail=(det[0]||aiOk[0]||ai[0]||{}).summary||a.task;
+    const hb=cycles.map(c=>{
+      const hit=mine.find(e=>e.cycle_id===c);
+      if(!hit)return '<i class="miss" title="no report this cycle"></i>';
+      const isDet=!/\(AI\)/i.test(String(hit.agent||''));
+      return '<i class="'+(isDet?'hit':'ai')+'"'+(isDet?' style="background:'+a.hue+'"':'')+
+        ' title="'+esc(hit.status||'')+'"></i>';
+    }).join('');
+    const reps=mine.slice(0,8).map(e=>{
+      const bad=/unavailable|error|fail|skipped|veto|blocked/i.test(String(e.status||''));
+      return '<div class="re"><div class="rt">'+utcTime(e.timestamp)+' UTC</div>'+
+        '<div class="rs '+(bad?'bad':'ok')+'">'+esc(e.status||'—')+'</div>'+
+        '<div class="rx">'+esc(String(e.summary||'').slice(0,240))+'</div></div>';
+    }).join('')||'<div class="empty">No recorded reports for this station yet.</div>';
+    let ctl;
+    if(TOGGLEABLE.includes(a.key)){
+      const on=cfg[a.key]!==false;
+      ctl='<label class="switch" title="Enable or disable this station"><input type="checkbox" data-agent="'+a.key+'"'+
+        (on?' checked':'')+' onchange="toggleAgent(\''+a.key+'\',this.checked,this)">'+
+        '<span class="tr"></span></label><span class="lb">'+(on?'ENABLED':'DISABLED')+'</span>';
+    }else if(a.key==='risk'){
+      ctl='<span class="lk">LOCKED · SAFETY INTERLOCK ALWAYS ON</span>';
+    }else{
+      ctl='<span class="lk">ADVISORY ROLE · NO EXECUTION PATH</span>';
+    }
+    return '<div class="pn" style="--d:'+(i*70)+'ms;--hue:'+a.hue+'">'+
+      '<div class="ahead"><div class="ava" title="'+share+'% of recorded reports">'+
+      '<svg viewBox="0 0 36 36"><circle class="ring-bg" cx="18" cy="18" r="15.9155"/>'+
+      '<circle class="ring-fg" cx="18" cy="18" r="15.9155" style="stroke:'+a.hue+'" stroke-dasharray="'+share+' 100"/></svg>'+
+      '<span class="mo" style="color:'+a.hue+'">'+esc(a.name[0])+'</span>'+
+      '<span class="lm '+lamp+'"></span></div>'+
+      '<div class="anm"><div class="nm">'+a.name+'</div>'+
+      '<div class="rl">'+a.ix+' · '+a.role.toUpperCase()+'</div></div></div>'+
+      '<div class="st '+tone+'">'+label+'</div>'+
+      '<div class="tx">'+esc(detail)+'</div>'+
+      '<div class="stats"><div><b>'+mine.length+'</b><span>REPORTS</span></div>'+
+      '<div><b>'+approvals+'</b><span>APPROVALS</span></div>'+
+      '<div><b>'+esc(relTime(lastTs))+'</b><span>LAST ACTIVE</span></div></div>'+
+      '<div class="hb" title="Report presence across the last '+cycles.length+' cycles, newest first">'+hb+'</div>'+
+      '<details class="rep"><summary>RECORDED REPORTS ('+mine.length+')</summary>'+reps+'</details>'+
+      '<div class="agctl">'+ctl+'</div></div>';
+  }).join('');
+  const disabled=TOGGLEABLE.filter(k=>cfg[k]===false).length;
+  const share=reporting.size?Math.round(reporting.size/AGENTS.length*100):0;
+  $id('fleetFill').style.width=share+'%';
+  $id('fleetPct').textContent=share+'%';
+  $id('fleetNote').textContent=reporting.size+' / '+AGENTS.length+' REPORTING · '+
+    entries+' RECORDED ENTRIES'+(disabled?' · '+disabled+' DISABLED':'');
+  // last_cycle is in-memory only and resets on restart, so derive the cycle
+  // time from the newest recorded event instead.
+  const lc=events.reduce((t,e)=>Math.max(t,Number(e.timestamp)||0),0);
+  $id('pipeMeta').textContent=reporting.size+' / '+AGENTS.length+' REPORTING'+
+    (disabled?' · '+disabled+' DISABLED':'')+' · CYCLE '+(lc>0?relTime(lc):'—');
+}
+
+/* ── positions ─────────────────────────────────────────── */
+function renderPositions(s){
+  const pos=s.account?.positions||[];
+  $id('posMeta').textContent=pos.length+' OPEN · $'+money(s.account?.exposure)+' EXPOSURE';
+  if(!pos.length){
+    $id('posBody').innerHTML='<div class="empty">No open paper positions.<br>Entries require fresh quotes and a passing risk review.</div>';
+    return;
+  }
+  $id('posBody').innerHTML='<div class="dtscroll"><table class="dt"><thead><tr>'+
+    '<th>INSTRUMENT</th><th class="r">NOTIONAL</th><th class="r">UNREALISED</th><th class="r">ACTION</th>'+
+    '</tr></thead><tbody>'+pos.map(p=>{
+      const u=Number(p.unrealized_pnl)||0;
+      return '<tr><td><span class="mono">'+esc(p.pair)+'</span>'+
+        '<span class="sub2">'+String(p.side||'').toUpperCase()+'</span></td>'+
+        '<td class="r mono">$'+money(p.notional)+'</td>'+
+        '<td class="r mono '+cls(u)+'">'+(u>=0?'+':'')+money(u)+'</td>'+
+        '<td class="r"><button class="xbtn" onclick="closePosition(\''+p.id+'\')">Close</button></td></tr>';
+    }).join('')+'</tbody></table></div>';
+}
+
+/* ── event log ─────────────────────────────────────────── */
+function renderFeed(s){
+  const ev=(s.events||[]).filter(e=>['live_agent_report','live_agent_started','accounting_report'].includes(e.kind)).slice(0,40);
+  if(!ev.length){
+    $id('feed').innerHTML='<div class="empty">No recorded events yet.<br>'+
+      'Press Run agent cycle in the office view to execute one pipeline pass.</div>';
+    return;
+  }
+  $id('feed').innerHTML=ev.map(e=>
+    '<div class="row"><i class="dot ok"></i><div class="tx"><b>'+esc(e.agent||'System')+
+    '</b><br>'+esc(e.summary||'Recorded event.')+'</div>'+
+    '<span class="ts">RECORDED</span></div>').join('');
+}
+
+/* ── header tags ───────────────────────────────────────── */
+function renderTags(s){
+  const r=s.risk||{},m=s.market||{};
+  const gate=$id('tagGate');
+  gate.textContent=r.halted?'RISK HALT':'RISK ARMED';
+  gate.className='tag '+(r.halted?'bad':'ok');
+  // The feed label must name the provider actually in use, not a hardcoded one.
+  const src=String(m.source||'');
+  const feed=$id('tagFeed');
+  feed.textContent=/gold-api/.test(src)&&/Yahoo/.test(src)?'YAHOO + SPOT METAL'
+    :/gold-api/.test(src)?'SPOT METAL'
+    :/Frankfurter|ECB/i.test(src)?'ECB REFERENCE':'LIVE FEED';
+  const d=String(m.provider_date||'—');
+  $id('tagDate').textContent=d.length>10?d.slice(0,16):d;
+  $id('feedSrc').textContent=src+
+    (Object.values(m.pairs||{}).some(q=>q.instrument==='metal')
+      ?'  ·  metals are spot per troy ounce; metal intraday bars are a futures proxy':'');
+  // The footnote under the table previously described ECB permanently.
+  $id('quoteNote').textContent=/gold-api/.test(src)
+    ?'FX quotes are Yahoo mid prices; metal quotes are true spot per troy ounce from gold-api.com. Bid and ask are simulated from a configured spread, not broker depth. Click a row to load the pair.'
+    :'Prices are ECB daily reference mid rates via Frankfurter. They are research inputs, not executable quotes. Click a row to load the pair.';
+}
+
+/* ── AI research desk ───────────────────────────────────── */
+function aiSay(text,kind){
+  const m=$id('aiMsg');m.textContent=text||'';m.className='msg'+(kind?' '+kind:'');
+}
+
+function renderBudget(b){
+  if(!b)return;
+  const row=(k,v)=>'<div><b>'+k+'</b><span>'+v+'</span></div>';
+  $id('aiBudget').innerHTML=
+    row('CALLS TODAY',b.calls+' / '+b.max_calls)+
+    row('SPEND TODAY',b.free_model?'$0.0000 (free model)':'$'+b.spent_usd.toFixed(4))+
+    row('SPEND CAP','$'+b.max_spend_usd.toFixed(2))+
+    row('PER CALL',b.free_model?'$0.0000':'$'+b.cost_per_call_usd.toFixed(4))+
+    row('REMAINING',b.calls_left+' calls · '+
+      (b.free_model?'$0.00':' $'+b.spend_left_usd.toFixed(2)));
+}
+
+function renderStages(result){
+  const box=$id('aiStages');
+  const stages=(result&&result.stages)||[];
+  if(!stages.length){
+    box.innerHTML='<div class="empty">No research run yet. Connect a key, then press Run research.</div>';
+    return;
+  }
+  const hist=result&&result.historical
+    ?'<div class="fine" style="margin:0 0 4px">Latest recorded AI reports — press Run research for a fresh pass.</div>':'';
+  box.innerHTML=hist+stages.map(s=>
+    '<div class="stage'+(s.ok?'':' bad')+'"><div class="sh"><b>'+s.agent+'</b>'+
+    '<span class="tag '+(s.ok?'ok':'bad')+'">'+(s.ok?'REPORT':'UNAVAILABLE')+'</span>'+
+    '<span class="tag">ADVISORY</span></div>'+
+    '<p>'+esc(s.text||((s.concerns||[]).join(' ')))+'</p>'+
+    ((s.concerns&&s.concerns.length)
+      ?'<ul>'+s.concerns.map(c=>'<li>'+esc(c)+'</li>').join('')+'</ul>':'')+
+    '</div>').join('');
+}
+
+/* The provider list is fetched once and cached. The selector is user-owned:
+   a background status poll must never overwrite a choice that has not yet
+   been saved with Connect, or picking a provider silently reverts. */
+let providerCache={},providerTouched=false;
+
+async function aiRestore(){
+  // The last research run is recorded server-side, so a reload or a new tab
+  // should show it instead of claiming no run has ever happened. With no run
+  // on record, fall back to the latest recorded AI reports from the event
+  // feed — real persisted output, never placeholder text.
+  try{
+    const r=await api('/api/connections/research');
+    if(r&&r.last&&((r.last.stages||[]).length)){renderStages(r.last);renderBudget(r.budget);return}
+    if(r&&r.budget)renderBudget(r.budget);
+    const evs=((state&&state.events)||[]).filter(e=>e.kind==='ai_research_report'&&e.agent);
+    if(!evs.length)return;
+    const seen={},stages=[];
+    for(const e of evs){
+      const key=String(e.agent).toLowerCase();
+      if(seen[key])continue;
+      seen[key]=1;
+      const bad=/unavailable|error|fail/i.test(String(e.status||''));
+      stages.push({agent:e.agent,ok:!bad,text:e.summary||'',concerns:e.concerns||[]});
+      if(stages.length>=4)break;
+    }
+    if(stages.length)renderStages({stages:stages,historical:true});
+  }catch(_){/* panel simply stays in its empty state */}
+}
+
+async function aiStatus(){
+  try{
+    const s=await api('/api/connections/model');
+    const sel=$id('aiProvider');
+    const names=Object.keys(s.providers||{});
+    if(sel.options.length!==names.length){
+      sel.innerHTML=names.map(k=>'<option value="'+k+'">'+
+        esc(s.providers[k].label)+'</option>').join('');
+    }
+    if(!providerTouched&&s.provider)sel.value=s.provider;
+    providerCache=s.providers||{};
+    applyProviderHints();
+    // Never repopulate these while the user has an unsaved selection: doing so
+    // refills a just-cleared Base URL with the previously saved provider's
+    // endpoint, which sends one gateway's key to a different gateway.
+    if(!providerTouched){
+      if(s.model&&!$id('aiModel').value)$id('aiModel').value=s.model;
+      if(s.base_url&&!$id('aiBase').value)$id('aiBase').value=s.base_url;
+      $id('aiJson').checked=s.json_mode!==false;
+    }
+    $id('aiState').textContent=s.connected
+      ?('CONNECTED · '+s.provider_label+' · '+(s.model||'NO MODEL'))
+      :(s.model?'MODEL SET · NO KEY':'NOT CONFIGURED');
+    renderBudget(s.budget);
+  }catch(e){aiSay('Cannot read connection status: '+e.message,'bad')}
+}
+
+function applyProviderHints(){
+  const name=$id('aiProvider').value;
+  const spec=providerCache[name];
+  if(!spec)return;
+  // A local endpoint needs no credential, so do not ask for one.
+  $id('aiKeyWrap').hidden=!spec.needs_key;
+  const base=$id('aiBase');
+  base.placeholder=spec.base_url||'e.g. https://openrouter.ai/api/v1';
+  // Pre-fill the endpoint the new provider actually uses, rather than leaving
+  // it blank for a background poll to overwrite with the old provider's URL.
+  if(spec.base_url)base.value=spec.base_url;
+  if(spec.default_model)$id('aiModel').value=spec.default_model;
+  $id('aiBaseHint').textContent=name==='custom'
+    ?'No default. Use https://openrouter.ai/api/v1 for OpenRouter, or your gateway’s base.'
+    :(spec.base_url?'':'Enter the endpoint for this provider.');
+}
+
+/* Every action button pushes the form to the server before acting. Otherwise a
+   key typed into the panel is ignored by Run research, which silently uses
+   whatever was last connected — and a provider mismatch sends a key intended for
+   one gateway to another. The form is the source of truth. */
+async function saveForm(){
+  const key=$id('aiKey').value;
+  const body={
+    key:key,
+    model:$id('aiModel').value,
+    provider:$id('aiProvider').value,
+    base_url:$id('aiBase').value,
+    json_mode:$id('aiJson').checked
+  };
+  const s=await api('/api/connections/model',{method:'POST',
+    headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  // Never leave a secret sitting in the DOM.
+  $id('aiKey').value='';
+  return s;
+}
+
+async function aiConnect(){
+  const btn=$id('aiConnect');btn.disabled=true;
+  try{
+    const s=await saveForm();
+    providerTouched=false;
+    renderBudget(s.budget);
+    if(s.connected){
+      $id('aiState').textContent='CONNECTED · '+s.provider_label+' · '+(s.model||'NO MODEL');
+      aiSay('Key held in server memory for this process only.','ok');
+    }else{
+      aiSay('Key cleared. Enter a key and an exact model id to connect.','bad');
+    }
+  }catch(e){$id('aiKey').value='';aiSay(e.message,'bad')}
+  finally{btn.disabled=false}
+}
+
+async function aiVerify(){
+  const btn=$id('aiVerify');btn.disabled=true;btn.textContent='Checking…';
+  try{
+    // Save first so the key is checked against the provider actually selected.
+    const s=await saveForm();
+    renderBudget(s.budget);
+    if(!s.connected)throw Error('Enter a key for '+s.provider_label+' first.');
+    const r=await api('/api/connections/model/verify',{method:'POST',
+      headers:{'Content-Type':'application/json'},body:'{}'});
+    aiSay('Key accepted by '+s.provider_label+'. '+r.count+' models visible. '+
+      (r.models&&r.models.length?('e.g. '+r.models.slice(0,3).join(', ')):'')+
+      ' Listing a model does not prove this app can use it.','ok');
+  }catch(e){aiSay('Check failed: '+e.message,'bad')}
+  finally{btn.disabled=false;btn.textContent='Check key'}
+}
+
+async function aiForget(){
+  try{
+    const r=await api('/api/connections/model/forget',{method:'POST',
+      headers:{'Content-Type':'application/json'},body:'{}'});
+    aiSay(r.cleared?'Key forgotten.':'No entered key to forget.',r.cleared?'ok':'');
+    renderBudget(r.budget);
+    $id('aiState').textContent='NOT CONFIGURED';
+  }catch(e){aiSay(e.message,'bad')}
+}
+
+async function aiRun(){
+  const btn=$id('aiRun');btn.disabled=true;
+  const label=btn.textContent;btn.textContent='Researching…';
+  // Show a thinking indicator in the AI stages panel
+  $id('aiStages').innerHTML='<div class="empty"><span class="thinking">AI agents are deliberating</span><span class="dots">...</span></div>';
+  try{
+    const s=await saveForm();
+    renderBudget(s.budget);
+    if(!s.connected)throw Error('No usable key for '+s.provider_label+
+      '. Enter a key, or pick a provider that needs none.');
+    const r=await api('/api/connections/research/run',{method:'POST',
+      headers:{'Content-Type':'application/json'},body:'{}'});
+    renderStages(r);renderBudget(r.budget);
+    if(!r.ok&&r.reason)aiSay(r.reason,'bad');
+  }catch(e){aiSay('Research failed: '+e.message,'bad')}
+  finally{btn.disabled=false;btn.textContent=label}
+}
+
+$id('aiConnect').addEventListener('click',aiConnect);
+$id('aiVerify').addEventListener('click',aiVerify);
+$id('aiForget').addEventListener('click',aiForget);
+$id('aiRun').addEventListener('click',aiRun);
+$id('aiProvider').addEventListener('change',()=>{
+  // Clear fields belonging to the previous provider so a stale base URL or
+  // model from another gateway is never silently reused. Apply hints from the
+  // cached list; do NOT call aiStatus(), which would reset the selector to the
+  // last saved provider before Connect is pressed.
+  providerTouched=true;
+  $id('aiModel').value='';
+  applyProviderHints();
+});
 
 
+/* ── Solana meme-coin research: discovery only, no trading action ── */
+function renderMemeResearch(result){
+  const candidates=Array.isArray(result.candidates)?result.candidates:[];
+  $id('memeMeta').textContent=(result.watchlist_count||0)+' WATCH · '+
+    (result.scored_candidates||0)+' SCORED · '+(result.discovered_tokens||0)+' DISCOVERED';
+  const msg=$id('memeMsg');
+  msg.textContent='Research-only scan from '+(result.provider||'market data')+
+    '. Security checks are not performed; WATCH is not a buy signal.';
+  msg.className='msg'+(result.errors&&result.errors.length?'':' ok');
+  if(!candidates.length){
+    $id('memeResults').innerHTML='<div class="empty">No candidates scored in this pass. Check provider errors below, then try another scan later.</div>'+
+      ((result.errors||[]).length?'<div class="notes">'+result.errors.map(e=>esc(e.token_address||'provider')+': '+esc(e.error)).join('<br>')+'</div>':'');
+    return;
+  }
+  $id('memeResults').innerHTML='<div style="overflow-x:auto"><table class="dt"><thead><tr>'+
+    '<th>TOKEN</th><th class="r">SCORE</th><th class="r">LIQUIDITY</th><th class="r">24H VOL</th>'+
+    '<th class="r">24H TXNS</th><th class="r">1H CHANGE</th><th>DECISION</th></tr></thead><tbody>'+
+    candidates.map(c=>{
+      const address=String(c.token_address||'').trim();
+      const pairAddress=String(c.pair_address||'').trim();
+      const tokenUrl=/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address)
+        ?'https://dexscreener.com/solana/'+encodeURIComponent(address):'';
+      const pairUrl=/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(pairAddress)
+        ?'https://dexscreener.com/solana/'+encodeURIComponent(pairAddress):'';
+      const name=esc(c.name||'Unknown')+' ('+esc(c.symbol||'?')+')';
+      const token=tokenUrl?'<a href="'+tokenUrl+'" target="_blank" rel="noopener noreferrer" style="color:var(--accent)" title="Open this token on DexScreener">'+name+'</a>':name;
+      const pairLink=pairUrl?' <a href="'+pairUrl+'" target="_blank" rel="noopener noreferrer" style="color:var(--dim)">PAIR ↗</a>':'';
+      const change=Number(c.price_change_1h_pct)||0;
+      const reasons=(c.rejection_reasons||[]).map(esc).join(', ');
+      const parts=c.score_components||{};
+      const breakdown=[
+        ['Liq',parts.liquidity],['Turn',parts.turnover],['Activity',parts.activity],
+        ['Buy',parts.buy_balance],['Mom',parts.momentum]
+      ].filter(p=>typeof p[1]==='number')
+       .map(p=>p[0]+' '+p[1].toFixed(1)).join(' · ');
+      return '<tr><td>'+token+pairLink+'<span class="sub2">'+esc(address)+
+        (reasons?' · '+reasons:'')+'</span></td>'+
+        '<td class="r mono" title="Score component points: '+esc(breakdown)+'">'+Number(c.score||0).toFixed(1)+
+        (breakdown?'<span class="sub2" style="display:block;white-space:normal;min-width:130px">'+esc(breakdown)+'</span>':'')+'</td>'+
+        '<td class="r mono">$'+money(c.liquidity_usd)+'</td>'+
+        '<td class="r mono">$'+money(c.volume_24h_usd)+'</td>'+
+        '<td class="r mono">'+Number(c.transactions_24h||0).toLocaleString()+'</td>'+
+        '<td class="r mono '+cls(change)+'">'+(change>0?'+':'')+change.toFixed(1)+'%</td>'+
+        '<td><span class="tag '+(c.decision==='WATCH'?'ok':'bad')+'">'+esc(c.decision)+'</span></td></tr>';
+    }).join('')+'</tbody></table></div>'+
+    ((result.errors||[]).length?'<div class="notes">Provider issues: '+result.errors.map(e=>esc(e.token_address||'provider')+': '+esc(e.error)).join(' · ')+'</div>':'')+
+    '<div class="notes">Scanned '+esc(result.generated_at||'')+'. Holder concentration, contract permissions and sellability remain unchecked.</div>';
+}
+function renderMemePaper(status){
+  const horizons=status.horizons||{};
+  $id('memePaperMeta').textContent=(status.snapshots||0)+' SNAPSHOTS · '+
+    (status.pending_horizon_observations||0)+' PENDING';
+  const names=['5m','15m','1h','4h','24h'];
+  $id('memePaperStatus').innerHTML=
+    '<div class="notes">Paper-only · modeled round-trip cost '+
+    Number(status.cost_assumptions?.modeled_round_trip_cost_pct||0).toFixed(2)+
+    '% · no wallet or live orders</div>'+
+    '<div style="overflow-x:auto"><table class="dt"><thead><tr>'+
+    '<th>HORIZON</th><th class="r">SAMPLES</th><th class="r">AVG NET RETURN</th>'+
+    '<th class="r">WIN RATE</th><th class="r">MISSED</th></tr></thead><tbody>'+
+    names.map(name=>{
+      const h=horizons[name]||{};
+      const avg=typeof h.average_net_return_pct==='number'?((h.average_net_return_pct>0?'+':'')+h.average_net_return_pct.toFixed(2)+'%'):'—';
+      const win=typeof h.win_rate_pct==='number'?h.win_rate_pct.toFixed(1)+'%':'—';
+      return '<tr><td>'+name+'</td><td class="r mono">'+(h.samples||0)+'</td>'+
+        '<td class="r mono '+(typeof h.average_net_return_pct==='number'?cls(h.average_net_return_pct):'')+'">'+avg+'</td>'+
+        '<td class="r mono">'+win+'</td><td class="r mono">'+(h.missed_sampling_windows||0)+'</td></tr>';
+    }).join('')+'</tbody></table></div>'+
+    '<div class="notes">Returns are sampled near each target horizon and adjusted using assumed costs, not real fills. Missed sampling windows are excluded. Repeated scans may create overlapping samples.</div>';
+}
+async function loadMemePaper(){
+  try{renderMemePaper(await api('/api/meme/paper'));}
+  catch(e){$id('memePaperStatus').innerHTML='<div class="notes">Paper evaluation unavailable: '+esc(e.message)+'</div>';}
+}
 
-const companyFrame=$('company-frame');let companyLive=null,companyTeam=null;
-function companySend(type,state){companyFrame.contentWindow?.postMessage({channel:'agent-company',type,state},'*')}
-window.companyLiveUpdate=state=>{companyLive={last_tick:state.last_tick,readiness:{blockers:state.readiness?.blockers||[]},config:state.config,worker_running:state.worker_running,valid_price_snapshots:state.valid_price_snapshots,eligible_count:state.eligible_count,calls_today:state.calls_today,strategy:{halted:state.strategy?.halted,equity:state.strategy?.equity,pnl:state.strategy?.pnl},events:(state.events||[]).filter(e=>['live_agent_report','live_agent_started'].includes(e.kind)).map(e=>({kind:e.kind,status:e.status,agent:e.agent,summary:e.summary,concerns:e.concerns,approve:e.approve,timestamp:e.timestamp})).concat(state.last_tick?[{kind:'accounting_report',agent:'Performance reviewer',summary:'Deterministic accounting: equity $'+state.strategy.equity.toFixed(2)+'; '+state.strategy.trades+' closed paper trades; recorded charges $'+state.strategy.cost.toFixed(4)+'. This is a calculation, not an AI call.',concerns:[],approve:[],timestamp:state.last_tick}]:[])};companySend('live',companyLive)};
-window.companyOrganizationUpdate=data=>{window.companyOrganization={name:data.config.name,priority:data.config.priority,budget:data.budget,open_tasks:data.tasks.filter(t=>t.status!=='done').length};companySend('organization',window.companyOrganization)};
-window.companyOpsUpdate=data=>{window.companyOpsState={daily:data.daily,checklist:data.checklist};companySend('operations',window.companyOpsState)};
-window.companyTeamUpdate=(records,status='recorded')=>{companyTeam={records:records.map(e=>({agent:e.agent,status:e.status,summary:e.summary,approve:e.approve,concerns:e.concerns,recorded_at:e.recorded_at,step:e.step})),status,provider:records.find(e=>e.provider)?.provider||$('provider').value};companySend('team',companyTeam)};
-companyFrame.onload=()=>{if(window.companyOrganization)companySend('organization',window.companyOrganization);if(window.companyOpsState)companySend('operations',window.companyOpsState);if(companyLive)companySend('live',companyLive);if(companyTeam)companySend('team',companyTeam)};
-const companyDialog=$('company-dialog');
-$('company-open').onclick=()=>{companyDialog.showModal();$('company-expanded').append(companyFrame)};
-function closeCompany(){companyDialog.close();$('company-dock').append(companyFrame)}
-$('company-close').onclick=closeCompany;companyDialog.addEventListener('cancel',event=>{event.preventDefault();closeCompany()});
+/* ── persistent autonomous paper portfolio; never live execution ── */
+function renderMemeTrader(status){
+  const positions=Array.isArray(status.positions)?status.positions:[];
+  const open=positions.filter(p=>p.status==='OPEN');
+  const events=Array.isArray(status.events)?status.events:[];
+  $id('memeTraderMeta').textContent=(status.risk_halted?'RISK HALT':'PAPER ONLY')+' · '+open.length+'/'+(status.max_open_positions||3)+' OPEN';
+  const cash=Number(status.cash_usd)||0,equity=Number(status.equity_usd)||0;
+  const pnl=Number(status.realized_pnl_usd)||0,unreal=Number(status.unrealized_pnl_usd)||0;
+  const fmt=v=>(v>0?'+':'')+v.toFixed(2);
+  let html='<div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">'+
+    '<div class="kpi"><div class="k">EQUITY</div><div class="v">$'+money(equity)+'</div></div>'+
+    '<div class="kpi"><div class="k">CASH</div><div class="v">$'+money(cash)+'</div></div>'+
+    '<div class="kpi"><div class="k">REALIZED P&L</div><div class="v '+cls(pnl)+'">$'+fmt(pnl)+'</div></div>'+
+    '<div class="kpi"><div class="k">UNREALIZED P&L</div><div class="v '+cls(unreal)+'">$'+fmt(unreal)+'</div></div>'+
+    '<div class="kpi"><div class="k">DAILY LOSS</div><div class="v">$'+money(status.daily_realized_loss_usd)+'</div></div></div>'+
+    '<div class="notes">Initial cash $'+money(status.initial_cash_usd)+' · position size $'+money(status.config?.position_usd)+
+    ' · stop '+(100*Number(status.config?.stop_loss_pct||0)).toFixed(1)+'% · target '+
+    (100*Number(status.config?.take_profit_pct||0)).toFixed(1)+'% · modeled fees/slippage only · no live execution</div>'+
+    '<h3 style="margin:14px 0 8px">Open and recent positions</h3>';
+  if(!positions.length){html+='<div class="empty">No simulated positions yet. Run a paper cycle to start recording decisions.</div>';}
+  else{
+    html+='<div style="overflow-x:auto"><table class="dt"><thead><tr><th>TOKEN</th><th>STATUS</th><th class="r">ENTRY</th><th class="r">LAST</th><th class="r">NOTIONAL</th><th class="r">P&L</th><th>EXIT / AGE</th></tr></thead><tbody>';
+    html+=positions.slice(0,30).map(p=>{
+      const ret=p.status==='CLOSED'?Number(p.realized_pnl||0):(Number(p.current_price)-Number(p.entry_price))*Number(p.quantity)-Number(p.entry_cost||0);
+      const exit=p.status==='CLOSED'?(p.exit_reason||'CLOSED'):'OPEN';
+      return '<tr><td>'+esc(p.symbol||'?')+'<span class="sub2">'+esc((p.token_address||'').slice(0,16))+'</span></td>'+
+        '<td><span class="tag '+(p.status==='OPEN'?'ok':'')+'">'+esc(p.status)+'</span></td>'+
+        '<td class="r mono">$'+money(p.entry_price)+'</td><td class="r mono">$'+money(p.current_price)+'</td>'+
+        '<td class="r mono">$'+money(p.notional)+'</td><td class="r mono '+cls(ret)+'">$'+fmt(ret)+'</td><td>'+esc(exit)+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+  }
+  html+='<h3 style="margin:14px 0 8px">Latest decisions and audit trail</h3>';
+  if(!events.length)html+='<div class="empty">No decisions recorded yet.</div>';
+  else html+='<div class="log">'+events.slice(0,15).map(e=>{
+    const d=e.details||{};const reason=d.reason||d.exit_reason||d.action||'Recorded';
+    let diagnostic='';
+    if(Number.isFinite(Number(d.score))&&Number.isFinite(Number(d.min_score))&&d.score!==undefined&&d.min_score!==undefined)diagnostic='Score '+Number(d.score).toFixed(1)+' / required '+Number(d.min_score).toFixed(1);
+    else if(Number.isFinite(Number(d.buy_ratio))&&d.buy_ratio!==undefined&&d.min_buy_ratio!==undefined&&d.max_buy_ratio!==undefined)diagnostic='Buy ratio '+(Number(d.buy_ratio)*100).toFixed(1)+'% / allowed '+(Number(d.min_buy_ratio)*100).toFixed(0)+'–'+(Number(d.max_buy_ratio)*100).toFixed(0)+'%';
+    else if(Number.isFinite(Number(d.price_change_1h_pct))&&d.price_change_1h_pct!==undefined){
+      if(d.max_entry_change_1h_pct!==undefined)diagnostic='1h price change '+Number(d.price_change_1h_pct).toFixed(1)+'% / maximum '+Number(d.max_entry_change_1h_pct).toFixed(1)+'%';
+      else if(d.min_entry_change_1h_pct!==undefined)diagnostic='1h price change '+Number(d.price_change_1h_pct).toFixed(1)+'% / minimum '+Number(d.min_entry_change_1h_pct).toFixed(1)+'%';
+    }
+    return '<div class="row"><i class="dot '+(e.event_type==='POSITION_OPENED'?'ok':e.event_type==='REJECTED'?'warn':'')+'"></i><div class="tx"><b>'+esc(e.event_type)+'</b> · '+esc(e.symbol||e.token_address||'portfolio')+' — '+esc(reason)+
+      (diagnostic?'<div class="notes">'+esc(diagnostic)+'</div>':'')+'<div class="notes">'+esc(new Date(Number(e.created_at)*1000).toLocaleString())+'</div></div></div>';
+  }).join('')+'</div>';
+  html+='<div class="notes">Paper simulation only. Public market prices may be stale or non-executable; safety checks are not an audit. Incomplete checks block entries.</div>';
+  $id('memeTraderStatus').innerHTML=html;
+}
+async function loadMemeTrader(){
+  try{renderMemeTrader(await api('/api/meme/trader'));}
+  catch(e){$id('memeTraderStatus').innerHTML='<div class="notes">Paper trader unavailable: '+esc(e.message)+'</div>';}
+}
+async function runMemeTrader(){
+  const b=$id('memeTraderRun'),label=b.textContent;
+  b.disabled=true;b.textContent='Running…';
+  $id('memeTraderMsg').textContent='Scanning up to 30 public candidates, refreshing open positions, checking candidate safety and recording paper decisions. This can take a little while.';
+  $id('memeTraderMsg').className='msg';
+  try{
+    const result=await api('/api/meme/trader/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({limit:30})});
+    renderMemeTrader(result.status||{});
+    const decisions=result.cycle?.decisions||[];
+    const opened=decisions.filter(d=>d.action==='OPEN').length;
+    const closed=decisions.filter(d=>d.action==='CLOSE').length;
+    const rejected=decisions.filter(d=>d.action==='REJECT').length;
+    const scan=result.scan||{},cycle=result.cycle||{};
+    let explanation='';
+    if(opened===0){
+      const blockers=Object.entries(scan.market_rejection_reasons||{}).sort((a,b)=>b[1]-a[1]).slice(0,3);
+      const reasons=Object.entries(cycle.decision_counts||{}).filter(([k])=>!['open','close'].includes(k)).sort((a,b)=>b[1]-a[1]).slice(0,3);
+      if(!(scan.watchlist_count||0)){
+        explanation=' No entries: no token passed the market screen.';
+        if(blockers.length)explanation+=' Main market filters: '+blockers.map(([k,v])=>k.replaceAll('_',' ')+' ('+v+')').join(', ')+'.';
+        const examples=(scan.market_rejection_examples||[]).slice(0,3);
+        if(examples.length){
+          const money=v=>Number.isFinite(Number(v))?'$'+Number(v).toLocaleString(undefined,{maximumFractionDigits:0}):'—';
+          explanation+=' Examples: '+examples.map(e=>(e.name||e.symbol||'Unknown')+' ('+(e.symbol||'?')+') — liquidity '+money(e.liquidity_usd)+', 24h volume '+money(e.volume_24h_usd)+', 1h '+(Number.isFinite(Number(e.price_change_1h_pct))?Number(e.price_change_1h_pct).toFixed(1)+'%':'—')).join('; ')+'.';
+        }
+      }else if(reasons.length){
+        explanation=' No entries: '+reasons.map(([k,v])=>k.replaceAll('_',' ')+' ('+v+')').join(', ')+'.';
+      }else{
+        explanation=' No entries this cycle; market scan found '+(scan.watchlist_count||0)+' watchlist candidate(s), '+(scan.watchlist_considered||0)+' checked.';
+      }
+    }
+    $id('memeTraderMsg').textContent='Cycle complete: '+(scan.scored_candidates||0)+' candidates scored · '+(scan.watchlist_count||0)+' passed market screen · '+(scan.watchlist_considered||0)+' safety-screened · '+opened+' opened · '+closed+' closed · '+rejected+' rejected. No live orders.'+explanation;
+    $id('memeTraderMsg').className=opened>0?'msg ok':((scan.errors||[]).length?'msg bad':'msg');
+    await loadMemePaper();
+  }catch(e){
+    $id('memeTraderMsg').textContent='Paper cycle failed: '+e.message;
+    $id('memeTraderMsg').className='msg bad';
+  }finally{b.disabled=false;b.textContent=label}
+}
+$id('memeTraderRun').addEventListener('click',runMemeTrader);
+$id('memeTraderRefresh').addEventListener('click',loadMemeTrader);
 
-companyFrame.srcdoc="\u003c!doctype html>\u003chtml lang=\"en\">\u003chead>\u003cmeta charset=\"utf-8\">\u003cmeta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\u003cstyle>\n*{box-sizing:border-box}body{margin:0;background:#0f0e14;color:#dfeafb;font:14px system-ui}header{padding:17px 20px;background:#222127;border-bottom:1px solid #45444a;display:flex;gap:15px;align-items:center;flex-wrap:wrap}h1{font-size:19px;margin:0;letter-spacing:1px}small,.muted{color:#a7a7b2}.badge{font-size:11px;letter-spacing:1px;color:#a7a7b2;border:1px solid #605f65;border-radius:20px;padding:5px 10px}select,button{font:inherit;background:#323137;color:#e2eefa;border:1px solid #5b5a60;border-radius:7px;padding:8px;cursor:pointer}button:focus-visible,select:focus-visible{outline:3px solid #ef777e}header .tools{margin-left:auto;display:flex;gap:8px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 255px;gap:14px;padding:14px}.world{background:#2b2a30;border:1px solid #5b5a60;border-radius:12px;overflow:hidden;position:relative}.world canvas{display:block;width:100%;height:auto;image-rendering:auto;cursor:pointer}.world footer{padding:10px 14px;color:#a7a7b2;background:#1f1e24;font-size:12px}.sidebar{background:#28272d;border:1px solid #4a494f;border-radius:12px;padding:15px;min-width:0}h2{font-size:16px;margin:0 0 8px}p{line-height:1.5;overflow-wrap:anywhere}#detail{min-height:72px;color:#a7a7b2}.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}.stats span{padding:5px 8px;border-radius:6px;background:#38373d;font-size:12px}.roster{display:flex;gap:7px;flex-wrap:wrap;padding:0 14px 14px}.roster button{font-size:12px}.roster button[aria-pressed=true]{border-color:#ef777e;background:#424147}#notice{margin:0;padding:10px 20px;background:#242329;color:#d6a4ae;font-size:12px}#feed{padding-left:19px;color:#a7a7b2;font-size:12px;max-height:190px;overflow:auto}#feed li{padding-bottom:10px}#role-status{color:#ef777e}.tagline{padding:0 14px 12px;font-size:12px;color:#a7a7b2}@media(max-width:760px){.layout{grid-template-columns:1fr}.sidebar{min-height:180px}header .tools{margin-left:0}#detail{min-height:0}#feed{max-height:100px}}\nbody{background:#0f0e14!important;color:#e9e9ee}button{background:#9c3039!important;border-color:#ad4650!important}\u003c/style>\u003c/head>\u003cbody>\n\u003cheader>\u003cdiv>\u003ch1>AGENT COMPANY\u003c/h1>\u003csmall>Your paper-trading team, on the office floor\u003c/small>\u003c/div>\u003cspan class=\"badge\" id=\"mode-badge\">LIVE OBSERVER\u003c/span>\u003cdiv class=\"tools\">\u003cselect id=\"source\" aria-label=\"Activity source\">\u003coption value=\"live\">Live paper team\u003c/option>\u003coption value=\"team\">Experiment team\u003c/option>\u003coption value=\"demo\">Office demo \u00b7 no AI calls\u003c/option>\u003c/select>\u003cbutton id=\"pause\">Pause animation\u003c/button>\u003c/div>\u003c/header>\n\u003cp id=\"notice\" role=\"status\">Waiting for a dashboard update. Idle characters do not mean an AI model is running.\u003c/p>\n\u003cdiv id=\"ceo-brief\" style=\"margin:10px 14px;padding:12px 16px;border:1px solid #713342;border-radius:9px;background:#2a1921;color:#efbdc7;font-size:12px\" role=\"status\">CEO \u00b7 Waiting for team status.\u003c/div>\u003cdiv class=\"layout\">\u003csection class=\"world\">\u003ccanvas id=\"office\" width=\"960\" height=\"620\" aria-label=\"Animated office with six agent workstations and a CEO supervisor. Select an agent using the buttons below.\">\u003c/canvas>\u003cfooter id=\"office-status\">Click a character or workstation to inspect its latest activity.\u003c/footer>\u003c/section>\u003caside class=\"sidebar\">\u003ch2 id=\"role-name\">Market researcher\u003c/h2>\u003cspan id=\"role-status\">Waiting\u003c/span>\u003cp id=\"detail\">No agent report received yet.\u003c/p>\u003cdiv class=\"stats\" id=\"stats\">\u003c/div>\u003ch2>Office activity\u003c/h2>\u003col id=\"feed\">\u003c/ol>\u003cp class=\"muted\" style=\"font-size:12px\">Characters and handoff effects are a visualization. Only recorded reports represent AI work. The performance reviewer is deterministic accounting.\u003c/p>\u003c/aside>\u003c/div>\n\u003cp class=\"muted\" style=\"padding:0 18px;font-size:11px\">Walking, coffee breaks and desk gestures are visual animation. Recorded reports in the activity panel identify actual AI work. Demo mode shows a sample collaboration cycle.\u003c/p>\u003cdiv class=\"roster\" id=\"roster\" aria-label=\"Choose agent\">\u003c/div>\u003cdiv class=\"tagline\">Research \u2192 screening \u2192 strategy \u2192 risk \u2192 coordination \u2192 accounting \u00b7 Paper only\u003c/div>\n\u003cscript>\nconst $=id=>document.getElementById(id),canvas=$('office'),ctx=canvas.getContext('2d');\nconst roles=['Market researcher','Token screener','Strategy analyst','Risk critic','Portfolio coordinator','Performance reviewer','CEO'];\nconst short=['RESEARCH','SCREENING','STRATEGY','RISK DESK','COORDINATION','ACCOUNTING','CEO'];\nconst colors=['#a7a7b2','#b39cfa','#f5bf73','#ff8795','#78e2b9','#a7a7b2','#ef7188'];\nconst desks=[{x:190,y:220},{x:480,y:220},{x:770,y:220},{x:190,y:430},{x:480,y:430},{x:770,y:430},{x:75,y:290}];\nlet selected=0,mode='live',paused=matchMedia('(prefers-reduced-motion: reduce)').matches,live=null,team=null,lastSeen=0,visualTime=0,lastFrame=0,demoStep=-1;\nlet staff=roles.map(()=>({status:'Waiting',summary:'No report received yet.',approve:[],concerns:[],at:0,activeUntil:0}));\nlet operations=null,organization=null;\nlet seen=new Set(),entries=[],packets=[];\nconst motions=roles.map(()=>({x:0,y:0}));\nconst demoReports=['Reviewing sample prices and missing observations.','Checking sample pool age and liquidity.','Comparing a sample momentum signal against costs.','Holding a sample proposal because evidence is incomplete.','Respecting the risk veto; no sample entry approved.','Preparing illustrative paper accounting.','Team check-in: keep reports clear, respect the risk veto and wait for sound evidence.'];\nfunction reset(){staff=roles.map(()=>({status:'Waiting',summary:'No report received yet.',approve:[],concerns:[],at:0,activeUntil:0}));seen.clear();entries=[];packets=[];demoStep=-1;renderDetails()}\nfunction renderDetails(){const a=staff[selected];$('role-name').textContent=roles[selected];$('role-status').textContent=a.status;$('detail').textContent=a.summary+(a.concerns.length?' Concerns: '+a.concerns.join('; '):'');$('stats').replaceChildren();for(const value of ['Approvals: '+a.approve.length,a.at?'Report: '+new Date(a.at*1000).toLocaleTimeString():'No recorded report','Handoff: '+(selected\u003c5?roles[selected+1]:selected===5?'CEO review':'Team oversight'),a.at?'Report age: '+Math.max(0,Math.floor(Date.now()/1000-a.at))+'s':'Task: waiting for evidence']){const node=document.createElement('span');node.textContent=value;$('stats').append(node)}for(const button of $('roster').children)button.setAttribute('aria-pressed',String(Number(button.dataset.index)===selected));$('feed').replaceChildren();for(const e of entries.slice(-6).reverse()){const item=document.createElement('li');item.textContent=e;$('feed').append(item)}}\nfunction apply(records,initial){for(const record of records){const index=roles.indexOf(record.agent);if(index\u003c0)continue;const key=JSON.stringify([record.agent,record.status,record.timestamp,record.recorded_at,record.step,record.summary]);if(seen.has(key))continue;seen.add(key);if(seen.size>2000)seen.delete(seen.values().next().value);const a=staff[index];a.status=record.status||'Report received';a.summary=typeof record.summary==='string'?record.summary:'Reviewing supplied evidence.';a.approve=Array.isArray(record.approve)?record.approve:[];a.concerns=Array.isArray(record.concerns)?record.concerns:[];a.at=record.timestamp||record.recorded_at||0;if(!initial){a.activeUntil=visualTime+12;if(index\u003c5)packets.push({from:index,to:index+1,born:visualTime});entries.push(short[index]+': '+a.status+' \u2014 '+a.summary.slice(0,100));if(entries.length>20)entries.shift()}}renderDetails()}\nfunction supervise(){\nlet status='Waiting',message='Waiting for verified team updates. Good decisions start with clear evidence.';\nif(mode==='demo'){status='Demo leadership';message='Sample check-in: collaborate, challenge weak evidence and respect the risk veto. Demo only.'}\nelse if(mode==='live'&&live){const blockers=live.readiness?.blockers||[];const latest=Math.max(0,...staff.slice(0,5).map(a=>a.at));const stale=lastSeen&&Date.now()-lastSeen>20000||live.last_tick&&Date.now()/1000-live.last_tick>90;\nif(stale){status='Updates stale';message='Team updates are stale. Check the server and data connection before trusting activity.'}\nelse if(!live.worker_running){status='Worker stopped';message='The paper worker is stopped. Resume it from Connections & setup when ready.'}\nelse if(live.strategy?.halted){status='Risk shutdown';message='Protect capital. New entries remain stopped; the CEO cannot override the risk controller.'}\nelse if(live.config?.provider==='none'){status='Setup required';message='The observer is working, but AI workers need a model connection. Configure it in Connections & setup.'}\nelse if(blockers.length){status='Blocked / waiting';message=blockers.join(' ')+' Staying selective is part of the job.'}\nelse if(latest&&Date.now()/1000-latest\u003c180){status='Team reporting';message='Reports are arriving. Keep evidence clear, challenge assumptions and respect every risk veto.'}\nelse {status='Waiting for reports';message='Monitoring is active; no recent AI report has arrived. Check eligibility, call allowance and the activity log. Never trade just to look busy.'}}\nelse if(mode==='team'&&team){status=team.status==='running'?'Team running':team.status==='failed'?'Review failure':'Review complete';message=team.status==='running'?'The experiment team is running. Keep handoffs clear; report failures and respect the risk veto.':team.status==='failed'?'An experiment failed. Review its activity before retrying.':'Review the results and costs before drawing conclusions.'}\nconst a=staff[6];if(a.summary!==message){a.status=status;a.summary=message;a.at=Date.now()/1000;a.approve=[];a.concerns=['Rule-based office supervisor; no trading authority or extra model calls.'];if(entries.length>20)entries.shift();entries.push('CEO: '+status+' \u2014 '+message.slice(0,100))}\nconst daily=operations?.daily;const digest=daily?' Today (UTC): '+daily.calls_today+' model calls; '+daily.eligible_now+' eligible now; '+daily.unresolved_alerts+' active incidents.':'';a.summary=message; $('ceo-brief').textContent='CEO \u00b7 '+status+' \u2014 '+message+digest+(organization?' '+organization.name+': '+organization.open_tasks+' open work orders; $'+organization.budget.remaining.toFixed(2)+' AI allowance left.':'');renderDetails();\n}\nfunction refreshSource(initial=false){if(mode==='demo')return;if(mode==='live'){if(!live){$('notice').textContent='Waiting for live paper state.';return}const noModel=live.config?.provider==='none';$('mode-badge').textContent='LIVE PAPER \u00b7 '+(noModel?'NO AI CONFIGURED':live.config.provider.toUpperCase());$('notice').textContent=noModel?'Market observer running without an AI provider. The team stays idle until a model is configured and eligible evidence exists.':live.worker_running?'Displaying recorded live-paper agent reports. Visual handoffs show newly received reports.':'Paper worker stopped. Displaying retained reports.';const records=(live.events||[]).filter(e=>['live_agent_report','live_agent_started','accounting_report'].includes(e.kind)).reverse().map(e=>({...e,status:e.kind==='live_agent_started'?'working':e.kind==='accounting_report'?'Accounting update':'Report received'}));apply(records,initial);$('office-status').textContent=(live.worker_running?'Observer online':'Observer stopped')+' \u00b7 '+(live.valid_price_snapshots||0)+' usable prices \u00b7 '+(live.eligible_count||0)+' eligible \u00b7 '+(live.calls_today||0)+' model calls today \u00b7 '+(live.strategy?.halted?'Risk shutdown':'Paper only');}\nelse{ $('mode-badge').textContent='EXPERIMENT \u00b7 '+(team?.provider==='scripted'?'SCRIPTED / NO AI':'RECORDED ACTIVITY');$('notice').textContent=team?'Showing the latest observed experiment handoffs; the experiment uses synthetic market data. Status: '+team.status:'Start an experiment in the dashboard to see its handoffs here.';if(team)apply(team.records||[],initial);$('office-status').textContent=team?'Experiment '+team.status+' \u00b7 '+team.provider+' \u00b7 synthetic market data':'No experiment observed in this page.';}\n}\nwindow.addEventListener('message',event=>{if(event.source!==parent||event.data?.channel!=='agent-company')return;if(event.data.type==='organization'){organization=event.data.state;supervise()}if(event.data.type==='operations'){operations=event.data.state;supervise()}if(event.data.type==='live'){live=event.data.state;lastSeen=Date.now();if(mode==='live')refreshSource(!seen.size)}if(event.data.type==='team'){team=event.data.state;if(mode==='team')refreshSource(!seen.size)}canvas.setAttribute('aria-label','Animated agent office. Company capital: '+capitalDisplay().amount+'. '+capitalDisplay().change+'. '+capitalDisplay().status+'. Select an agent using the buttons below.');supervise()});\n$('source').onchange=()=>{mode=$('source').value;reset();if(mode==='demo'){$('mode-badge').textContent='OFFICE DEMO \u00b7 NO AI';$('notice').textContent='Illustrative animation only. Demo does not call models, start trials or move funds.';$('office-status').textContent='Demo office \u00b7 sample messages \u00b7 no real agent activity';}else refreshSource(true);supervise()};\n$('pause').textContent=paused?'Resume animation':'Pause animation';$('pause').onclick=()=>{paused=!paused;$('pause').textContent=paused?'Resume animation':'Pause animation'};\nfor(let i=0;i\u003croles.length;i++){const button=document.createElement('button');button.textContent=roles[i];button.dataset.index=i;button.onclick=()=>{selected=i;renderDetails()};$('roster').append(button)}\ncanvas.onclick=event=>{const bounds=canvas.getBoundingClientRect(),x=(event.clientX-bounds.left)*960/bounds.width,y=(event.clientY-bounds.top)*620/bounds.height;let index=motions.findIndex(p=>Math.hypot(x-p.x,y-p.y)\u003c30);if(index\u003c0)index=desks.findIndex(d=>Math.abs(x-d.x)\u003c105&&y>d.y-75&&y\u003cd.y+85);if(index>=0){selected=index;renderDetails()}};\n\nfunction rect(x,y,w,h,color){ctx.fillStyle=color;ctx.fillRect(x,y,w,h)}\nfunction box(x,y,w,h,color,r=8){ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill()}\nfunction text(value,x,y,color='#a9a6b4',size=12,align='center'){ctx.fillStyle=color;ctx.font='600 '+size+'px system-ui';ctx.textAlign=align;ctx.fillText(value,x,y)}\nfunction line(x,y,x2,y2,c,w=1){ctx.strokeStyle=c;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x2,y2);ctx.stroke()}\nfunction plant(x,y){ctx.fillStyle='#0005';ctx.beginPath();ctx.ellipse(x+3,y+15,23,8,0,0,Math.PI*2);ctx.fill();box(x-13,y,26,24,'#8b5556',5);for(let i=0;i\u003c6;i++){ctx.save();ctx.translate(x,y-6);ctx.rotate(i*Math.PI/3);ctx.fillStyle=i%2?'#537e70':'#73a58a';ctx.beginPath();ctx.ellipse(0,-15,7,20,0,0,Math.PI*2);ctx.fill();ctx.restore()}}\nfunction avatar(i,x,y,walking,working){const phase=visualTime*10+i,step=walking?Math.sin(phase)*6:0,bob=walking?Math.abs(Math.sin(phase))*2:working?Math.sin(visualTime*5)*.7:0;ctx.fillStyle='#0006';ctx.beginPath();ctx.ellipse(x,y+28,19,7,0,0,Math.PI*2);ctx.fill();y-=bob;line(x-6,y+10,x-7+step,y+25,'#202029',7);line(x+6,y+10,x+7-step,y+25,'#202029',7);box(x-13,y-13,26,30,colors[i],8);const arm=working?Math.sin(phase)*3:step;line(x-13,y-7,x-18,y+6+arm,'#d2a584',5);line(x+13,y-7,x+18,y+6-arm,'#d2a584',5);ctx.fillStyle='#e5b999';ctx.beginPath();ctx.arc(x,y-23,13,0,Math.PI*2);ctx.fill();box(x-13,y-36,26,12,['#3f2937','#6f463e','#34313b','#5e3a4a','#44332e','#676472','#33232b'][i],7);rect(x-7,y-24,2.5,3,'#30242c');rect(x+5,y-24,2.5,3,'#30242c');line(x-3,y-17,x+3,y-17,'#ac7a66');box(x-4,y-10,8,8,'#f1f0f2',2);rect(x-2,y-9,4,3,'#ae394a');if(i===selected){ctx.strokeStyle=colors[i];ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y+29,24,9,0,0,Math.PI*2);ctx.stroke()}}\nfunction position(i,active){const d=desks[i],home={x:d.x,y:d.y+45};let phase=(visualTime+i*4)%32,target={x:610,y:330};let progress=0;if(active){phase=(12-Math.max(0,staff[i].activeUntil-visualTime))%12;progress=phase\u003c4?phase/4:phase\u003c7?1:Math.max(0,1-(phase-7)/5)}else{progress=phase\u003c22?0:phase\u003c26?(phase-22)/4:phase\u003c28?1:1-(phase-28)/4;target={x:840-i*12,y:330}}\n// Three-segment aisle paths keep characters outside desks and meeting furniture.\nconst path=[home,{x:home.x,y:i\u003c3?290:510},{x:930,y:i\u003c3?290:510},{x:930,y:330},target];const scaled=progress*4,k=Math.min(3,Math.floor(scaled)),t=Math.min(1,scaled-k),a=path[k],b=path[k+1];return {x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,walking:progress>0&&progress\u003c1}}\nfunction capitalDisplay(){const equity=live?.strategy?.equity,pnl=live?.strategy?.pnl;const valid=mode==='live'&&typeof equity==='number'&&Number.isFinite(equity);return {amount:valid?'$'+equity.toFixed(2):'\u2014',change:valid&&typeof pnl==='number'&&Number.isFinite(pnl)?(pnl>=0?'+$':'\u2212$')+Math.abs(pnl).toFixed(2)+' NET P&L':'BALANCE UNAVAILABLE',status:mode!=='live'?'SELECT LIVE PAPER':!valid?'WAITING FOR ACCOUNT':Date.now()-lastSeen>20000?'LAST RECEIVED \u00b7 STALE':'LIVE PAPER ACCOUNT'};}\nfunction capitalScreen(){const d=capitalDisplay();ctx.save();ctx.shadowColor='#c74456';ctx.shadowBlur=12;box(335,14,290,82,'#682b38',9);ctx.shadowBlur=0;box(338,17,284,76,'#080b10',7);line(345,20,615,20,'#d35b6d',2);text('COMPANY CAPITAL',480,33,'#c0a4af',9);text(d.amount,480,62,'#faf1f4',27);text(d.change,480,79,d.change.startsWith('\u2212')?'#f18493':'#9acbb8',9);text(d.status,780,76,'#af939f',9);ctx.restore();}\nfunction draw(){ctx.clearRect(0,0,960,620);const bg=ctx.createLinearGradient(0,0,0,620);bg.addColorStop(0,'#25232e');bg.addColorStop(1,'#111116');rect(0,0,960,620,bg);box(18,100,924,480,'#25242c',12);for(let y=105;y\u003c575;y+=38)for(let x=22;x\u003c940;x+=46){rect(x,y,45,37,(Math.floor(x/46)+Math.floor(y/38))%2?'#292830':'#26252d')}\nbox(20,20,920,72,'#14141d');for(let x=35;x\u003c945;x+=150){box(x,28,135,53,'#080b14',4);for(let j=0;j\u003c12;j++){const h=8+((j*13+x)%29);rect(x+5+j*10,76-h,7,h,'#252538');if(j%3===0)rect(x+7+j*10,78-h,2,3,'#bf5a6666')}line(x+67,29,x+67,81,'#47404e',3)}text('EMBER / OPERATIONS',170,53,'#d7bdc3',13);text('RESEARCH \u2022 RISK \u2022 REVIEW',170,73,'#867c91',8);capitalScreen();\n// A red-lit walkway, glass partitions and a collaboration hub.\nrect(35,313,890,40,'#18181f');line(40,315,920,315,'#a63d4b66',2);line(40,353,920,353,'#a63d4b44',2);for(let i=0;i\u003c9;i++)box(80+i*100,327,5,5,'#c5526066',2);box(383,305,194,52,'#06060a55',14);box(390,300,180,47,'#4c313b',14);box(400,305,160,35,'#352730',10);text('COLLABORATION HUB',480,327,'#e3a5af',10);for(let x of [370,590])box(x,310,15,25,'#77717f',5);\nbox(810,365,102,54,'#332b35');box(822,375,30,31,'#151419',5);rect(829,382,15,12,'#b74856');text('COFFEE',883,391,'#bfb1bb',9);for(let i=0;i\u003c3;i++){ctx.strokeStyle='#aa8d9966';ctx.beginPath();ctx.moveTo(838+i*5,374);ctx.quadraticCurveTo(833+i*5,365,838+i*5+Math.sin(visualTime*2+i)*3,355);ctx.stroke()}\nplant(62,155);plant(902,145);plant(62,535);plant(903,535);\nfor(let i=0;i\u003c6;i++){const d=desks[i],a=staff[i],active=a.activeUntil>visualTime||a.status==='working'&&mode==='team'&&team?.status==='running';box(d.x-97,d.y-55,194,108,'#0003',12);box(d.x-90,d.y-60,180,83,'#746169',8);box(d.x-86,d.y-57,172,73,'#4a3d47',6);line(d.x-84,d.y+16,d.x+84,d.y+16,'#988087',2);for(let offset of [-34,29]){box(d.x+offset-25,d.y-49,50,36,'#10121a',4);box(d.x+offset-22,d.y-46,44,29,active?'#242232':'#1c1d29',2);for(let j=0;j\u003c4;j++){const len=active?12+(Math.floor(visualTime*3)+j*11)%23:15+j*5;rect(d.x+offset-18,d.y-41+j*5,len,2,colors[i]+'aa')}rect(d.x+offset-3,d.y-13,6,10,'#24232d');rect(d.x+offset-13,d.y-3,26,3,'#24232d')}\nbox(d.x-30,d.y+5,62,9,'#272531',3);for(let k=0;k\u003c10;k++)rect(d.x-25+k*5,d.y+8,3,2,'#69616f');box(d.x+59,d.y-15,11,15,'#d8b3a2',3);box(d.x-70,d.y-20,13,23,'#17171e',3);rect(d.x-67,d.y-16,7,14,'#b9465c55');box(d.x-20,d.y+37,40,25,'#4c4555',8);box(d.x-18,d.y+59,36,6,'#202027',3);text(short[i],d.x,d.y-73,colors[i],11);box(d.x-4,d.y-67,8,3,active?colors[i]:'#696171',2);if(i===selected){ctx.strokeStyle=colors[i]+'99';ctx.lineWidth=1.5;ctx.strokeRect(d.x-95,d.y-63,190,126)}const p=position(i,active);motions[i]=p;avatar(i,p.x,p.y,p.walking,active&&!p.walking);if(active){box(p.x+22,p.y-47,58,20,'#32252e',5);text(mode==='demo'?'DEMO':a.status==='working'?'WORKING':'REPORT',p.x+51,p.y-33,'#ffacb8',8)}text(active?'HANDOFF / REVIEW':a.status.toUpperCase().slice(0,22),d.x,d.y+93,active?colors[i]:'#8e8598',9)}\n// CEO has a dedicated leadership pod and walks the clear upper aisle.\nbox(25,255,105,56,'#68404b',9);box(35,260,85,39,'#36232e',6);box(48,266,46,24,'#12131c',4);text('CEO',77,282,'#f096aa',11);text('LEADERSHIP',77,247,'#d798a7',9);\nconst tour=(visualTime%40)/40;let cx=75,cy=330;if(tour>.15&&tour\u003c.85){const t=(tour-.15)/.7;cx=75+825*(t\u003c.5?t*2:(1-t)*2);cy=290}\nmotions[6]={x:cx,y:cy};avatar(6,cx,cy,tour>.15&&tour\u003c.85,false);box(cx+21,cy-42,68,22,'#3f202d',5);text(mode==='demo'?'TEAM CHECK':'OVERSIGHT',cx+55,cy-27,'#f9a5b8',8);\npackets=packets.filter(p=>visualTime-p.born\u003c3);for(const p of packets){const t=Math.min(1,(visualTime-p.born)/3),a=desks[p.from],b=desks[p.to],x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t-40*Math.sin(t*Math.PI);ctx.shadowColor='#ef657e';ctx.shadowBlur=12;box(x-8,y-6,16,12,'#f4a1b1',3);ctx.shadowBlur=0;line(x-4,y-2,x+4,y-2,'#753546')}\nbox(160,575,640,28,'#14131bee',8);text(mode==='demo'?'DEMO COLLABORATION  \u2022  NO AI CALLS':mode==='live'?'LIVE PAPER OFFICE  \u2022  AMBIENT MOTION IS VISUAL ONLY':'EXPERIMENT TEAM  \u2022  SYNTHETIC MARKET DATA',480,593,'#c794a0',10);\n}\nfunction frame(now){const delta=lastFrame?Math.min(.1,(now-lastFrame)/1000):0;lastFrame=now;if(!paused&&!document.hidden){visualTime+=delta;if(mode==='demo'){const step=Math.floor(visualTime/3);if(step!==demoStep){demoStep=step;const i=step%7;for(const a of staff)a.status='Waiting';apply([{agent:roles[i],status:'Demo handoff',summary:demoReports[i],concerns:[],approve:[],timestamp:Date.now()/1000}],false);staff[i].activeUntil=visualTime+12;selected=i;renderDetails()}}}if(mode==='live'&&lastSeen&&Date.now()-lastSeen>20000){supervise();}if(mode==='live'&&lastSeen&&Date.now()-lastSeen>20000)$('notice').textContent='Dashboard updates are stale. Displaying last received state; this is not current AI activity.';draw();requestAnimationFrame(frame)}\nsupervise();renderDetails();requestAnimationFrame(frame);\n\u003c/script>\u003c/body>\u003c/html>\n";
+async function loadMemeResearch(){
+  try{
+    const result=await api('/api/meme/research');
+    if(Array.isArray(result.candidates))renderMemeResearch(result);
+  }catch(e){
+    $id('memeMsg').textContent='Research status unavailable: '+e.message;
+    $id('memeMsg').className='msg bad';
+  }
+  await loadMemePaper();
+}
+async function scanMemeResearch(){
+  const button=$id('memeScan'),label=button.textContent;
+  button.disabled=true;button.textContent='Scanning…';
+  $id('memeMsg').textContent='Fetching candidate lists and checking available Solana pools…';
+  $id('memeMsg').className='msg';
+  try{
+    const result=await api('/api/meme/research/run',{method:'POST',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({limit:20})});
+    renderMemeResearch(result);
+    if(result.paper_status)renderMemePaper(result.paper_status);
+    else await loadMemePaper();
+  }catch(e){
+    $id('memeMsg').textContent='Scan failed: '+e.message;
+    $id('memeMsg').className='msg bad';
+  }finally{button.disabled=false;button.textContent=label}
+}
+async function updateMemePaper(){
+  const button=$id('memePaperUpdate'),label=button.textContent;
+  button.disabled=true;button.textContent='Updating…';
+  try{
+    const result=await api('/api/meme/paper/update',{method:'POST',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({})});
+    renderMemePaper(result.status||{});
+  }catch(e){
+    $id('memePaperStatus').innerHTML='<div class="notes">Update failed: '+esc(e.message)+'</div>';
+  }finally{button.disabled=false;button.textContent=label}
+}
+$id('memeScan').addEventListener('click',scanMemeResearch);
+$id('memePaperUpdate').addEventListener('click',updateMemePaper);
 
+/* ── data flow ─────────────────────────────────────────── */
+function applyState(s){
+  state=s;
+  renderKpis(s);renderPipeline(s);renderPositions(s);renderFeed(s);renderTags(s);
+  quotes=s.market?.pairs||{};
+  renderTicker();renderTape();loadPair(chartPair);
+  // The metal basis arrives with the quote, so metal bars must be re-based
+  // before they can be drawn against it.
+  if(PAIRS.some(isMetal))refreshSeries();
+  const r=s.risk||{};
+  $id('risk').className='riskbox'+(r.halted?' halt':'');
+  $id('risk').textContent='Max trade $'+money(r.max_trade_notional)+
+    '  ·  Max exposure $'+money(r.max_exposure)+
+    '  ·  Max positions '+r.max_positions+
+    '  ·  Daily loss $'+money(r.max_daily_loss)+
+    '  ·  SL '+Number((r.stop_loss_pct||0)*100).toFixed(1)+'%'+
+    '  ·  TP '+Number((r.take_profit_pct||0)*100).toFixed(1)+'%'+
+    '  ·  Leverage '+r.max_leverage+'x'+(r.halted?'  ·  HALT ACTIVE':'');
+}
 
+async function refresh(){
+  try{
+    const s=await api('/api/forex');
+    s.account=s.account||{};
+    // agent positions expose realised pnl; the account endpoint does not
+    if(typeof s.account.unrealized_pnl!=='number')
+      s.account.unrealized_pnl=(s.account.positions||[])
+        .reduce((t,p)=>t+(Number(p.unrealized_pnl)||0),0);
+    try{s.agentState=await api('/api/forex/agents');s.events=s.agentState.events||[]}
+    catch(_){s.events=state?.events||[]}
+    applyState(s);
+    const quotePairs=Object.keys(s.market?.pairs||{});
+    const feedErrors=s.market?.errors||{};
+    if(!quotePairs.length){
+      $id('sysDot').className='dot bad';
+      $id('sysTxt').textContent='NO MARKET DATA';
+      say('No usable market quotes — '+(s.error||'all configured providers returned no quotes')+'. Check provider availability; orders remain blocked without fresh quotes.','bad');
+    }else if(Object.keys(feedErrors).length){
+      $id('sysDot').className='dot warn';
+      $id('sysTxt').textContent='PARTIAL DATA';
+      const missing=Object.keys(feedErrors);
+      say('Showing '+quotePairs.length+' instrument(s); '+missing.length+' feed(s) unavailable: '+missing.slice(0,4).join(', ')+(missing.length>4?'…':'')+'. Missing prices are not substituted.','bad');
+    }else{
+      $id('sysDot').className='dot ok';
+      $id('sysTxt').textContent='CONNECTED';
+      say('');
+    }
+  }catch(e){
+    $id('sysDot').className='dot bad';
+    $id('sysTxt').textContent='DISCONNECTED';
+    say('Server unreachable — '+e.message,'bad');
+    if(!state)applyState({account:{},risk:{},market:{},events:[]});
+  }
+}
 
-let preparedSwap=null,swapSignature=null,swapTimer=null;
-window.invalidateSwap=()=>{preparedSwap=null;$('swap-send').disabled=true;$('swap-consent').checked=false;$('swap-review').textContent='Wallet changed or disconnected. Prepare a fresh swap.'};
-function swapConsent(){ $('swap-send').disabled=!preparedSwap||!$('swap-consent').checked||!walletProvider?.isConnected||walletAddress!==preparedSwap.wallet||Date.now()/1000>preparedSwap.expires; }
-$('swap-consent').onchange=swapConsent;
-async function swapState(){try{const response=await fetch('/api/swaps');const state=await response.json();if(!response.ok)throw Error(state.error||'Swap service unavailable');$('swap-status').textContent=(state.configured?'Jupiter connected':'Jupiter key required')+' · '+(state.buys_halted?'BUY STOP LATCHED':'Wallet-approved pilot')+' · unattended trading inactive';$('swap-history').textContent=JSON.stringify(state.records,null,2)}catch(e){$('swap-status').textContent=e.message}}
-$('swap-connect').onclick=async()=>{try{await api('/api/swaps/connect',{key:$('swap-key').value.trim()});await swapState()}catch(e){$('swap-status').textContent=e.message}finally{$('swap-key').value=''}};
-$('swap-prepare').onclick=async()=>{const button=$('swap-prepare');button.disabled=true;window.invalidateSwap();swapSignature=null;$('swap-check').disabled=true;$('swap-result').replaceChildren();try{if(!walletProvider?.isConnected||walletProvider.publicKey.toString()!==walletAddress)throw Error('Connect Phantom first. A watched address cannot authorize a swap.');const address=walletAddress;const generation=walletGeneration;$('swap-status').textContent='Checking token, routes, wallet balance and simulation…';const result=await api('/api/swaps/prepare',{wallet:address,mint:$('swap-mint').value.trim(),side:$('swap-side').value,usd:Number($('swap-usd').value),amount:$('swap-amount').value.trim()});if(generation!==walletGeneration)throw Error('Wallet changed while preparing. This attempt remains reserved; prepare again.');preparedSwap=result;const {transaction,message,...review}=result;$('swap-review').textContent=JSON.stringify(review,null,2);$('swap-status').textContent='Simulation passed. Review below; this preparation expires in 45 seconds.';clearTimeout(swapTimer);swapTimer=setTimeout(swapConsent,Math.max(0,(result.expires-Date.now()/1000)*1000));swapConsent()}catch(e){$('swap-status').textContent=e.message}finally{button.disabled=false}};
-$('swap-send').onclick=async()=>{const record=preparedSwap;if(!record||!$('swap-consent').checked)return;$('swap-send').disabled=true;$('swap-consent').checked=false;try{if(!walletProvider?.isConnected||walletProvider.publicKey.toString()!==record.wallet||walletAddress!==record.wallet)throw Error('Wallet changed. Prepare again.');const authorization=await api('/api/swaps/ready',{id:record.id,wallet:record.wallet});if(!walletProvider?.isConnected||walletProvider.publicKey.toString()!==record.wallet||Date.now()/1000>record.expires)throw Error('Wallet changed or swap expired before approval. Prepare again.');const reply=await walletProvider.request({method:'signAndSendTransaction',params:{message:authorization.message},options:{skipPreflight:false,preflightCommitment:'confirmed',maxRetries:0}});swapSignature={id:record.id,signature:reply.signature};$('swap-check').disabled=false;const link=document.createElement('a');link.href='https://solscan.io/tx/'+encodeURIComponent(reply.signature);link.target='_blank';link.rel='noopener noreferrer';link.textContent='View submitted transaction';link.style.color='#ef5454';$('swap-result').append(link);$('swap-status').textContent='Wallet submitted a transaction. Confirmation is not yet established.';await checkSwap()}catch(e){$('swap-status').textContent='Wallet approval/submission failed or status is unknown. Check Phantom before preparing another attempt. '+(e.message||'');}finally{preparedSwap=null;await swapState()}};
-async function checkSwap(){if(!swapSignature)return;try{const result=await api('/api/swaps/confirm',swapSignature);$('swap-result').append(document.createTextNode(' · '+result.state));if(result.state==='confirmed'||result.state==='failed')$('swap-check').disabled=true;await swapState()}catch(e){$('swap-result').append(document.createTextNode(' · Confirmation check unavailable: '+e.message));$('swap-check').disabled=false}}
-$('swap-check').onclick=checkSwap;
-$('swap-halt').onclick=async()=>{try{await api('/api/swaps/halt',{});window.invalidateSwap();await swapState()}catch(e){$('swap-status').textContent=e.message}};
-for(const id of ['swap-mint','swap-side','swap-usd','swap-amount'])$(id).addEventListener('input',()=>window.invalidateSwap());
-swapState();
+function say(text,kind){
+  const m=$id('msg');
+  m.textContent=text||'';
+  m.className='msg'+(kind?' '+kind:'');
+}
 
+async function submitOrder(){
+  const b=$id('submit'),label=b.textContent;
+  b.disabled=true;b.textContent='Submitting…';
+  try{
+    await api('/api/forex/open',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({pair:$id('pair').value,side:$id('side').value,notional:Number($id('notional').value)})});
+    await refresh();
+    say('Paper order accepted by the simulator. No live broker order was sent.','ok');
+  }catch(e){
+    await refresh();
+    say(e.message,'bad');
+  }finally{b.disabled=false;b.textContent=label}
+}
 
+async function closePosition(id){
+  try{
+    await api('/api/forex/close',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id})});
+    await refresh();
+    say('Paper position closed in the simulator.','ok');
+  }catch(e){say(e.message,'bad')}
+}
 
-$('risk-scan').onclick=async()=>{const button=$('risk-scan');button.disabled=true;$('risk-status').textContent='Reading on-chain authorities, sampled owners and pool evidence…';$('risk-reasons').replaceChildren();try{const report=await api('/api/token-risk',{mint:$('risk-mint').value.trim()});$('risk-report').textContent=JSON.stringify(report,null,2);$('risk-status').textContent=report.allowed?'Basic checks passed · not a safety guarantee':'ENTRY BLOCKED · '+report.status;const readable={unsupported_token:'Unsupported token program or mint.',mint_authority_active_or_unknown:'Tokens can still be minted, or mint authority is unknown.',freeze_authority_active_or_unknown:'Accounts can still be frozen, or freeze authority is unknown.',holder_or_mint_evidence_missing_or_inconsistent:'Required owner/supply evidence is missing or inconsistent.',concentrated_single_owner:'A sampled owner controls over 20% of total supply.',concentrated_top10_owners:'Top ten sampled owners control over 50% of total supply.',pool_evidence_missing:'No usable pool evidence.',thin_liquidity:'Pool liquidity is below $100,000.',young_pool:'Pool is less than 24 hours old.',liquidity_dropped_30_percent:'Observed pool liquidity fell by at least 30%.',required_evidence_unavailable:'Provider data unavailable; cannot assess required risks.',evidence_stale:'Evidence expired while checking.'};for(const reason of report.reasons){const node=document.createElement('p');node.textContent='Blocked: '+(readable[reason]||reason);node.className='error';$('risk-reasons').append(node)}for(const warning of report.warnings){const node=document.createElement('p');node.textContent=warning;node.className='muted';$('risk-reasons').append(node)}}catch(e){$('risk-status').textContent='ENTRY BLOCKED · '+e.message}finally{button.disabled=false}};
+$id('submit').addEventListener('click',submitOrder);
+window.closePosition=closePosition;
+async function quickTrade(side){
+  // One-click paper order on the charted pair at the ticket notional.
+  // Server-side gates still apply: stale quotes are rejected with 400 and
+  // the message surfaces below. Nothing bypasses the risk controller.
+  const b=side==='buy'?$id('qbuy'):$id('qsell'),label=b.textContent;
+  b.disabled=true;b.textContent='…';
+  try{
+    await api('/api/forex/open',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({pair:chartPair,side,notional:Number($id('notional').value)})});
+    await refresh();
+    say('Paper '+side+' '+chartPair+' accepted by the simulator. No live broker order was sent.','ok');
+  }catch(e){await refresh();say(e.message,'bad')}
+  finally{b.disabled=false;b.textContent=label}
+}
+$id('qbuy').addEventListener('click',()=>quickTrade('buy'));
+$id('qsell').addEventListener('click',()=>quickTrade('sell'));
+$id('interval').addEventListener('change',async e=>{
+  interval=e.target.value;
+  await refreshSeries();
+  loadPair(chartPair);
+});
 
+addEventListener('resize',drawChart);
+function tickClock(){
+  const d=new Date(),p=n=>String(n).padStart(2,'0');
+  const el=$id('clock');
+  if(el)el.textContent=p(d.getUTCHours())+':'+p(d.getUTCMinutes())+':'+p(d.getUTCSeconds())+' UTC';
+}
+tickClock();
+/* ── Terminal boot sequence ──────────────────────────────── */
+(function bootSequence() {
+  var overlay = document.getElementById('bootOverlay');
+  if (!overlay) return;
 
-</script><script src="product.js"></script><script src="operations.js"></script><script src="virtual-company.js"></script><script src="performance.js"></script></html>
+  var lines = [
+    ['ok', '[boot]',   'TradingLab Autonomous Agent Terminal'],
+    ['ok', '[kernel]', 'initialising subsystems…'],
+    ['ok', '[kernel]', 'memory allocator online'],
+    ['ok', '[kernel]', 'thread pool ready'],
+    ['ok', '[feed]',   'connecting to market data streams…'],
+    ['ok', '[feed]',   'ECB reference rate link established'],
+    ['ok', '[feed]',   'Yahoo Finance proxy connected'],
+    ['ok', '[feed]',   'live feeds: 12 instruments'],
+    ['ok', '[agents]', 'spawning six-agent research desk'],
+    ['ok', '[agents]', 'Market Observer — online'],
+    ['ok', '[agents]', 'Macro Analyst — online'],
+    ['ok', '[agents]', 'Strategy Analyst — online'],
+    ['ok', '[agents]', 'Risk Critic — online'],
+    ['ok', '[agents]', 'Portfolio Coordinator — online'],
+    ['warn', '[risk]', 'daily-loss gate armed (paper mode)'],
+    ['ok', '[api]',    'HTTP server listening on port $PORT'],
+    ['ok', '[ui]',     'terminal canvas ready'],
+    ['',  '[boot]',    'READY — type or click to begin'],
+  ];
 
+  var container = document.getElementById('bootLines');
+  var cursor = document.getElementById('bootCursor');
+  var idx = 0;
 
+  function nextLine() {
+    if (idx >= lines.length) {
+      // Fade out
+      overlay.style.transition = 'opacity 0.8s ease';
+      overlay.style.opacity = '0';
+      setTimeout(function() {
+        overlay.parentNode.removeChild(overlay);
+      }, 800);
+      return;
+    }
 
+    var line = lines[idx];
+    var cls = line[0] || '';
+    var proc = line[1];
+    var msg = line[2];
 
+    var div = document.createElement('div');
+    div.className = 'line' + (cls ? ' ' + cls : '');
+    div.innerHTML =
+      '<span class="p">' + proc + '</span>' +
+      (cls === 'ok' ? '<span class="dot"></span>'
+       : cls === 'err' ? '<span class="dot"></span>'
+       : cls === 'warn' ? '<span class="dot"></span>'
+       : '') +
+      '<span class="txt">' + msg + '</span>';
 
+    container.appendChild(div);
+    idx++;
 
+    // Scroll to bottom
+    container.scrollTop = container.scrollHeight;
 
+    setTimeout(nextLine, 120 + Math.random() * 80);
+  }
 
+  // Start with cursor visible
+  if (cursor) cursor.style.display = 'inline-block';
+  setTimeout(nextLine, 300);
+})();
+
+/* ── Theme toggle: terminal ↔ 2029 neon ↔ unified desk ────── */
+(function themeToggle() {
+  var btn = document.getElementById('themeToggle');
+  if (!btn) return;
+
+  var themes = ['terminal', 'neon2029', 'unified'];
+  var current = 0;
+
+  function applyTheme() {
+    document.body.classList.remove('t2029', 'desk-unified');
+    btn.textContent = '2029';
+    btn.classList.remove('active');
+
+    if (themes[current] === 'neon2029') {
+      document.body.classList.add('t2029');
+      btn.textContent = '◉';
+      btn.classList.add('active');
+    } else if (themes[current] === 'unified') {
+      document.body.classList.add('desk-unified');
+      btn.textContent = '◌';
+      btn.classList.add('active');
+    }
+  }
+
+  btn.addEventListener('click', function() {
+    current = (current + 1) % themes.length;
+    applyTheme();
+  });
+
+  // Persist preference
+  var saved = localStorage.getItem('tradinglab_theme');
+  if (saved === 'neon2029') { current = 1; }
+  else if (saved === 'unified') { current = 2; }
+  applyTheme();
+
+  btn.addEventListener('click', function() {
+    localStorage.setItem('tradinglab_theme', themes[current]);
+  });
+})();
+
+// Phantom wallet connection is client-side and read-only: no signing or transactions.
+(function initPhantomWallet(){
+  const btn=document.getElementById('phantomConnect');
+  if(!btn)return;
+  let provider=null;
+  let connectedAddress='';
+  const shortAddress=address=>address.length>12?address.slice(0,5)+'…'+address.slice(-5):address;
+  const setConnected=address=>{
+    connectedAddress=address||'';
+    btn.textContent=connectedAddress?shortAddress(connectedAddress):'CONNECT PHANTOM';
+    btn.title=connectedAddress
+      ?'Connected wallet: '+connectedAddress+' (click to disconnect)'
+      :'Connect your Phantom wallet; no transactions will be signed';
+    btn.setAttribute('aria-label',connectedAddress?'Disconnect Phantom wallet '+connectedAddress:'Connect Phantom wallet');
+    btn.classList.toggle('go',!connectedAddress);
+    btn.classList.toggle('wallet-connected',!!connectedAddress);
+    fetchBalance(connectedAddress);
+  };
+  const fetchBalance=address=>{
+    const el=document.getElementById('walletBalance');
+    if(!el)return;
+    if(!address){el.style.display='none';return;}
+    el.style.display='inline-block';
+    fetch('/api/jupiter/balance?address='+address)
+      .then(r=>r.json())
+      .then(d=>{el.textContent=(d.sol_balance||0).toFixed(4)+' SOL';})
+      .catch(()=>{el.textContent='-- SOL';});
+  };
+  const findProvider=()=>{
+    if(window.phantom&&window.phantom.solana&&window.phantom.solana.isPhantom)return window.phantom.solana;
+    if(window.solana&&window.solana.isPhantom)return window.solana;
+    return null;
+  };
+  provider=findProvider();
+  if(provider&&provider.publicKey)setConnected(String(provider.publicKey));
+  if(!provider){fetchBalance('Bsrr94dmKKv1zy9Kw7FHSfsv7f3QuoSqRvNgWjmY12rB');}
+  if(provider&&provider.on){
+    provider.on('connect',publicKey=>setConnected(String(publicKey||provider.publicKey||'')));
+    provider.on('disconnect',()=>setConnected(''));
+    provider.on('accountChanged',publicKey=>setConnected(publicKey?String(publicKey):''));
+  }
+  btn.addEventListener('click',async()=>{
+    btn.disabled=true;
+    try{
+      provider=findProvider();
+      if(connectedAddress&&provider){
+        await provider.disconnect();
+        setConnected('');
+        return;
+      }
+      if(!provider){
+        btn.textContent='PHANTOM NOT FOUND';
+        btn.title='Install Phantom from https://phantom.app/ then reload Tradingbo';
+        const install=window.confirm('Phantom was not detected. Open the official Phantom website to install it?');
+        if(install)window.open('https://phantom.app/','_blank','noopener,noreferrer');
+        return;
+      }
+      const result=await provider.connect();
+      const address=String((result&&result.publicKey)||provider.publicKey||'');
+      if(!address)throw new Error('Phantom did not return a public wallet address.');
+      setConnected(address);
+    }catch(error){
+      if(error&&error.code===4001){
+        btn.title='Connection request was rejected in Phantom.';
+        btn.textContent='CONNECT PHANTOM';
+      }else{
+        btn.title=(error&&error.message)||'Unable to connect to Phantom.';
+        btn.textContent='CONNECT PHANTOM';
+      }
+    }finally{
+      btn.disabled=false;
+    }
+  });
+})();
+
+setInterval(tickClock,1000);
+refreshSeries();
+aiStatus();
+aiRestore();
+loadMemeResearch();
+loadMemeTrader();
+refresh();
+setInterval(refresh,15000);
+setInterval(aiStatus,30000);
+setInterval(loadMemeTrader,60000);
+setInterval(()=>{loadSeries(chartPair)},60000);
+</script>
+</body>
+</html>

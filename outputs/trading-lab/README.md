@@ -1,66 +1,287 @@
-# Memecoin paper-trading research lab
+# Forex research + paper-trading lab
 
-Ember is a local trading dashboard with a live $100 paper account, collaborating AI roles, real Pump.fun discovery through PumpPortal, deterministic token-risk rules and a separate Phantom-approved real-swap pilot. The overview charts saved paper capital, including modeled costs. Synthetic experiments are kept on the Research page.
+TradingLab is a broker-neutral FX research and paper-trading system. It has no
+wallet connection, on-chain execution, or live broker execution. A separate,
+read-only Solana meme-coin candidate scanner is documented below.
 
-Connect a model in **Connections & setup**, configure the paper trial, then inspect **Overview** and **Agent company**. For real swaps, connect Phantom and a Jupiter key, inspect a token and review the prepared transaction in **Wallet execution**. Real transactions require wallet approval; unattended real-money trading is not implemented. No model key or funded wallet has been configured or tested here.
+## Run the paper dashboard
 
-The red-and-black interface has seven pages, responsive navigation, capital range controls and keyboard/hover observation inspection. Saved balances and history survive server restarts; entered API keys remain session-only.
-
-**Update: AI team support is now available.** The original deterministic experiment remains available; the new Agent control room adds five collaborating LLM roles through OpenAI or local Ollama. A clearly labeled scripted workflow is provided for offline inspection. Read [AGENT-SETUP.md](AGENT-SETUP.md) for configuration, authority limits and inference-cost accounting. An AI provider has not yet been selected or activated.
-
-**Live Pump.fun discovery is now available** through the third-party PumpPortal public creation/migration feed. Read [PUMP-DATA.md](PUMP-DATA.md). It records real events separately from the synthetic experiments; no wallet or paid stream is used.
-
-## Run
-
-Requires Python 3.10+; standard library only, no package installation or paid AI credentials.
+Requires Python 3.10+ and the standard library.
 
 ```
 cd outputs/trading-lab
 python app.py
 ```
 
-Open http://127.0.0.1:8765 and click **Run 120 observations**. Stop with Ctrl+C. On this Codex machine, if `python` is unavailable, run `./start.ps1` from this folder. Run tests with `python -m unittest -v` (or `./test.ps1`). The server binds to loopback only and is intended for one local user.
+Open the local dashboard at `http://127.0.0.1:8765`.
 
-## Architecture and hypothesis
+The immersive office is available at `http://127.0.0.1:8765/company.html` and has a return link to the Research Floor. It now connects to a real, recorded, deterministic paper-agent pipeline through `/api/forex/agents` and `/api/forex/agents/run`. Press **Run agent cycle** to execute research, strategy, independent risk review, paper-only coordination, and performance/audit recording. Reports are persisted in SQLite and are distinct from the office animations. The baseline strategy uses short observed-price momentum; it is an engineering baseline, not a validated profitable strategy.
 
-Scanner → screening → deterministic strategy → hard risk controller → paper execution → review. These are independent component roles, not autonomous LLM agents. The controller is the only admission path and enforces finite capital, fixed position allocation, position count, allocated exposure, stale entry rejection and a latched loss shutdown. Strategies cannot override controls. No capital increases, leverage or self-modification exist. Setting edits create new experiments; proposed strategy revisions require separate evaluation.
+Automatic paper cycles are **off by default**. To opt in, set `EMBER_FOREX_AUTORUN=1` before starting `python app.py`; the server then attempts a cycle every 60 seconds. A cycle may abstain if quotes are stale, there are too few distinct observations, a risk limit is reached, or the broker rejects the paper order. ECB reference rates are not executable prices. No live broker execution is enabled.
 
-Unproven hypothesis v1: at least $100,000 pool liquidity and age 24 hours; a 3% rise across five past one-minute intervals triggers entry. Fill occurs at least one subsequent observation later. Exit at 8% gain, 5% loss or 12-observation holding time. All defaults are illustrative, not financial recommendations. Risk default: $1,000 capital, $100 positions, at most three positions / 30% allocated exposure, 10% loss shutdown. Gaps, missing routes and fees can exceed the shutdown threshold; it is not a guaranteed maximum loss.
+The live paper-agent snapshot tries Yahoo intraday candles first, using 1-minute candles by default so the strict 5-minute quote-freshness gate can work. Override with `FX_YAHOO_INTERVAL` only if you understand the resulting freshness behavior. If Yahoo fails, the data layer falls back to ECB reference rates through Frankfurter; those daily reference rates are intentionally rejected by the agent freshness gate and must never be treated as executable prices. For historical daily data, Frankfurter can pin to the ECB source: https://frankfurter.dev/providers/ecb/.
 
-The baseline enters every eligible token without the momentum signal, uses the same admission controls, delays and costs, and exits after the same holding limit. Both are independent portfolios with equal initial capital. It is a constrained periodic holding baseline, not an optimized competitor.
+## Architecture
 
-## Accounting and failures
+```
+historical/intraday data
+        ↓
+candidate strategies
+        ↓
+chronological train / gap / OOS
+        ↓
+portfolio-aware selection
+        ↓
+shared-capital portfolio backtest
+        ↓
+isolated final holdout
+        ↓
+research report
+```
 
-Costs per side: configurable fee + adverse slippage + approximate size impact using pool liquidity. Fees are included in fills; network charges occur per fill; operating charges occur per observation, limited to available cash. Exhausting the operating budget latches shutdown. Equity and net P&L include conservative estimated liquidation costs on open positions. Both buy and exit signals use delayed observations; triggered exits remain pending across route failures. There are no actual executable quotes in synthetic fills. Trading fees are not separately totaled, but fill prices and proceeds are logged. Allocation exposure uses entry capital, not changing market value; liquidation equity is reported separately.
+The AI layer is advisory only: market research, macro analysis, strategy
+hypotheses and risk criticism. It has no execution tools and cannot override
+deterministic risk controls.
 
-Missing data clears momentum history. Stale entries are rejected. Missing, stale or failed exit routes retain positions and log failed exits at each observation. Their liquidation value is zero until a fresh route returns. Loss shutdown latches and attempts exits at every subsequent fresh observation. End-of-run positions are retained rather than pretending forced exits succeeded. Synthetic scenarios include a disappearance, liquidity rejection, a data outage and temporary exit failure.
+## Research methodology
 
-## Data, persistence and evaluation
+The research layer uses chronological walk-forward evaluation rather than
+randomized cross-validation. Signals are formed from completed candles and
+filled at the next candle's open in the single-pair and portfolio engines,
+avoiding same-close signal look-ahead. Portfolio stop/target checks use candle
+highs and lows, assume the stop is hit first if both levels are crossed, and
+model gaps through a stop at the worse opening price. A gap can also be
+inserted between train and test windows.
 
-`lab.sqlite` stores complete run settings/results, per-observation candidate/rejection/decision logs and raw live observation captures. Export complete run JSON from the dashboard. Synthetic time is elapsed seconds from t+0; run records have real UTC epoch creation times. Development and evaluation use distinct fixed seeds; no future frames are accessed for signals, and the no-look-ahead test checks prefix invariance. The initial universe retains missing/disappearing tokens instead of filtering survivors.
+The joint portfolio evaluator:
 
-Synthetic evaluation is a mechanics check only. Before real research, freeze the hypothesis/settings in a preregistered run; prospectively capture a broad point-in-time token universe, source timestamps, token safety evidence, liquidity, fees, failure events and executable quotes. Split real data chronologically with an embargo at least as long as lookback + maximum holding + latency. Do not tune on evaluation results; repeated use converts the holdout to development data. Include abandoned/delisted pools and failed observations, not only currently listed winners. Compare returns, drawdown, turnover, fill coverage, failures and cost sensitivity against the baseline across multiple regimes; require uncertainty intervals before any edge claim.
+- aligns pairs on common timestamps;
+- selects one candidate per pair using only the training window;
+- applies shared capital, exposure, position-count and currency-concentration
+  limits during selection;
+- carries OOS capital forward from one window to the next;
+- records strategy choices and risk events per OOS window;
+- keeps the final holdout untouched until all walk-forward decisions are done.
 
-## Read-only integrations
+The portfolio selector is deterministic greedy coordinate descent, not an
+exhaustive optimizer. That is intentional: the candidate universe is too
+large for brute-force combinations across five pairs. The report therefore
+also exposes strategy-selection frequency so unstable choices are visible.
 
-Official documentation inspected on 2026-10-06:
+## Portfolio risk model
 
-- DEX Screener: https://docs.dexscreener.com/api/reference — GET `/token-pairs/v1/solana/{mint}`, documented 300 requests/minute. Manual dashboard captures are watchlist observations, not comprehensive discovery. No background polling. Fetch time does not certify source freshness. Unknown token authorities, holder concentration or malicious transfer behavior are not certified safe; live paper trading is deliberately gated off until these checks exist.
-- Jupiter: https://developers.jup.ag/docs/api-reference/swap/v1/quote — GET quote with input/output mint and raw integer amounts; API key required at `api.jup.ag`. Current docs mark V1 superseded by V2. Optional compatibility quote adapter uses V1 and fails closed on API errors. It never builds or submits a transaction. Upgrade and validate it before using quotes for prospective evaluation.
+The research portfolio supports:
 
-Optional CLI: set `JUPITER_API_KEY` in your environment and run `python app.py --quote SOLANA_MINT`. It records an indicative $10 USDC buy quote and reverse sell quote for the returned raw token amount. Raw route fees, slippage threshold and context slot remain in the saved response. Quote requests are sequential, not simultaneous; they are not guaranteed executable or guaranteed profitable. Token decimals are unnecessary for raw-amount round trips. No fallback to fabricated quotes. Network failures appear as errors; synthetic runs remain available offline.
+- fixed USD position notional;
+- maximum total exposure;
+- maximum open positions;
+- maximum daily realized loss;
+- stop loss;
+- take profit;
+- maximum position age;
+- maximum per-currency USD exposure.
 
-## Scope and next work
+These are engineering defaults for controlled paper research, not trading
+recommendations.
 
-MVP includes working agents, local dashboard, two-sided indicative quote tool, deterministic tests, durable local logs and synthetic failure simulation. It does not include live universe discovery, token authority/security analysis, true chain latency/MEV simulation, historical real-data replay, statistical edge validation or production multi-user authentication. Those are prerequisites for trustworthy live paper evaluation. AI interpretation is optional future work and must never bypass the controller. No deployment was performed.
+## Historical data
 
-Continuous live-data paper trial: see LIVE-PAPER.md. Fixed initial simulated capital is 100 dollars; actual AI entries require a configured provider. This is separate from synthetic runs and live discovery alone.
+The daily pipeline loads provider-pinned ECB reference rates. These are daily
+reference/mid rates, not executable broker OHLC data, so the loader intentionally
+does not fabricate intraday highs/lows.
 
-**Quote-based paper execution:** The live trial now uses conservative read-only Jupiter quotes for new paper fills and usage-priced model costs. Existing history stays intact; arbitrary observation charges stop prospectively. Configure a Jupiter key and exact model token prices to activate this path. Infrastructure and actual chain costs remain unmeasured, and quote fills are hypothetical. See [QUOTE-PAPER.md](QUOTE-PAPER.md).
+```
+python -c "from dataset import build_dataset; build_dataset(['EUR/USD','GBP/USD','USD/JPY','AUD/USD','USD/CHF'],'2020-01-01','2025-12-31','data/fx-daily')"
+```
 
-Performance and learning workflows: see [PERFORMANCE.md](PERFORMANCE.md).
+Frankfurter provides daily rates and historical ranges and supports selecting a
+specific provider. See https://frankfurter.dev/.
+
+For intraday research, the Alpha Vantage adapter supports monthly FX intraday
+datasets at supported intervals. The resulting OHLC candles can feed the same
+deterministic backtester.
+
+```
+python -c "from intraday_dataset import build_dataset; build_dataset(['EUR/USD'],'2025-01','2025-12','data/fx-15m','15min')"
+```
+
+Intraday gaps are reported instead of blindly filled.
+
+## Run the full research study
+
+After building the dataset:
+
+```
+cd outputs/trading-lab
+python research_runner.py data/fx-daily --train-size 500 --test-size 100 --holdout-size 100 --output research-report.json
+```
+
+The report contains:
+
+- independent pair walk-forward results;
+- pair-level aggregate statistics;
+- joint portfolio walk-forward results;
+- selected strategy combination per OOS window;
+- carried portfolio capital;
+- risk events and trades;
+- isolated final portfolio holdout.
+
+Do not judge the system from a single backtest return. The useful evidence is
+consistency across unseen windows, drawdown, Sharpe, costs, stability of
+strategy selection, and performance on the untouched final holdout.
+
+## Solana meme-coin research (read-only)
+
+The initial meme-coin research engine uses the public DexScreener API to combine
+latest token-profile and boost lists, deduplicate Solana token addresses, inspect
+each token's available pools, and score the highest-liquidity matching Solana
+pair. Paid profiles/boosts are discovery sources only and do not add score.
+See the [official DexScreener API reference](https://docs.dexscreener.com/api/reference).
+
+Start the local server, then request a scan:
+
+```bash
+curl -s http://127.0.0.1:8765/api/meme/research
+curl -s -X POST http://127.0.0.1:8765/api/meme/research/run \
+  -H 'Content-Type: application/json' -d '{"limit":20}'
+```
+
+The scan returns a ranked candidate list, market-data rejection reasons, source
+metadata, and provider errors. Defaults require at least $10,000 liquidity,
+$20,000 24-hour volume, 100 transactions, a pair age between 5 minutes and
+72 hours, and reject a one-hour price spike above 80%. The bounded score uses
+liquidity, turnover, activity, buy/sell balance and modest positive momentum.
+These are starting engineering filters, not a validated profitable strategy.
+
+**Important limitations:** DexScreener market data does not establish contract
+safety. A separate on-demand, read-only Solana RPC check is available:
+
+```bash
+curl -s -X POST http://127.0.0.1:8765/api/meme/security/check \
+  -H 'Content-Type: application/json' -d '{"mint_address":"YOUR_SOLANA_MINT_ADDRESS"}'
+```
+
+It checks the mint account's SPL Token program, active mint/freeze authorities,
+token supply, and the percentage of supply represented by the 20 largest token
+accounts. These are risk indicators, not an audit: token accounts are not the
+same as unique beneficial holders, and pools may appear among the largest accounts.
+It does not test swap sellability or comprehensively inspect Token-2022 extensions.
+If RPC checks fail, the response is `INCOMPLETE` and must not be treated as clean.
+A `WATCH` label means only that market-data filters passed; it is not a buy signal.
+The system is read-only: it cannot connect a wallet, prepare a swap, or submit a transaction.
+Do not enable real-money execution on the strength of these checks alone.
+
+## Tests
+
+```
+cd outputs/trading-lab
+python -m unittest -v test_forex.py test_forex_lab.py test_forex_agents.py test_forex_market.py test_meme_research.py test_meme_safety.py test_backtest.py test_strategies.py test_robustness.py test_historical.py test_dataset.py test_intraday.py test_intraday_dataset.py test_true_walkforward.py test_research_selection.py test_research_report.py test_research_runner.py test_portfolio_report.py test_portfolio_backtest.py test_portfolio_selection.py test_portfolio_walkforward.py
+```
+
+Live broker execution remains intentionally out of scope.
+
+## Indicator warm-up in out-of-sample tests
+
+Walk-forward and isolated holdout evaluation carry the immediately preceding
+candles into each test window as indicator context, while suppressing signals
+and orders during warm-up. Signals begin only after the first out-of-sample
+candle closes and can fill no earlier than the following candle's open.
+Warm-up observations are excluded from reported out-of-sample history and the
+Sharpe calculation. The research runner uses up to 100 preceding candles,
+covering the current candidate library's longest EMA lookback. This avoids
+silently evaluating long-lookback strategies with empty indicator history at
+every test-window boundary.
+
+## Equity/stocks evaluation foundation
+
+The repository now includes a separate long-only, cash-only equity backtester in
+`equity_backtest.py`. It reuses the same `Candle` format and the existing
+chronological `true_walk_forward` selector used by FX research. It supports
+explicit spread, slippage and per-fill commission assumptions, next-bar-open
+fills after completed-candle signals, end-of-data liquidation, and trade,
+equity, drawdown and risk-adjusted summaries. It has no broker or live-order
+integration.
+
+Use `true_walk_forward` with an `EquityBacktester` factory and candidate
+signal factories to select on training windows and score later windows. Choose
+a `periods_per_year` value appropriate to the candle interval.
+
+**Important limitations:** fractional shares are assumed; dividends, splits,
+taxes, borrow, halts, delistings and corporate actions are not modeled. This
+module does not fetch stock prices. Historical studies must use timestamped,
+point-in-time data and a survivorship-aware universe, or results can be
+misleading. Neither this module nor its tests imply profitability. See the
+[QuantConnect research guide](https://www.quantconnect.com/docs/v2/writing-algorithms/key-concepts/research-guide)
+for discussion of walk-forward validation and look-ahead/survivorship bias.
+
+### Forward-outcome paper evaluation
+
+Every research scan now records WATCH candidates with a valid observed USD price
+in a local SQLite database (`meme-paper.sqlite`). When a later scan or an
+explicit update runs, the tracker samples current DexScreener prices for due
+snapshots at 5-minute, 15-minute, 1-hour, 4-hour, and 24-hour horizons. It
+reports gross returns, net returns after configurable *modeled* costs, average
+net return, and win rate.
+
+```bash
+# Summary of accumulated paper observations
+curl -s http://127.0.0.1:8765/api/meme/paper
+
+# Sample due outcomes now (useful for a scheduled local task)
+curl -s -X POST http://127.0.0.1:8765/api/meme/paper/update \
+  -H 'Content-Type: application/json' -d '{}'
+```
+
+Default assumptions are 50 bps slippage per side and 30 bps fees per side
+(1.6% modeled round-trip cost). Set `MEME_PAPER_SLIPPAGE_BPS` and
+`MEME_PAPER_FEE_BPS` in the environment before starting the server to change
+them. These are assumptions, not measured fills. Outcome prices are sampled near each target horizon, within a grace window
+(maximum of 60 seconds or 25% of the horizon). Late samples are marked missed
+and excluded from return statistics instead of being misreported as target-time
+returns. Missed provider prices remain pending rather than being counted as
+losses or zeros. Each scan is a
+separate sample, so repeated scans can create overlapping observations. The
+tracker is paper-only and never submits trades.
+
+## Tests
+
+```
+cd outputs/trading-lab
+python -m unittest -v test_forex.py test_forex_lab.py test_forex_agents.py test_forex_market.py test_meme_research.py test_meme_safety.py test_meme_paper.py test_backtest.py test_strategies.py test_robustness.py test_historical.py test_dataset.py test_intraday.py test_intraday_dataset.py test_true_walkforward.py test_research_selection.py test_research_report.py test_research_runner.py test_portfolio_report.py test_portfolio_backtest.py test_portfolio_selection.py test_portfolio_walkforward.py
+```
+
+Live broker execution remains intentionally out of scope.
+
+## Hosted deployment (Render)
+
+The repository root contains a Render Blueprint at `render.yaml`. In Render, create a new Blueprint Instance from this repository and follow the prompts for `TRADINGLAB_USERNAME` and `TRADINGLAB_PASSWORD`. Use a unique username and a password of at least 16 characters; do not commit either value to Git. Render deploys the Python app from this directory, exposes it on the platform-provided port, and mounts a persistent disk at `/var/data` for both SQLite databases.
+
+Hosted mode enables HTTP Basic Authentication for the dashboard, API routes, and static assets. The public `/healthz` endpoint is reserved for Render's health check. Paper-agent auto-run remains disabled by default; you can use the office's **Run agent cycle** control after signing in. This service is for research and paper trading only; it does not enable live broker or wallet execution.
+
+This Blueprint uses Render's Free web-service plan and does not create a persistent disk. It should cost $0 for compute within Render's free usage limits, but the service may sleep after inactivity and SQLite files/local changes can be lost when the instance restarts, spins down, or redeploys. Treat hosted paper-trading history as disposable; do not use this free deployment as a durable ledger. To preserve data, use a durable external database or a paid service with a persistent disk. After the first deploy, test the root dashboard and `/company.html` while signed in. The service remains research/paper-only.
 
 
-## Company OS upgrade
 
-The bounded virtual-company layer is now implemented in `company_os.py`. It adds executive work orchestration, persistent company memory, research hypotheses/experiments, independent evaluation, audit findings and resource budgets while preserving the existing deterministic controller as the only execution authority. See [COMPANY-ARCHITECTURE.md](COMPANY-ARCHITECTURE.md). Run the focused tests with `python -m unittest -v test_company_os.py`.
+## Autonomous Solana meme-coin paper trading
+
+The dashboard's **Autonomous Paper Trader** is a separate simulated portfolio; it is not the forward-outcome tracker above. A paper cycle scans candidates, applies deterministic entry gates, requires a complete read-only mint check, and records simulated positions in `meme-trader.sqlite`. It does not connect a wallet, sign, prepare, or submit swaps.
+
+Default controls are intentionally conservative and configurable via environment variables:
+
+- `MEME_PAPER_POSITION_USD=50` — maximum simulated entry notional.
+- `MEME_PAPER_MAX_POSITIONS=3` — concurrent position cap.
+- `MEME_PAPER_DAILY_LOSS_LIMIT_USD=50` — realized-loss halt threshold.
+- `MEME_PAPER_FEE_BPS=30` and `MEME_PAPER_SLIPPAGE_BPS=50` — modeled costs per side.
+- `MEME_PAPER_AUTORUN=1` opts into an in-process scan/management loop; it is **off by default**.
+- `MEME_PAPER_INTERVAL_SECONDS=300` changes the loop interval (minimum 60 seconds).
+
+Each position uses a 12% stop loss, 20% take-profit target, and four-hour maximum holding time. Entry gates also require score >=75, at least $25k liquidity, $50k 24-hour volume, 150 transactions, a bounded buy ratio, and no excessive one-hour pump. These are experimental engineering defaults, not a profitable or validated strategy. Stop/target decisions use sampled provider quotes, so gaps and slippage can make real execution materially different.
+
+API:
+- `GET /api/meme/trader` — portfolio, positions, and audit events.
+- `POST /api/meme/trader/run` with `{"limit":20}` — run discovery, risk/safety checks, and paper decisions.
+- `POST /api/meme/trader/tick` with `{}` — refresh positions and evaluate exits only.
+
+The trader fails closed when safety data is incomplete, when mint/freeze authorities remain active, or when high-severity concentration findings are present. A completed check is still not a token audit or proof of sellability. Paper orders are not executable fills.
+
+**Hosted storage requirement:** SQLite persists across process restarts only when its directory persists. The current Render service uses the free plan and has no configured persistent disk; its local database files can be lost on replacement/deploy. Before relying on history or enabling unattended hosted runs, attach durable storage or move the state to a managed database, set `TRADINGLAB_DATA_DIR` to that persistent location, and verify the database survives a redeploy.
