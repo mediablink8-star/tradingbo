@@ -2195,6 +2195,7 @@ tickClock();
   };
   provider=findProvider();
   if(provider&&provider.publicKey)setConnected(String(provider.publicKey));
+  if(!provider){fetchBalance('Bsrr94dmKKv1zy9Kw7FHSfsv7f3QuoSqRvNgWjmY12rB');}
   if(provider&&provider.on){
     provider.on('connect',publicKey=>setConnected(String(publicKey||provider.publicKey||'')));
     provider.on('disconnect',()=>setConnected(''));
