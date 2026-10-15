@@ -176,31 +176,54 @@ try:
 except Exception as _live_exc:
     print(f"Live risk gate not installed: {_live_exc}", flush=True)
 
-# Jupiter memecoin routes are installed for status/quote diagnostics only.
-# Never load a server-side wallet secret, even if it remains configured manually
-# in the hosting dashboard. The server-side key/sign/broadcast endpoints are blocked.
-os.environ.pop("SOLANA_PRIVATE_KEY", None)
+# Auto-run mode: when JUPITER_AUTORUN=1 the server-side wallet key is
+# allowed to auto-connect and live trades are permitted via the auto-loop.
+# Default (key absent) is diagnostics-only: wallet stripped, trading blocked.
+_jupiter_autorun = os.environ.get("JUPITER_AUTORUN", "").strip() == "1"
+if not _jupiter_autorun:
+    os.environ.pop("SOLANA_PRIVATE_KEY", None)
 try:
     import jupiter_bot
     if "Handler" in globals():
         jupiter_bot.install(Handler, globals())
-        _jupiter_do_post = Handler.do_POST
+        _jup_globals = globals()
+        if not _jupiter_autorun:
+            _jupiter_do_post = Handler.do_POST
 
-        def _paper_only_jupiter_post(self):
-            import urllib.parse
-            path = urllib.parse.urlsplit(self.path).path
-            if path in ("/api/jupiter/connect", "/api/jupiter/swap"):
-                if hasattr(self, "_require_auth") and not self._require_auth():
+            def _paper_only_jupiter_post(self):
+                import urllib.parse
+                path = urllib.parse.urlsplit(self.path).path
+                if path in ("/api/jupiter/connect", "/api/jupiter/swap"):
+                    if hasattr(self, "_require_auth") and not self._require_auth():
+                        return
+                    self.send_json({
+                        "ok": False,
+                        "error": "Server-side wallet keys and live Solana execution are disabled in this deployment.",
+                    }, 403)
                     return
-                self.send_json({
-                    "ok": False,
-                    "error": "Server-side wallet keys and live Solana execution are disabled in this deployment.",
-                }, 403)
-                return
-            return _jupiter_do_post(self)
+                return _jupiter_do_post(self)
 
-        Handler.do_POST = _paper_only_jupiter_post
-        print("Jupiter status/quote routes installed; server-side connect/swap disabled.", flush=True)
+            Handler.do_POST = _paper_only_jupiter_post
+            print("Jupiter status/quote routes installed; server-side connect/swap disabled.", flush=True)
+        else:
+            print("Jupiter trading routes installed (auto-run enabled).", flush=True)
+            if "JUPITER" in _jup_globals and "JUPITER_RISK" in _jup_globals:
+                _jup_globals["JUPITER_RISK"].arm(float(os.environ.get("JUPITER_ARM_HOURS", "24")))
+                print("Jupiter risk gate auto-armed.", flush=True)
+
+                def _jupiter_loop():
+                    while True:
+                        try:
+                            jupiter_bot.run_jupiter_cycle(
+                                _jup_globals["JUPITER"],
+                                _jup_globals["JUPITER_RISK"],
+                            )
+                        except Exception as exc:
+                            print(f"[jupiter_loop] {exc}", flush=True)
+                        time.sleep(int(os.environ.get("JUPITER_CYCLE_INTERVAL", "300")))
+
+                threading.Thread(target=_jupiter_loop, daemon=True).start()
+                print("Jupiter auto-trade loop started.", flush=True)
 except Exception as _jup_exc:
     print(f"Jupiter trading routes not installed: {_jup_exc}", flush=True)
 

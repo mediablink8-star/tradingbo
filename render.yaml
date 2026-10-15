@@ -22,3 +22,15 @@ services:
         value: "0"
       - key: JUPITER_API_KEY
         sync: false
+      - key: SOLANA_PRIVATE_KEY
+        sync: false
+      - key: JUPITER_AUTORUN
+        sync: false
+      - key: JUPITER_AUTOTRADE_TOKENS
+        sync: false
+      - key: JUPITER_AUTOTRADE_SOL
+        value: "0.1"
+      - key: JUPITER_ARM_HOURS
+        value: "24"
+      - key: JUPITER_CYCLE_INTERVAL
+        value: "300"

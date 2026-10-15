@@ -673,3 +673,53 @@ def install(handler_cls, g: dict):
     handler_cls.do_GET = do_GET
     handler_cls.do_POST = do_POST
     return {"jupiter": jupiter, "risk": risk}
+
+
+def run_jupiter_cycle(jupiter, risk):
+    """One autonomous trading cycle.
+
+    Called by the launcher loop when JUPITER_AUTORUN=1.
+    Reads JUPITER_AUTOTRADE_TOKENS (comma-separated mint addresses)
+    and JUPITER_AUTOTRADE_SOL (SOL per trade) from the environment.
+    """
+    if not jupiter.configured:
+        print("Jupiter auto-trade: wallet not configured, skipping.", flush=True)
+        return
+    if not risk.armed:
+        print("Jupiter auto-trade: risk gate disarmed, skipping.", flush=True)
+        return
+
+    tokens_str = os.environ.get("JUPITER_AUTOTRADE_TOKENS", "").strip()
+    tokens = [t.strip() for t in tokens_str.split(",") if t.strip()]
+    if not tokens:
+        print("Jupiter auto-trade: no tokens in JUPITER_AUTOTRADE_TOKENS, skipping.", flush=True)
+        return
+
+    sol_amount = float(os.environ.get("JUPITER_AUTOTRADE_SOL", "0.1"))
+
+    for token in tokens:
+        try:
+            result = jupiter.get_quote_and_swap(token, sol_amount)
+            if not result.get("ok"):
+                print(f"Jupiter auto-trade: quote failed for {token}: "
+                      f"{result.get('error', 'unknown')}", flush=True)
+                continue
+
+            notional = sol_amount * 100  # rough USD estimate
+            check = risk.check_order(notional)
+            if not check["allowed"]:
+                print(f"Jupiter auto-trade: risk gate rejected {token}: "
+                      f"{check['reason']}", flush=True)
+                continue
+
+            swap_result = jupiter.sign_and_send(result["swap"], jupiter._private_key)
+            if swap_result.get("ok"):
+                print(f"Jupiter auto-trade: swapped {sol_amount} SOL -> {token} | "
+                      f"out={result['out_amount']} | "
+                      f"impact={result.get('price_impact_pct', 0)}% | "
+                      f"sig={swap_result.get('signature', '')[:12]}...", flush=True)
+            else:
+                print(f"Jupiter auto-trade: swap failed for {token}: "
+                      f"{swap_result.get('error')}", flush=True)
+        except Exception as exc:
+            print(f"Jupiter auto-trade: error for {token}: {exc}", flush=True)
