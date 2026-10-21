@@ -2,61 +2,69 @@
 
 ## Current product boundary
 
-The AI agent company runs research and paper decisions. It does not submit its
-proposals to a real broker or wallet. A separate Jupiter code path exists in
-`jupiter_bot.py`; when explicitly enabled with `JUPITER_AUTORUN=1`, the launcher
-loads the server wallet key, arms that path's in-memory risk gate and starts an
-automatic worker. That worker only processes the static mint list in
-`JUPITER_AUTOTRADE_TOKENS`, using `JUPITER_AUTOTRADE_SOL`. It does not consume
-the AI company's proposals or the persistent `/api/live/*` gate.
+The supported product is a personal FX, metals, and US stocks trading desk.
+The AI committee can deliberate and the existing FX paper workflow can record
+simulated outcomes. There is no supported live broker executor today. AI
+recommendations are not live orders, and no profitability or live readiness is
+claimed.
 
-The Render Blueprint sets `JUPITER_AUTORUN=0`. With that setting, the launcher
-removes `SOLANA_PRIVATE_KEY` from the process environment and blocks its
-server-side connect and swap endpoints. Keep this setting at `0` until the
-separate live path has been reviewed and retired or deliberately redesigned.
+The hosted dashboard must not store IBKR credentials or reach IB Gateway. The
+future execution service is designed to run on the user's PC beside IB Gateway.
+The new `local_executor_gate.py` contains only fail-closed heartbeat, arm-lease,
+and disarm primitives; it has no broker connection, order submission,
+persistence, authentication, or UI integration. It is a foundation, not an
+execution adapter. Do not configure it as a live trading service.
 
-There is also a distinct wallet-approved Jupiter pilot documented in
-`REAL-SWAPS.md`. That flow asks the user's connected Phantom wallet to approve
-transactions; it is not the server-side auto-trader and it is not autonomous
-AI execution.
+Legacy Solana/Jupiter paths remain in the repository for historical reference.
+They are outside the active product, must remain disabled in deployment, and
+must not be used for autonomous execution. The Render service should serve the
+dashboard only.
 
-## What exists today
+## Implemented in this branch
 
-- An operator-started Forex paper-agent loop. It uses the existing fresh-quote checks, deterministic FX strategy and risk gate, records paper actions, and exposes start/stop controls in the dashboard. AI remains advisory; no broker orders are submitted.
+- Explicit supported universe remains the existing five FX pairs, XAU/USD, and
+  six US large-cap stocks. No additional instruments are introduced.
+- A local executor lease primitive requires a fresh heartbeat before arming,
+  caps arm duration, and fails closed on disconnect, stale heartbeat, lease
+  expiry, or explicit disarm.
+- The existing deterministic paper risk engine remains the final authority for
+  the paper workflow. Its current defaults are engineering defaults, not live
+  limits or recommendations.
+- A staged implementation and acceptance checklist is recorded in
+  [AUTONOMY-ROADMAP.md](AUTONOMY-ROADMAP.md).
 
-- Deterministic paper portfolios, research and recorded agent decisions.
-- AI roles that can advise or veto within the paper pipeline; deterministic
-  risk controls remain authoritative there.
-- A persistent live ARM/DISARM risk API with default limits of a $100 wallet
-  cap, $12 per order, $25 daily realized-loss limit, two open positions, $30
-  total exposure and a 24-hour ARM lifetime. This controller is separate from
-  the `JUPITER_AUTORUN` worker.
-- A browser-approved Jupiter swap pilot with transaction checks, simulation,
-  explicit Phantom approval and persistent reservations; see `REAL-SWAPS.md`.
-- A legacy-style server-side Jupiter worker that can submit real transactions
-  if its environment flag and wallet key are both configured.
+## Required before a live release
 
-These pieces do not yet form one coherent, production-ready autonomous trading
-system. The company and live-execution controls are not wired together.
+1. Retire crypto surfaces from active navigation and remove crypto secrets and
+   autorun settings from the Render deployment while preserving legacy data.
+2. Unify instrument metadata and quote freshness; live orders must only use
+   executable IBKR quotes. Reference or synthetic fallback prices must block
+   order entry.
+3. Build the local, authenticated executor beside IB Gateway. Keep broker
+   credentials local. Use outbound authenticated TLS communication with the
+   hosted dashboard, heartbeat leases, idempotent commands, and durable audit.
+4. Implement an IBKR adapter that reconciles orders, executions, positions,
+   balances, commissions, and uncertain submissions. Re-check deterministic
+   risk constraints immediately before every order.
+5. Finish the desk UI with explicit paper/live state, quote source and age,
+   order status, account exposure, loss limits, committee activity, and a
+   persistent kill control.
+6. Complete end-to-end paper integration and failure-recovery checks. Paper
+   mode is an integration gate, not evidence of profitability.
+7. Require a user-reviewed paper record and manual sign-off. Then require
+   user-configured live risk limits and an explicit manual live arm. Only after
+   those gates may the AI submit orders without per-order confirmation, and
+   every proposed order must still pass deterministic controls.
+8. Prepare operations: credential handling, backups, alerts, recovery, kill
+   behavior, and documented incident steps. A disconnected executor blocks
+   new entries; risk-reducing management must be defined and verified before
+   live launch.
 
-## Work required before an autonomous live-trading release
+## Trading and safety model
 
-1. Choose one live execution architecture and remove or disable the competing
-   path. Require every order to pass through the same persistent risk and
-   accounting controller.
-2. Ensure the controller reserves exposure atomically before execution and
-   reconciles orders, fills, balances, losses and uncertain submissions against
-   the chain. Fail closed on stale or incomplete state.
-3. Keep signing authority outside the AI process, with a narrowly scoped wallet
-   and enforced program, asset, amount and fee policies.
-4. Run the complete agent-to-paper pipeline prospectively and compare it with
-   fixed rules using out-of-sample evidence after all costs. No profitable edge
-   is established by the current backtests or UI.
-5. Add operational recovery for pending or failed exits, idempotent requests,
-   durable alerts, backups, and a documented incident procedure.
-6. Verify the deployed configuration, secrets, persistent storage, access
-   controls and wallet policy before any funded pilot.
-
-No actual wallet, signer, cloud account, funding, profitable strategy or
-24/7-operated trading company is claimed. The live worker stays disabled in
-the checked-in Render configuration.
+The AI can propose an action and explain evidence. It cannot change risk
+settings, arm itself, widen limits, or override a rejection. Manual disarm
+blocks new entries and cancels unfilled entry orders; the live design must keep
+risk-reducing management available and must not force liquidation by default.
+No local machine, broker account, or strategy is currently configured for live
+trading.
