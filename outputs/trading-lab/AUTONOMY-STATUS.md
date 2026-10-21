@@ -9,7 +9,8 @@
 | Model limits | Six-call minimum per cycle; daily call and spend caps enforced |
 | Audit | Persistent quote snapshot, recommendation, gate, paper action and account |
 | Broker access | None; no IB Gateway adapter or live orders |
-| Render | Authenticated dashboard with persistent data disk; verify current deploy |
+| Local executor | Loopback control service, durable kill switch and signed replay-safe disarm commands; no arm/order endpoint |
+| Render | Deployed Forex-only release; health and API universe verified |
 
 See [the roadmap](AUTONOMY-ROADMAP.md) and [release boundary](LIVE-AUTONOMY.md)
 for completed stages and outstanding live-trading requirements.

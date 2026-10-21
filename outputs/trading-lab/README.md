@@ -160,7 +160,7 @@ cd outputs/trading-lab
 python -m unittest -v test_forex.py test_forex_lab.py test_forex_agents.py test_forex_market.py test_execution_safety.py test_deployment_config.py test_backtest.py test_strategies.py test_robustness.py test_historical.py test_dataset.py test_intraday.py test_intraday_dataset.py test_true_walkforward.py test_research_selection.py test_research_report.py test_research_runner.py test_portfolio_report.py test_portfolio_backtest.py test_portfolio_selection.py test_portfolio_walkforward.py
 ```
 
-Live broker execution remains disabled. The local executor gate is not a broker adapter; see [the live execution boundary](LIVE-AUTONOMY.md).
+Live broker execution remains disabled. The optional [local executor control foundation](LOCAL-EXECUTOR.md) provides only a loopback health/status service, durable kill switch and signed disarm commands; it cannot arm or submit orders. See [the live execution boundary](LIVE-AUTONOMY.md).
 
 ## Hosted deployment (Render)
 

@@ -27,10 +27,13 @@ Forex product.
 
 ## What remains before live trading
 
-The `local_executor_gate.py` module and `instrument_catalog.py` validator are
-only fail-closed foundations. There is no local executor, IBKR API adapter,
-order reconciliation, durable command protocol, broker paper-account test or
-live control UI. The Render dashboard cannot serve as a broker executor.
+The `local_executor_gate.py` module, `instrument_catalog.py` validator and
+`local_executor_service.py` control service are fail-closed foundations. The
+local service runs on loopback, forces a durable kill switch after restart,
+and accepts signed, expiring, replay-resistant kill/disarm commands. It has no
+arm endpoint, IBKR API adapter, order endpoint, order reconciliation, broker
+paper-account test or live control UI. The Render dashboard cannot serve as a
+broker executor.
 
 Before any live release, the project still needs a local executor next to IB
 Gateway, authenticated expiring commands, idempotency and replay protection,
