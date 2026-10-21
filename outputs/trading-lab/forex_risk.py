@@ -1,7 +1,9 @@
-"""Deterministic FX risk controls."""
+"""Deterministic cross-asset paper risk controls."""
 from dataclasses import dataclass
 import math
 import time
+
+from instrument_catalog import get_instrument
 
 
 @dataclass(frozen=True)
@@ -42,18 +44,14 @@ class FXRisk:
 
     @staticmethod
     def _currency_legs(pair, side):
-        if not isinstance(pair, str) or side not in ("buy", "sell"):
-            raise ValueError("Invalid FX pair or side for currency risk.")
-        parts = pair.upper().split("/")
-        # Three-letter currencies plus 3-5 letter equity tickers quoted as
-        # SYM/USD. Gross-per-leg concentration then also caps single-name
-        # stock exposure, which is exactly what this gate should do.
-        if (len(parts) != 2 or parts[0] == parts[1]
-                or any(not (c.isalpha() and c.isupper() and 3 <= len(c) <= 5)
-                       for c in parts)):
-            raise ValueError("Invalid FX pair for currency risk.")
+        if side not in ("buy", "sell"):
+            raise ValueError("Invalid instrument side for concentration risk.")
+        instrument = get_instrument(pair)
         direction = 1.0 if side == "buy" else -1.0
-        return ((parts[0], direction), (parts[1], -direction))
+        # Equity tickers and XAU are named concentration buckets; USD remains
+        # a shared bucket across all supported markets.
+        return ((instrument.base_currency, direction),
+                (instrument.quote_currency, -direction))
 
     def validate_currency_exposure(self, positions, pair, side, notional):
         """Cap gross currency-leg exposure to prevent concentrated USD bets."""
