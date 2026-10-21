@@ -81,7 +81,14 @@ class ForexPaperBroker:
     def open(self,pair,price,notional,side,prices=None):
         if side not in ("buy","sell") or not isinstance(pair,str):raise ValueError("Invalid FX order.")
         pair=pair.strip().upper()
-        instrument=get_instrument(pair)
+        try:
+            instrument=get_instrument(pair)
+        except ValueError:
+            parts=pair.split("/")
+            if (len(parts)==2 and all(part.isalpha() and len(part)==3 for part in parts)
+                    and "USD" not in parts):
+                raise ValueError(f"No built-in USD conversion for {pair}")
+            raise
         price=float(price);notional=float(notional)
         if not math.isfinite(price) or price<=0:raise ValueError("Invalid FX price.")
         # Validate conversion support before touching account state.
