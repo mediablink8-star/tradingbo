@@ -1,13 +1,15 @@
-# Ember Capital research and paper-trading lab
+# Ember Capital personal trading desk
 
-Ember Capital combines a broker-neutral FX research and paper-trading system,
-a Solana meme-coin research and paper portfolio, and a persistent virtual
-company dashboard. The AI agent company currently makes paper decisions. A
-separate browser-approved Jupiter pilot is described below; it requires an
-explicit Phantom approval for each transaction and does not execute the agent
-company's decisions. A legacy server-side Jupiter worker is present in the
-repository; it is disabled by default in `render.yaml` and must not be treated
-as a production execution path. See [live execution status](LIVE-AUTONOMY.md).
+A personal trading desk for FX, gold, and US large-cap stocks. The current
+release is a research and paper-trading product: market data may be delayed or
+reference-only, all simulated orders pass through deterministic risk controls,
+and the six-agent AI committee cannot submit live broker orders. Crypto and
+Polymarket are outside the active product scope; legacy research and execution
+code is retained only for historical compatibility and is not a supported
+trading workflow.
+
+See [the staged autonomy and release plan](AUTONOMY-ROADMAP.md) and
+[live execution status](LIVE-AUTONOMY.md) before enabling any automated mode.
 
 ## Run the paper dashboard
 
