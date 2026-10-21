@@ -914,9 +914,9 @@ body:before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:60
           </div>
           <div>
             <div class="qtscroll"><table class="qt"><thead><tr>
-              <th>PAIR</th><th>LAST</th><th>BID</th><th>ASK</th><th>SPR</th><th>DATE</th>
+              <th>INSTRUMENT</th><th>LAST</th><th>BID</th><th>ASK</th><th>SPR</th><th>SOURCE</th><th>AGE</th>
             </tr></thead><tbody id="quotes"></tbody></table></div>
-            <div class="notes" id="quoteNote">Prices are reference mid rates. Click a row to load the pair.</div>
+            <div class="notes" id="quoteNote">Quotes may be delayed, reference-only, or simulated. They are not live executable prices. Click a row to load the instrument.</div>
           </div>
         </div>
       </section>
@@ -1277,7 +1277,8 @@ function renderQuotes(){
       '<td class="dim">'+px(p,q.bid)+'</td>'+
       '<td class="dim">'+px(p,q.ask)+'</td>'+
       '<td class="dim">'+(Number(q.spread_bps||0).toFixed(1))+'</td>'+
-      '<td class="mut">'+(q.provider_date||'—')+'</td></tr>';
+      '<td class="mut">'+(q.source||'—')+'</td>'+
+      '<td class="mut">'+Math.max(0,Math.round(Date.now()/1000-Number(q.observed||0)))+'s</td></tr>';
   }).join('');
   // The risk controller refuses entries older than MAX_QUOTE_AGE. Surface that
   // per row so a rejected order is explained rather than mysterious.
