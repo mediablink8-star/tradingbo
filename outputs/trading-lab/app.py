@@ -141,7 +141,7 @@ _auth_guard_old = (
 _auth_guard_new = (
     "        # Only read-only paper/demo status is public; mutations and config stay protected.\n"
     "        public_dashboard_gets = {\n"
-    "            \"/api/forex\", \"/api/forex/agents\", \"/api/forex/bars\",\n"
+    "            \"/api/forex\", \"/api/forex/agents\", \"/api/forex/bars\", \"/api/forex/auto\",\n"
     "            \"/api/meme/research\", \"/api/meme/paper\", \"/api/meme/trader\",\\n"
     "        }\\n"
     "        if path.startswith(\"/api/\") and path not in public_dashboard_gets and not self._require_auth():"
@@ -154,7 +154,7 @@ else:
     # just because its surrounding comments changed.
     _auth_guard_line_old = 'if path.startswith("/api/") and not self._require_auth():'
     _auth_guard_line_new = (
-        'public_dashboard_gets = {"/api/forex", "/api/forex/agents", "/api/forex/bars", '
+        'public_dashboard_gets = {"/api/forex", "/api/forex/agents", "/api/forex/bars", "/api/forex/auto", '
         '"\/api/meme/research", "/api/meme/paper", "/api/meme/trader"}\n'
         '        if path.startswith("/api/") and path not in public_dashboard_gets and not self._require_auth():'
     )
