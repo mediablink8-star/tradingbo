@@ -3,10 +3,12 @@
 ## Current product
 
 The supported instruments are EUR/USD, GBP/USD, USD/JPY, AUD/USD and USD/CHF.
-The six-agent AI committee can deliberate, recommend and record simulated Forex
-actions. The dashboard paper broker and deterministic risk engine are the only
-execution path in this release. Paper prices and fills are simulations; this
-system has not established a profitable strategy.
+The six-agent AI committee can scan, propose a Forex plan and record its quote
+snapshot and gate result. The autonomous worker produces proposals only. An
+operator must approve the exact plan before the dashboard submits a simulated
+entry; approval rechecks the quote and applies deterministic risk controls.
+Paper prices and fills are simulations; this system has not established a
+profitable strategy.
 
 The Render service hosts the dashboard and persistent paper ledger. It does
 not store IBKR credentials, connect to IB Gateway, or submit live orders. The
@@ -20,10 +22,12 @@ Forex product.
   dashboard; it is stopped after every server restart.
 - Runs a six-agent committee and requires every response, no Risk Critic veto,
   a supported currency pair and sufficient model-call/spend budget.
-- Records the quote snapshot, recommendation, gate result, simulated action
-  and resulting account in the persistent Forex database.
-- Sends no live order. Every simulated entry still goes through current quote
-  validation and deterministic paper risk limits.
+- Records the quote snapshot, recommendation and eligibility result in the
+  persistent Forex database without opening a position.
+- Only a separate operator approval can request a simulated entry. The
+  approval is single-use, rechecks the current quote and drift, then passes
+  through deterministic paper risk limits.
+- Sends no live order.
 
 ## What remains before live trading
 

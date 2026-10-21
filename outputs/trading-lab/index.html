@@ -822,6 +822,21 @@ body:before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:60
   @media(max-width:1000px){.bar{grid-template-columns:1fr auto;gap:8px 12px;padding:11px 18px}.topnav{grid-column:1/-1;grid-row:2;justify-content:flex-start}.btags{grid-column:1/-1;grid-row:3;justify-content:flex-start}#markets .chartwrap{grid-template-columns:1fr!important}}
   @media(max-width:700px){.bar{gap:9px;padding:10px 14px}.topnav{grid-column:1/-1;margin:0 -2px;gap:2px}.topnav a{padding:9px 10px!important;font-size:11px!important}.btags{grid-row:3;overflow-x:auto;flex-wrap:nowrap!important}.wrap{gap:12px!important;padding:16px 12px 34px!important}.secbd,#command-deck .secbd{padding:14px!important}#unifiedStrip{grid-template-columns:repeat(2,minmax(0,1fr))!important}#unifiedStrip .cell{min-height:66px;padding:11px 12px!important;border-bottom:1px solid #edf0ec}.deck-kpis,.agent-rail{grid-template-columns:repeat(2,minmax(0,1fr))!important}.deck-actions>*{flex:1 1 100%}#markets .chartbox{padding:12px!important}#markets .chartwrap{grid-template-columns:1fr!important}}
 </style>
+<style id="fxWorkflowStyles">
+#fxWorkflow{border-color:#e7e6df!important}#fxWorkflow .sechd{background:#fdfcf9!important}
+.fxw-intro{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:17px 19px;border-bottom:1px solid #ecece6;background:#fcfbf8}
+.fxw-intro div{display:grid;gap:5px}.fxw-intro strong{font:650 15px/1.25 system-ui,sans-serif;color:#28362d}.fxw-intro span{font:400 12px/1.5 system-ui,sans-serif;color:#758078}
+.fxw-intro>b{flex:none;padding:7px 9px;border:1px solid #eadbc8;border-radius:6px;background:#fbf5eb;color:#946b36;font:700 9px/1 ui-monospace,monospace;letter-spacing:.08em}
+.fxw-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;background:#e9ebe5;border-bottom:1px solid #e9ebe5}
+.fxw-step{min-width:0;padding:16px;background:#fff;border-right:1px solid #e9ebe5}.fxw-step:last-child{border:0}
+.fxw-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.fxw-head>span:first-child{font:700 9px/1 ui-monospace,monospace;letter-spacing:.11em;color:#9b634d}
+.fxw-step p{min-height:52px;margin:12px 0;color:#758078;font:400 11px/1.55 system-ui,sans-serif}
+.fxw-output{min-height:72px;margin-top:12px;padding:10px;border:1px solid #eceee9;border-radius:8px;background:#fafbf9;color:#657168;font:400 10px/1.6 ui-monospace,monospace;overflow-wrap:anywhere;white-space:pre-wrap}
+.fxw-step select{max-width:120px;padding:7px;border:1px solid #e0e5df;border-radius:7px;background:#fff;color:#39483e;font:600 11px ui-monospace,monospace}
+.fxw-approve{background:#fffdfa}.fxw-approve #fxApprovalState{font:650 9px ui-monospace,monospace;color:#9b7950}
+@media(max-width:900px){.fxw-steps{grid-template-columns:repeat(2,minmax(0,1fr))}.fxw-step:nth-child(2){border-right:0}.fxw-step:nth-child(-n+2){border-bottom:1px solid #e9ebe5}}
+@media(max-width:560px){.fxw-steps{grid-template-columns:1fr}.fxw-step{border-right:0!important;border-bottom:1px solid #e9ebe5}.fxw-step p{min-height:0}.fxw-intro{align-items:flex-start}.fxw-intro>b{font-size:8px}}
+</style>
 <style id="bootStyles">
 #bootOverlay{position:fixed;inset:0;background:#05070a;z-index:9999;display:flex;
   flex-direction:column;gap:4px;padding:24px;font:400 11px/1.35 "SF Mono",ui-monospace,Menlo,Consolas,monospace;
@@ -915,6 +930,18 @@ body:before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:60
         </div>
       </section>
 
+      <section class="sec" id="fxWorkflow">
+        <div class="sechd"><h2>Forex Decision Workflow</h2><span class="sub">SCAN → PLAN → REPLAY → APPROVE · PAPER ONLY</span></div>
+        <div class="fxw-intro"><div><strong>Research first. Review every plan.</strong><span>AI proposes an entry; deterministic risk sets the stop, target and size. Nothing is submitted until you approve this exact paper plan.</span></div><b>NO LIVE BROKER</b></div>
+        <div class="fxw-steps">
+          <article class="fxw-step"><div class="fxw-head"><span>01 / SCAN</span><button class="btn" id="fxScan">Scan five pairs</button></div><p>Screen loaded Forex bars for recent direction and range. This is a setup filter, not a forecast.</p><div id="fxScanResults" class="fxw-output">Load the market bars, then scan for setups.</div></article>
+          <article class="fxw-step"><div class="fxw-head"><span>02 / PLAN</span><select id="fxPlanPair" aria-label="Pair to plan"></select></div><p>Ask the research committee for a proposal on the selected pair.</p><button class="btn go" id="fxPlan">Build AI plan</button><div id="fxPlanResult" class="fxw-output">No plan yet.</div></article>
+          <article class="fxw-step"><div class="fxw-head"><span>03 / REPLAY</span><button class="btn" id="fxReplay">Run 10,000 paths</button></div><p>Resample historical bar returns over 24 bars and count stop/target touches. Historical model frequencies only.</p><div id="fxReplayResult" class="fxw-output">Build a plan and load at least 40 bars to replay.</div></article>
+          <article class="fxw-step fxw-approve"><div class="fxw-head"><span>04 / APPROVE</span><span id="fxApprovalState">WAITING FOR PLAN</span></div><p>Approval rechecks today’s quote and rejects a move over 10 bps. Approval submits to the paper account only.</p><button class="btn go" id="fxApprove" disabled>Approve paper entry</button><div id="fxApprovalResult" class="fxw-output">No paper order can be submitted until an eligible plan is reviewed.</div></article>
+        </div>
+        <div class="notes">Market history and quotes may be delayed or reference-only. Replay results are not predictions, fills, or a performance guarantee. Stops and targets use the configured deterministic risk preset.</div>
+      </section>
+
       <section class="sec" id="pipeline"><i class="hud tl"></i><i class="hud tr"></i><i class="hud bl"></i><i class="hud br"></i>
         <div class="sechd">
           <h2>Trading Fleet</h2>
@@ -923,8 +950,8 @@ body:before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:60
         </div>
         <div class="fx-auto-control">
           <span class="sub" id="fxAutoStatus" role="status">Autonomous AI Forex paper agent stopped · connect and verify a model to start · no live broker execution.</span>
-          <button class="btn" type="button" id="fxAiCycle">Run AI paper cycle</button>
-          <button class="btn go" type="button" id="fxAutoStart">Start autonomous AI paper</button>
+          <button class="btn" type="button" id="fxAiCycle">Run AI proposal cycle</button>
+          <button class="btn go" type="button" id="fxAutoStart">Start autonomous research</button>
           <button class="btn" type="button" id="fxAutoStop" disabled>Stop AI agent</button>
         </div>
         <div class="fleetbar" aria-label="Fleet reporting share">
@@ -1374,14 +1401,14 @@ async function loadFxAutoStatus(){
       (decision.blockers?.length?' · gate: '+decision.blockers.join('; ').slice(0,120):''):'';
     const budget=s.budget?' · model calls left today: '+(s.budget.calls_left??'—'):'';
     status.textContent=s.stopping
-      ?'Autonomous AI Forex agent is finishing its current paper cycle…'
+      ?'Autonomous Forex research is finishing its current proposal cycle…'
       :s.running
-      ?'AUTONOMOUS FX AI PAPER ACTIVE · every '+Math.round((s.interval_seconds||300)/60)+' min · '+(s.cycles||0)+' cycles'+extra+budget+' · no live orders.'
-      :'Autonomous AI Forex agent stopped · '+(s.cycles||0)+' cycle(s) · '+(s.ai_available?'AI model ready':'connect and verify an AI model')+budget+(s.last_error?' · '+s.last_error:extra)+' · paper only.';
+      ?'AUTONOMOUS FOREX RESEARCH ACTIVE · every '+Math.round((s.interval_seconds||300)/60)+' min · '+(s.cycles||0)+' proposal cycles'+extra+budget+' · operator approval required.'
+      :'Autonomous Forex research stopped · '+(s.cycles||0)+' proposal cycle(s) · '+(s.ai_available?'AI model ready':'connect and verify an AI model')+budget+(s.last_error?' · '+s.last_error:extra)+' · paper approval required.';
     if(start)start.disabled=!!(s.running||s.stopping);
     if(stop)stop.disabled=!s.running||!!s.stopping;
   }catch(e){
-    status.textContent='FX paper-agent status unavailable: '+e.message;
+    status.textContent='Forex research status unavailable: '+e.message;
   }
 }
 async function setFxAuto(action){
@@ -1404,13 +1431,82 @@ async function runFxAiCycle(){
     const result=await api('/api/forex/agents/ai-cycle',{method:'POST',
       headers:{'Content-Type':'application/json'},body:'{}'});
     await refresh();
-    const paper=result.paper||{};
-    say(paper.reason||('AI paper cycle completed: '+(paper.executed||[]).length+' paper action(s). No live order was sent.'),
-      paper.executed?.length?'ok':'');
-  }catch(e){say('AI paper cycle did not run: '+e.message,'bad')}
+    say('Research proposal saved. Review it in the Forex Decision Workflow; no paper entry was submitted.');
+  }catch(e){say('AI proposal cycle did not run: '+e.message,'bad')}
   finally{button.disabled=false;button.textContent=label;await loadFxAutoStatus()}
 }
 if($id('fxAiCycle'))$id('fxAiCycle').addEventListener('click',runFxAiCycle);
+let reviewedFxPlan=null;
+function fillFxPlanPairs(){
+  const select=$id('fxPlanPair');if(!select)return;
+  select.innerHTML=PAIRS.map(p=>'<option value="'+p+'">'+p+'</option>').join('');
+  select.value=chartPair;
+}
+function fxPairQuote(pair){return quotes[pair]||((state&&state.market&&state.market.pairs)||{})[pair]||null}
+function fxNumber(x){const n=Number(x);return Number.isFinite(n)?n:null}
+function fxFmt(pair,n){if(n==null)return '—';return n.toFixed(pair.endsWith('JPY')?3:5)}
+function scanFxSetups(){
+  fillFxPlanPairs();
+  const rows=PAIRS.map(pair=>{
+    const bars=series[pair]||[],tail=bars.slice(-24),q=fxPairQuote(pair);
+    if(tail.length<12)return {pair,bars:tail,score:null,reason:'Need more bars'};
+    const first=fxNumber(tail[0].c),last=fxNumber(tail[tail.length-1].c);
+    const move=first&&last?(last/first-1)*100:0;
+    const ranges=tail.map(b=>Math.abs((Number(b.h)-Number(b.l))/Number(b.c))).filter(Number.isFinite);
+    const range=ranges.length?100*ranges.reduce((a,b)=>a+b,0)/ranges.length:0;
+    const age=q?Date.now()/1000-Number(q.observed):Infinity;
+    const fresh=!!(q&&Number.isFinite(age)&&age>=-30&&age<=MAX_QUOTE_AGE&&
+      String(q.provider_date||'').slice(0,10)===new Date().toISOString().slice(0,10));
+    return {pair,bars:tail,move,range,fresh,score:Math.abs(move)/(range||1),reason:fresh?'':'quote needs refresh'};
+  }).sort((a,b)=>(b.score??-1)-(a.score??-1));
+  $id('fxScanResults').textContent=rows.map(x=>x.score==null?x.pair+' · '+x.reason:
+    x.pair+' · '+(x.move>=0?'UP ':'DOWN ')+Math.abs(x.move).toFixed(3)+'% / 24 bars · avg range '+x.range.toFixed(3)+'% · '+(x.fresh?'quote fresh':'quote stale')).join('\n');
+  if(rows[0]&&rows[0].score!=null)$id('fxPlanPair').value=rows[0].pair;
+}
+$id('fxScan')?.addEventListener('click',scanFxSetups);
+$id('fxPlanPair')?.addEventListener('change',()=>{reviewedFxPlan=null;$id('fxApprove').disabled=true;$id('fxApprovalState').textContent='WAITING FOR PLAN'});
+$id('fxPlan')?.addEventListener('click',async()=>{
+  const pair=$id('fxPlanPair').value,button=$id('fxPlan');button.disabled=true;button.textContent='Six agents researching…';
+  reviewedFxPlan=null;$id('fxApprove').disabled=true;$id('fxApprovalState').textContent='PLAN IN PROGRESS';
+  try{
+    const result=await api('/api/forex/agents/plan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pair})});
+    const final=result.deliberation?.final_decision||{},proposal=result.proposal||{},q=(result.quote_snapshot||{})[pair]||fxPairQuote(pair)||{};
+    // Runtime audit is the source of truth for approval; live quote shown here is informative only.
+    const side=String(final.side||'hold').toLowerCase(),entry=fxNumber(q[side==='buy'?'ask':'bid']);
+    const risk=state?.risk||{},stopPct=Number(risk.stop_loss_pct??.01),targetPct=Number(risk.take_profit_pct??.02);
+    const stop=entry==null?null:entry*(side==='buy'?1-stopPct:1+stopPct),target=entry==null?null:entry*(side==='buy'?1+targetPct:1-targetPct);
+    const blockers=proposal.blockers||[];
+    $id('fxPlanResult').textContent=[side.toUpperCase()+' '+pair,final.rationale||'No rationale supplied.',entry==null?'Entry quote unavailable':'Reference entry '+fxFmt(pair,entry)+' · stop '+fxFmt(pair,stop)+' · target '+fxFmt(pair,target),'Paper notional capped at $250 · stops/targets are deterministic presets · plan '+(result.cycle_id||'—'),proposal.eligible?'Eligible for review':(blockers.join('; ')||'No eligible entry proposal')].join('\n');
+    reviewedFxPlan=proposal.eligible?{cycle_id:result.cycle_id,pair,side,entry,stop,target}:null;
+    $id('fxApprove').disabled=!reviewedFxPlan;$id('fxApprovalState').textContent=reviewedFxPlan?'READY FOR YOUR REVIEW':'PLAN BLOCKED';
+    $id('fxApprovalResult').textContent=reviewedFxPlan?'Review the pair, direction, reference quote, stop and target, then approve to submit this paper entry.':(blockers.join('\n')||'The committee did not produce an approvable plan.');
+    $id('fxReplayResult').textContent='Replay the reviewed '+pair+' plan across historical bars.';
+    await refresh();
+  }catch(e){$id('fxPlanResult').textContent='Plan failed: '+e.message;$id('fxApprovalState').textContent='PLAN FAILED'}
+  finally{button.disabled=false;button.textContent='Build AI plan'}
+});
+$id('fxReplay')?.addEventListener('click',()=>{
+  const plan=reviewedFxPlan,bars=plan?(series[plan.pair]||[]):[];
+  if(!plan||bars.length<40){$id('fxReplayResult').textContent='Need an eligible plan and at least 40 historical bars.';return}
+  const returns=[];for(let i=1;i<bars.length;i++){const a=Number(bars[i-1].c),b=Number(bars[i].c);if(a>0&&b>0&&Number.isFinite(a)&&Number.isFinite(b))returns.push(Math.log(b/a))}
+  if(returns.length<30){$id('fxReplayResult').textContent='Not enough valid historical returns.';return}
+  let stop=0,target=0,neither=0;const buy=plan.side==='buy',horizon=24;
+  for(let n=0;n<10000;n++){let px=plan.entry,done=false;for(let j=0;j<horizon;j++){px*=Math.exp(returns[Math.floor(Math.random()*returns.length)]);if(buy?px<=plan.stop:px>=plan.stop){stop++;done=true;break}if(buy?px>=plan.target:px<=plan.target){target++;done=true;break}}if(!done)neither++}
+  $id('fxReplayResult').textContent='10,000 resampled paths · 24-bar horizon\nStop touched first: '+(100*stop/10000).toFixed(1)+'%\nTarget touched first: '+(100*target/10000).toFixed(1)+'%\nNeither within horizon: '+(100*neither/10000).toFixed(1)+'%\nHistorical bar returns sampled with replacement; spread, slippage, gaps and forward prediction are not modelled.';
+});
+$id('fxApprove')?.addEventListener('click',async()=>{
+  const plan=reviewedFxPlan;if(!plan)return;
+  const button=$id('fxApprove');button.disabled=true;button.textContent='Rechecking quote…';
+  try{
+    const result=await api('/api/forex/agents/approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cycle_id:plan.cycle_id})});
+    if(!result.ok)throw new Error(result.reason||'Paper approval rejected');
+    $id('fxApprovalState').textContent=result.already_approved?'ALREADY APPROVED':'PAPER ENTRY CREATED';
+    $id('fxApprovalResult').textContent=(result.paper?.reason||'Paper entry accepted.')+'\nNo live broker order was sent.';
+    reviewedFxPlan=null;await refresh();
+  }catch(e){$id('fxApprovalState').textContent='APPROVAL REJECTED';$id('fxApprovalResult').textContent=e.message+'\nRefresh market data and create a new plan before retrying.';reviewedFxPlan=null}
+  finally{button.textContent='Approve paper entry';button.disabled=!reviewedFxPlan}
+});
+fillFxPlanPairs();
 async function toggleAgent(key,on,box){
   box.disabled=true;
   $id('pipeErr').textContent='';
@@ -1531,7 +1627,7 @@ function renderFeed(s){
   const ev=(s.events||[]).filter(e=>['live_agent_report','live_agent_started','accounting_report'].includes(e.kind)).slice(0,40);
   if(!ev.length){
     $id('feed').innerHTML='<div class="empty">No recorded events yet.<br>'+
-      'Press Run agent cycle in the office view to execute one pipeline pass.</div>';
+      'Run a research cycle to record agent observations and a proposal.</div>';
     return;
   }
   $id('feed').innerHTML=ev.map(e=>
@@ -1558,9 +1654,26 @@ function renderTags(s){
     (Object.values(m.pairs||{}).some(q=>q.instrument==='metal')
       ?'  ·  metals are spot per troy ounce; metal intraday bars are a futures proxy':'');
   // The footnote under the table previously described ECB permanently.
-  $id('quoteNote').textContent=/gold-api/.test(src)
-    ?'FX quotes are Yahoo mid prices; metal quotes are true spot per troy ounce from gold-api.com. Bid and ask are simulated from a configured spread, not broker depth. Click a row to load the pair.'
-    :'Prices are ECB daily reference mid rates via Frankfurter. They are research inputs, not executable quotes. Click a row to load the pair.';
+  $id('quoteNote').textContent=/Yahoo/i.test(src)
+    ?'Yahoo Finance prices are indicative reference data. Bid and ask are estimated from a configured spread, not broker depth. These are not live executable prices.'
+    :/Frankfurter|ECB/i.test(src)
+    ?'ECB daily reference mid rates are research inputs, not executable quotes. No live broker price feed is connected.'
+    :'Prices may be delayed or simulated. They are research inputs, not live executable prices.';
+}
+
+function applyState(s){
+  state=s||{};
+  quotes=(state.market&&state.market.pairs)||{};
+  renderKpis(state);
+  renderTicker();
+  renderTape();
+  renderQuotes();
+  renderTags(state);
+  renderPipeline(state);
+  renderPositions(state);
+  renderFeed(state);
+  renderBudget(state.agentState&&state.agentState.ai_budget);
+  loadPair(chartPair);
 }
 
 /* ── AI research desk ───────────────────────────────────── */

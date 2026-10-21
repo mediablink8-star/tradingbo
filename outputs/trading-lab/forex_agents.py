@@ -418,15 +418,17 @@ class ForexAgentRuntime:
             "execution_enabled": False,
         }
 
-    def run_deliberation(self, apply_paper: bool = True):
-        """Run the six-agent deliberative cycle and optionally act on it.
+    def run_deliberation(self, apply_paper: bool = False, requested_pair=None):
+        """Run the six-agent committee and save its proposal without execution.
 
-        The AI conversation is advisory. Any paper order still goes through
-        the existing deterministic risk engine inside self.lab.open/close.
+        Paper orders require approve_paper_cycle() with the saved cycle ID.
         In autonomous mode every specialist must respond, and the risk critic
         must not veto the recommendation. The model budget is reserved before
         the committee starts so it cannot stop halfway through its six calls.
         """
+        if apply_paper:
+            return {"ok": False, "reason": "AI proposals cannot execute directly; explicitly approve the saved plan.",
+                    "paper": {"action": "hold", "executed": []}, "execution_enabled": False}
         if not self._cycle_lock.acquire(blocking=False):
             return {
                 "ok": True, "skipped": True, "reason": "cycle_in_progress",
@@ -434,7 +436,7 @@ class ForexAgentRuntime:
                 "execution_enabled": False,
             }
         try:
-            return self._run_deliberation_locked(apply_paper=apply_paper)
+            return self._run_deliberation_locked(apply_paper=apply_paper, requested_pair=requested_pair)
         finally:
             self._cycle_lock.release()
 
@@ -455,18 +457,141 @@ class ForexAgentRuntime:
         return {"ready": True, "budget": budget}
 
     def run_ai_cycle(self):
-        """Run one full six-agent Forex paper cycle, failing closed on budget."""
+        """Run a six-agent proposal cycle; paper execution requires approval."""
+        return self.run_ai_proposal()
+
+    def run_ai_proposal(self, pair=None):
+        """Create an approval-gated AI plan without opening a paper position."""
         layer = getattr(self, "research", None)
         if layer is None or not callable(getattr(layer, "available", None)) or not layer.available():
             return {"ok": False, "reason": "Connect and verify an AI model before running an AI paper cycle.",
                     "paper": {"action": "hold", "executed": []}, "execution_enabled": False}
+        if pair:
+            from instrument_catalog import get_instrument
+            try:
+                pair = get_instrument(pair).symbol
+            except ValueError as exc:
+                return {"ok": False, "reason": str(exc), "paper": {"action": "hold", "executed": []},
+                        "execution_enabled": False}
         budget = self._ai_cycle_budget()
         if not budget["ready"]:
             return {"ok": False, "reason": budget["reason"], "budget": budget.get("budget"),
                     "paper": {"action": "hold", "executed": []}, "execution_enabled": False}
-        return self.run_deliberation(apply_paper=True)
+        return self.run_deliberation(requested_pair=pair)
 
-    def _run_deliberation_locked(self, apply_paper=True):
+    def approve_paper_cycle(self, cycle_id):
+        """Submit the exact saved proposal to the paper broker after explicit approval."""
+        from instrument_catalog import SUPPORTED_SYMBOLS
+        from multi_agent import apply_decision_to_paper
+
+        if not self._cycle_lock.acquire(blocking=False):
+            return {"ok": False, "reason": "Another Forex analysis or approval is in progress.",
+                    "execution_enabled": False}
+        try:
+            key = str(cycle_id or "").strip()[:80]
+            audit = self.get_cycle_audit(key)
+            if not audit:
+                return {"ok": False, "reason": "The Forex plan was not found.", "execution_enabled": False}
+            gate = audit.get("risk_gate") or {}
+            deliberation = audit.get("deliberation") or {}
+            final = deliberation.get("final_decision") or {}
+            pair = str(final.get("pair_or_token") or "").strip().upper()
+            side = str(final.get("side") or "hold").strip().lower()
+            if gate.get("proposal_state") != "awaiting_operator" or not gate.get("proposal_eligible"):
+                paper = audit.get("paper") or {}
+                if paper.get("executed"):
+                    return {"ok": True, "already_approved": True, "cycle_id": key,
+                            "paper": paper, "account": audit.get("account"), "execution_enabled": False}
+                return {"ok": False, "cycle_id": key,
+                        "reason": "; ".join(gate.get("blockers") or []) or "This plan is not eligible for paper approval.",
+                        "execution_enabled": False}
+            if pair not in SUPPORTED_SYMBOLS or side not in ("buy", "sell"):
+                return {"ok": False, "cycle_id": key, "reason": "Unsupported or incomplete Forex plan.",
+                        "execution_enabled": False}
+
+            # Claim the proposal durably before touching the paper broker. If the
+            # process stops mid-approval, a retry cannot create a duplicate entry.
+            with self._transaction() as db:
+                row = db.execute(
+                    "SELECT risk_gate_json,paper_json FROM fx_agent_cycle_audits WHERE cycle_id=?", (key,)
+                ).fetchone()
+                if not row:
+                    return {"ok": False, "reason": "The Forex plan was not found.", "execution_enabled": False}
+                current_gate, current_paper = json.loads(row[0]), json.loads(row[1])
+                if current_gate.get("proposal_state") != "awaiting_operator":
+                    return {"ok": False, "cycle_id": key,
+                            "reason": "This plan has already been actioned or is being processed.",
+                            "paper": current_paper, "execution_enabled": False}
+                current_gate["proposal_state"] = "approval_pending"
+                db.execute(
+                    "UPDATE fx_agent_cycle_audits SET risk_gate_json=?,paper_json=? WHERE cycle_id=?",
+                    (json.dumps(current_gate), json.dumps({"action": "approval_pending", "executed": []}), key),
+                )
+
+            quote_snapshot = audit.get("quote_snapshot") or {}
+            planned_quote = quote_snapshot.get(pair) or {}
+            planned_entry = planned_quote.get("ask" if side == "buy" else "bid")
+            try:
+                planned_entry = float(planned_entry)
+                current = self.lab.tick()
+                row = (current.get("market") or {}).get("pairs", {}).get(pair) or {}
+                current_entry = float(row.get("ask" if side == "buy" else "bid"))
+                observed = float(row.get("observed"))
+                provider_date = str(row.get("provider_date") or "")
+                age = time.time() - observed
+                if not math.isfinite(current_entry) or current_entry <= 0:
+                    raise ValueError("Current Forex quote is invalid.")
+                if age < -30 or age > 300 or not self.lab._provider_date_is_today(provider_date):
+                    raise ValueError("Current quote is stale or not dated today; refresh the plan before approving.")
+                drift_bps = abs(current_entry / planned_entry - 1.0) * 10000.0
+                if not math.isfinite(drift_bps) or drift_bps > 10.0:
+                    raise ValueError("Price moved more than 10 bps from the reviewed plan; create a new plan.")
+            except (AttributeError, KeyError, TypeError, ValueError, OverflowError, ZeroDivisionError) as exc:
+                paper = {"action": "rejected", "executed": [], "reason": str(exc)[:300]}
+                self._finish_paper_approval(key, paper, gate_state="rejected", account=self.lab.status().get("account", {}))
+                return {"ok": False, "cycle_id": key, "reason": paper["reason"], "paper": paper,
+                        "execution_enabled": False}
+
+            try:
+                paper = apply_decision_to_paper(
+                    final,
+                    lab_open=self.lab.open,
+                    lab_close=self.lab.close,
+                    account=self.lab.status().get("account", {}),
+                    max_notional=PAPER_NOTIONAL,
+                )
+            except Exception as exc:
+                paper = {"action": "rejected", "executed": [], "reason": str(exc)[:300]}
+            account = self.lab.status().get("account", {})
+            approved = bool(paper.get("executed"))
+            self._finish_paper_approval(key, paper,
+                                        gate_state="approved" if approved else "rejected",
+                                        account=account)
+            return {"ok": approved, "cycle_id": key, "paper": paper, "account": account,
+                    "execution_enabled": False}
+        finally:
+            self._cycle_lock.release()
+
+    def _finish_paper_approval(self, cycle_id, paper, *, gate_state, account):
+        with self._transaction() as db:
+            row = db.execute("SELECT risk_gate_json FROM fx_agent_cycle_audits WHERE cycle_id=?",
+                             (cycle_id,)).fetchone()
+            if not row:
+                return
+            gate = json.loads(row[0])
+            gate["proposal_state"] = gate_state
+            gate["paper_action"] = paper.get("action", "rejected")
+            gate["entry_allowed"] = bool(paper.get("executed"))
+            db.execute("UPDATE fx_agent_cycle_audits SET risk_gate_json=?,paper_json=?,account_json=? WHERE cycle_id=?",
+                       (json.dumps(gate), json.dumps(paper, default=str),
+                        json.dumps(account, default=str), cycle_id))
+            self._event(db, cycle_id, "Operator-approved paper gate",
+                        "APPROVED" if paper.get("executed") else "REJECTED",
+                        paper.get("reason", "Paper entry passed deterministic risk checks.")[:500],
+                        approve=[item.get("pair") for item in paper.get("executed", []) if item.get("pair")],
+                        concerns=[] if paper.get("executed") else [paper.get("reason", "No paper entry created.")])
+
+    def _run_deliberation_locked(self, apply_paper=True, requested_pair=None):
         from multi_agent import MultiAgentEngine, apply_decision_to_paper
         from instrument_catalog import SUPPORTED_SYMBOLS
 
@@ -474,6 +599,9 @@ class ForexAgentRuntime:
         engine = MultiAgentEngine(layer, max_rounds=1)
         data = self.lab.tick()
         market = data.get("market", {})
+        if requested_pair:
+            pairs = market.get("pairs") or {}
+            market["pairs"] = {requested_pair: pairs[requested_pair]} if requested_pair in pairs else {}
         account = data.get("account", {})
         risk = data.get("risk", {})
         positions = account.get("positions", []) if isinstance(account, dict) else []
@@ -535,6 +663,11 @@ class ForexAgentRuntime:
         pair = str(final.get("pair_or_token") or "").strip().upper()
         if pair and pair not in SUPPORTED_SYMBOLS:
             blockers.append("Coordinator selected an unsupported instrument.")
+        if requested_pair and pair != requested_pair:
+            blockers.append("Coordinator did not follow the selected Forex pair.")
+        side = str(final.get("side") or "hold").lower()
+        if side not in ("buy", "sell"):
+            blockers.append("Coordinator did not propose a buy or sell entry.")
         if pair:
             final["pair_or_token"] = pair
 
@@ -587,6 +720,8 @@ class ForexAgentRuntime:
             "committee_complete": not blockers,
             "risk_vetoes": vetoes,
             "blockers": blockers,
+            "proposal_eligible": bool(not blockers and deliberation.get("ok") and pair in SUPPORTED_SYMBOLS and side in ("buy", "sell")),
+            "proposal_state": "awaiting_operator" if not blockers and deliberation.get("ok") and pair in SUPPORTED_SYMBOLS and side in ("buy", "sell") else "blocked",
             "paper_action": paper_result.get("action", "hold"),
             "entry_allowed": bool(paper_result.get("executed")),
             "live_execution_enabled": False,
@@ -603,7 +738,10 @@ class ForexAgentRuntime:
             "cycle_id": cycle_id,
             "timestamp": now,
             "deliberation": deliberation,
+            "quote_snapshot": quote_snapshot,
             "paper": paper_result,
+            "proposal": {"eligible": bool(risk_gate["proposal_eligible"]), "state": risk_gate["proposal_state"],
+                         "pair": pair, "side": side, "blockers": blockers},
             "ai_gate": {"entry_allowed": bool(paper_result.get("executed")), "blockers": blockers},
             "budget": self._ai_cycle_budget().get("budget"),
             "events": events,
