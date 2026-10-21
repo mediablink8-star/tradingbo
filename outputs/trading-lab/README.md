@@ -1,8 +1,13 @@
-# Forex research + paper-trading lab
+# Ember Capital research and paper-trading lab
 
-TradingLab is a broker-neutral FX research and paper-trading system. It has no
-wallet connection, on-chain execution, or live broker execution. A separate,
-read-only Solana meme-coin candidate scanner is documented below.
+Ember Capital combines a broker-neutral FX research and paper-trading system,
+a Solana meme-coin research and paper portfolio, and a persistent virtual
+company dashboard. The AI agent company currently makes paper decisions. A
+separate browser-approved Jupiter pilot is described below; it requires an
+explicit Phantom approval for each transaction and does not execute the agent
+company's decisions. A legacy server-side Jupiter worker is present in the
+repository; it is disabled by default in `render.yaml` and must not be treated
+as a production execution path. See [live execution status](LIVE-AUTONOMY.md).
 
 ## Run the paper dashboard
 

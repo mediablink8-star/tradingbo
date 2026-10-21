@@ -146,6 +146,8 @@
   function drawChart() {
     const canvas = $("deckChart");
     if (!canvas) return;
+    const empty = $("deckChartEmpty");
+    if (empty) empty.hidden = history.length >= 2;
     const ctx = canvas.getContext("2d");
     const dpr = window.devicePixelRatio || 1;
     const w = canvas.clientWidth || 640;
@@ -155,7 +157,7 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
-    ctx.strokeStyle = "rgba(0,245,160,0.06)";
+    ctx.strokeStyle = "rgba(50,78,61,0.10)";
     ctx.lineWidth = 1;
     for (let i = 0; i < 5; i++) {
       const y = 20 + (h - 40) * (i / 4);
@@ -163,9 +165,8 @@
     }
 
     if (history.length < 2) {
-      ctx.fillStyle = "#3a4a55";
-      ctx.font = "11px JetBrains Mono, monospace";
-      ctx.fillText("Equity trail appears after paper cycles.", 16, h / 2);
+      ctx.fillStyle = "#748179";
+      ctx.font = "11px ui-monospace, monospace";
       return;
     }
 
@@ -182,8 +183,8 @@
     const ys = (v) => 16 + (h - 32) * (1 - (v - min) / (max - min));
 
     const grad = ctx.createLinearGradient(0, 0, 0, h);
-    grad.addColorStop(0, "rgba(0,245,160,0.25)");
-    grad.addColorStop(1, "rgba(0,245,160,0.0)");
+    grad.addColorStop(0, "rgba(22,131,95,0.16)");
+    grad.addColorStop(1, "rgba(22,131,95,0.0)");
     ctx.beginPath();
     history.forEach((p, i) => {
       const x = xs(i), y = ys(p.equity);
@@ -200,10 +201,10 @@
       const x = xs(i), y = ys(p.equity);
       if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     });
-    ctx.strokeStyle = "#00f5a0";
+    ctx.strokeStyle = "#16835f";
     ctx.lineWidth = 2;
-    ctx.shadowColor = "rgba(0,245,160,0.55)";
-    ctx.shadowBlur = 8;
+    ctx.shadowColor = "rgba(22,131,95,0.12)";
+    ctx.shadowBlur = 2;
     ctx.stroke();
     ctx.shadowBlur = 0;
 
@@ -211,7 +212,7 @@
     const lx = xs(history.length - 1), ly = ys(last.equity);
     ctx.beginPath();
     ctx.arc(lx, ly, 4, 0, Math.PI * 2);
-    ctx.fillStyle = "#e8fff6";
+    ctx.fillStyle = "#16835f";
     ctx.fill();
   }
 

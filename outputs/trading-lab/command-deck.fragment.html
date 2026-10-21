@@ -8,8 +8,8 @@
             <div class="deck-brand">
               <div class="logo">◈</div>
               <div>
-                TradingLab Bot
-                <small>MANUAL ARM REQUIRED FOR LIVE · AGENTS CANNOT BYPASS</small>
+                Ember Capital AI
+                <small>AGENTS RESEARCH · EXECUTION STAYS RISK-GATED</small>
               </div>
             </div>
             <div class="deck-meta">
@@ -44,14 +44,24 @@
             </div>
           </div>
 
-          <canvas id="deckChart" class="deck-chart" height="220"></canvas>
+          <div class="deck-chart-wrap">
+            <canvas id="deckChart" class="deck-chart" height="220"></canvas>
+            <div class="deck-chart-empty" id="deckChartEmpty">Paper equity history appears after the first completed cycle.</div>
+          </div>
 
-          <div class="agent-rail" id="agentGrid"></div>
+          <div class="agent-rail" id="agentGrid">
+            <div class="acard"><div class="ring">OBS</div><div class="aname">Observer</div><div class="arole">Market data</div><div class="astatus">WAITING</div></div>
+            <div class="acard"><div class="ring">TEC</div><div class="aname">Technical</div><div class="arole">Structure</div><div class="astatus">WAITING</div></div>
+            <div class="acard"><div class="ring">NAR</div><div class="aname">Narrative</div><div class="arole">Regime</div><div class="astatus">WAITING</div></div>
+            <div class="acard"><div class="ring">STR</div><div class="aname">Strategy</div><div class="arole">Hypotheses</div><div class="astatus">WAITING</div></div>
+            <div class="acard"><div class="ring">RSK</div><div class="aname">Risk critic</div><div class="arole">Independent review</div><div class="astatus">WAITING</div></div>
+            <div class="acard"><div class="ring">CRD</div><div class="aname">Coordinator</div><div class="arole">Paper decision</div><div class="astatus">WAITING</div></div>
+          </div>
 
           <div class="deck-actions">
             <button type="button" class="btn go" id="deckPaper">Run paper cycle</button>
-            <button type="button" class="btn" id="deckMeme">Six-agent meme</button>
-            <button type="button" class="btn" id="deckFx">Six-agent forex</button>
+            <button type="button" class="btn" id="deckMeme">Review Solana</button>
+            <button type="button" class="btn" id="deckFx">Review FX</button>
           </div>
 
           <div class="deck-log" id="deckLog"></div>

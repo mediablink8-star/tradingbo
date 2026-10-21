@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TradingLab · Autonomous Paper Trading Terminal</title>
+<title>Ember Capital · Trading Workspace</title>
 <style>
 /* ============================================================
    TRADINGLAB — terminal stylesheet
@@ -802,6 +802,23 @@ body:before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:60
 </style>
 <link rel="stylesheet" href="terminal-2029.css">
 <link rel="stylesheet" href="desk-unify-a.css">
+<style id="product-redesign-core">
+  :root{color-scheme:light;--bg:#f4f5f2;--surface:#fff;--surface-2:#f8f9f7;--line:#e2e6e1;--line-2:#d5dcd5;--ink:#18221d;--ink-2:#536058;--dim:#77827a;--faint:#89938c;--up:#16835f;--down:#c8444c;--accent:#c96348;--panel:#fff;--text:#18221d;--muted:#69756d;--accent-2:#a95038;--line-strong:#d5dcd5;--glow:none;--font-ui:system-ui,-apple-system,"Segoe UI",sans-serif;--font-mono:ui-monospace,Consolas,monospace}
+  html,body{height:auto;min-height:100%;scroll-behavior:smooth}body,body.t2029,body.desk-unified{background:#f4f5f2!important;color:#18221d!important;font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif!important}body::before{display:none!important}
+  .bar{position:sticky;top:0;z-index:30;display:grid;grid-template-columns:minmax(155px,auto) minmax(0,1fr) auto;grid-template-rows:auto auto;align-items:center;gap:4px 16px;min-height:88px;padding:10px clamp(18px,3vw,42px);background:#fffffffa!important;border-bottom:1px solid #e2e6e1!important;box-shadow:0 2px 12px #1f2c2309!important;backdrop-filter:blur(14px)}
+  .bar .path{grid-column:1;grid-row:1;color:#768078!important;font:700 11px/1.2 system-ui,sans-serif!important;letter-spacing:.13em!important;white-space:nowrap}.bar .path b{color:#18221d!important;font-size:13px}.topnav{grid-column:1/-1;grid-row:2;display:flex;flex-wrap:nowrap!important;justify-content:flex-start;gap:4px;min-width:0;overflow:auto hidden;scrollbar-width:none;background:transparent!important;border:0!important}.topnav a{flex:0 0 auto;white-space:nowrap;padding:9px 10px!important;border:0!important;border-radius:8px!important;color:#68736b!important;font:600 12px/1 system-ui,sans-serif!important}.topnav a.on{color:#9d4c36!important;background:#f9eee9!important;box-shadow:none!important}
+  .bar>#themeToggle{display:none!important}.bar>#phantomConnect{grid-column:3;grid-row:1;min-height:38px!important;margin:0!important;padding:0 13px!important;border:1px solid #d9ded8!important;border-radius:9px!important;background:#fff!important;color:#47544b!important;box-shadow:none!important;font:650 11px/1 system-ui,sans-serif!important;letter-spacing:0!important}.btags{grid-column:2;grid-row:1;justify-content:flex-end;gap:6px!important;margin:0}.btags .tag{padding:5px 8px!important;border:1px solid #e7ebe6!important;border-radius:6px!important;background:#f8f9f7!important;color:#69756d!important;font:600 9px/1 ui-monospace,Consolas,monospace!important;letter-spacing:.04em!important}.btags .tag.live{color:#176b50!important;border-color:#cfe8d8!important;background:#edf7f1!important;animation:none!important}
+  .wrap{display:grid;gap:18px!important;width:min(100%,1580px);margin:0 auto;padding:28px clamp(16px,3vw,42px) 56px!important}#command-deck{order:-2;margin:0!important}#markets{order:-1}#pipeline{order:1}#meme-research{order:2}#positions{order:3}#activity{order:4}#ai{order:5}#ticket{order:6}#kpis{display:none!important}
+  body.desk-unified .sec,body.t2029 .sec,.sec{border:1px solid #e2e6e1!important;border-radius:14px!important;background:#fff!important;box-shadow:0 3px 14px #18221d09!important;overflow:hidden}.sec .hud{display:none!important}body.desk-unified .sechd,body.t2029 .sechd,.sechd{min-height:54px;padding:14px 18px!important;border-bottom:1px solid #edf0ec!important;background:#fff!important}body.desk-unified .sechd h2,body.t2029 .sechd h2,.sechd h2{color:#25322a!important;font:700 12px/1.2 system-ui,sans-serif!important;letter-spacing:.09em!important}.secbd{padding:18px!important}
+  #liveArmPanel{margin:0 0 20px!important;padding:14px 16px!important;border:1px solid #eadbc8!important;border-radius:10px!important;background:#fbf7ef!important;box-shadow:none!important;color:#453b30!important}#liveArmPanel *{color:#574b3e!important}#liveArmPanel button.go{background:#b87835!important;color:#fff!important;border:0!important;box-shadow:none!important}
+  #modeBar{display:flex;gap:4px!important;margin:0 0 14px!important;padding:4px!important;width:max-content;max-width:100%;border-radius:9px;background:#f1f3f0}#modeBar button.mode-btn{min-width:104px!important;min-height:34px!important;padding:8px 14px!important;border:0!important;border-radius:7px!important;background:transparent!important;color:#69756c!important;font:650 11px/1 system-ui,sans-serif!important;letter-spacing:.04em!important;box-shadow:none!important}#modeBar button.mode-btn.active{background:#fff!important;color:#28362d!important;box-shadow:0 1px 3px #1a261d14!important}
+  #unifiedStrip{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:0!important;margin:0 0 14px!important;border:1px solid #e2e6e1!important;border-radius:11px!important;background:#fff!important;box-shadow:none!important}#unifiedStrip .cell{min-height:78px;padding:14px 16px!important;border-right:1px solid #edf0ec;background:#fff!important}#unifiedStrip .cell .lab{color:#89948c!important;font:650 9px/1 system-ui,sans-serif!important;letter-spacing:.11em!important}#unifiedStrip .cell .val{margin-top:9px!important;color:#26352c!important;font:650 clamp(15px,2vw,21px)/1.05 system-ui,sans-serif!important;letter-spacing:-.035em!important}#unifiedPositions{margin:0 0 20px!important;padding:14px 16px!important;border:1px solid #e2e6e1!important;border-radius:11px!important;background:#fafbf9!important}
+  .deck-kpis{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px!important;margin:0 0 14px!important;background:transparent!important}.deck-kpis .dkpi{min-height:78px;padding:14px 15px!important;border:1px solid #e2e6e1!important;border-radius:10px!important;background:#fbfcfa!important}.deck-chart-wrap{position:relative;margin:0 0 16px}.deck-chart{display:block;width:100%;height:150px!important;margin:0!important;border:1px solid #edf0ec;border-radius:9px;background:#fbfcfa!important}.deck-chart-empty{position:absolute;inset:0;display:grid;place-items:center;padding:18px;color:#78847b;font:500 12px/1.5 system-ui,sans-serif;text-align:center;pointer-events:none}.deck-chart-empty[hidden]{display:none!important}.agent-rail{gap:9px!important;margin:0 0 14px!important}body.desk-unified .acard,.acard{min-width:0;padding:12px!important;border:1px solid #e6ebe5!important;border-radius:10px!important;background:#fbfcfa!important;box-shadow:none!important}.acard .ring{display:grid;place-items:center;width:30px;height:30px;margin-bottom:9px;border:1px solid #e2e8e1;border-radius:9px;background:#f0f3ef;color:#6f8175;font:650 9px/1 ui-monospace,monospace}.acard .aname{color:#334239!important;font:650 11px/1.25 system-ui,sans-serif}.acard .arole,.acard .astatus{color:#89948c!important;font:550 9px/1.35 system-ui,sans-serif}
+  body.desk-unified .btn,body.desk-unified button.btn,body.t2029 .btn,button.btn,.qbtn{min-height:38px;padding:9px 13px!important;border:1px solid #dfe5df!important;border-radius:8px!important;background:#fff!important;color:#46534a!important;box-shadow:none!important;font:650 11px/1.2 system-ui,sans-serif!important;letter-spacing:0!important}.btn.go,button.btn.go,.qbtn.buy{border-color:#bb5c43!important;background:#bf6148!important;color:#fff!important}.deck-log,.term-body,.decision-box{border:1px solid #e7ece6!important;border-radius:9px!important;background:#fafbf9!important;color:#59665d!important;box-shadow:none!important}
+  #markets .chartwrap{grid-template-columns:minmax(0,1fr) 260px!important}#markets .chartbox{padding:16px!important;border-color:#edf0ec!important}#markets .charttop{gap:10px!important;flex-wrap:wrap}#markets .charttop .sym{color:#25352b!important;font:700 15px/1.2 system-ui,sans-serif!important}#markets .charttop .px{color:#293b30!important;font:650 14px/1.2 ui-monospace,Consolas,monospace!important}#markets .tape{gap:8px!important;background:#fff!important;border-bottom:1px solid #edf0ec}#markets .tape .q{padding:12px 14px;background:#fff!important}th{background:#f5f7f4!important;color:#7d8980!important}td,th{border-color:#e9ede8!important}pre{border:1px solid #e6ebe5!important;border-radius:8px!important;background:#f7f9f6!important;color:#46534a!important}
+  @media(max-width:1000px){.bar{grid-template-columns:1fr auto;gap:8px 12px;padding:11px 18px}.topnav{grid-column:1/-1;grid-row:2;justify-content:flex-start}.btags{grid-column:1/-1;grid-row:3;justify-content:flex-start}#markets .chartwrap{grid-template-columns:1fr!important}}
+  @media(max-width:700px){.bar{gap:9px;padding:10px 14px}.topnav{grid-column:1/-1;margin:0 -2px;gap:2px}.topnav a{padding:9px 10px!important;font-size:11px!important}.btags{grid-row:3;overflow-x:auto;flex-wrap:nowrap!important}.wrap{gap:12px!important;padding:16px 12px 34px!important}.secbd,#command-deck .secbd{padding:14px!important}#unifiedStrip{grid-template-columns:repeat(2,minmax(0,1fr))!important}#unifiedStrip .cell{min-height:66px;padding:11px 12px!important;border-bottom:1px solid #edf0ec}.deck-kpis,.agent-rail{grid-template-columns:repeat(2,minmax(0,1fr))!important}.deck-actions>*{flex:1 1 100%}#markets .chartbox{padding:12px!important}#markets .chartwrap{grid-template-columns:1fr!important}}
+</style>
 <style id="bootStyles">
 #bootOverlay{position:fixed;inset:0;background:#05070a;z-index:9999;display:flex;
   flex-direction:column;gap:4px;padding:24px;font:400 11px/1.35 "SF Mono",ui-monospace,Menlo,Consolas,monospace;
@@ -831,7 +848,7 @@ body:before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:60
 
   <main class="main">
     <div class="bar">
-      <div class="path">TradingLab / <b>Overview</b></div>
+      <div class="path">EMBER CAPITAL <span aria-hidden="true">/</span> <b>Overview</b></div>
       <nav class="topnav" aria-label="Sections">
         <a class="on" href="#overview">Overview</a>
         <a href="#markets">Markets</a>
@@ -849,8 +866,8 @@ body:before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:60
         <span class="tag" id="clock" title="Coordinated Universal Time">--:--:--</span>
         <span class="tag" id="tagFeed">ECB REFERENCE</span>
         <span class="tag" id="tagDate">DATE —</span>
-        <span class="tag" id="tagGate">RISK ARMED</span>
-        <span class="tag live"><i class="dot ok" id="sysDot"></i><span class="t" id="sysTxt">LIVE</span></span>
+        <span class="tag" id="tagGate">FX LIMITS ACTIVE</span>
+        <span class="tag live"><i class="dot ok" id="sysDot"></i><span class="t" id="sysTxt">STARTING</span></span>
       </div>
     </div>
 
@@ -1503,7 +1520,7 @@ function renderFeed(s){
 function renderTags(s){
   const r=s.risk||{},m=s.market||{};
   const gate=$id('tagGate');
-  gate.textContent=r.halted?'RISK HALT':'RISK ARMED';
+  gate.textContent=r.halted?'FX RISK HALT':'FX LIMITS ACTIVE';
   gate.className='tag '+(r.halted?'bad':'ok');
   // The feed label must name the provider actually in use, not a hardcoded one.
   const src=String(m.source||'');
