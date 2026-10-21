@@ -33,18 +33,14 @@ class DeploymentConfigTests(unittest.TestCase):
         with open(self.render_path) as f:
             return yaml.safe_load(f)
 
-    def test_jupiter_autorun_is_disabled(self):
-        """JUPITER_AUTORUN must default to '0' — live trading must not auto-start."""
+    def test_legacy_crypto_environment_is_absent(self):
+        """The Forex deployment must not configure crypto trading credentials or workers."""
         if not HAS_YAML or not os.path.exists(self.render_path):
             self.skipTest("render.yaml or PyYAML not available")
         config = self._load_render()
-        env_vars = config["services"][0]["envVars"]
-        for var in env_vars:
-            if var["key"] == "JUPITER_AUTORUN":
-                self.assertNotIn("sync", var, "JUPITER_AUTORUN should have an explicit value, not sync:false")
-                self.assertEqual(var["value"], "0", "JUPITER_AUTORUN must default to '0'")
-                return
-        self.fail("JUPITER_AUTORUN not found in render.yaml")
+        keys = {var["key"] for var in config["services"][0]["envVars"]}
+        self.assertNotIn("JUPITER_AUTORUN", keys)
+        self.assertNotIn("SOLANA_PRIVATE_KEY", keys)
 
     def test_solana_private_key_is_not_committed(self):
         """SOLANA_PRIVATE_KEY must be sync:false — never in the repo."""
@@ -101,14 +97,14 @@ class RequirementsTests(unittest.TestCase):
         if not os.path.exists(path):
             self.skipTest("requirements.txt not found")
 
-    def test_requirements_contains_jupiter_deps(self):
+    def test_requirements_contains_forex_runtime_deps(self):
         path = os.path.join(self.lab_dir, "requirements.txt")
         if not os.path.exists(path):
             self.skipTest("requirements.txt not found")
         with open(path) as f:
             content = f.read().lower()
-        self.assertIn("base58", content, "base58 must be in requirements.txt for Solana wallet support")
-        self.assertIn("pynacl", content, "PyNaCl must be in requirements.txt for transaction signing")
+        self.assertNotIn("base58", content, "Forex-only runtime must not require Solana dependencies")
+        self.assertNotIn("pynacl", content, "Forex-only runtime must not require transaction signing")
 
 
 if __name__ == "__main__":

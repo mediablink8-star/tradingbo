@@ -185,8 +185,6 @@ nav a.on .ic{color:var(--accent)}
 .btn.go{background:var(--accent);border-color:var(--accent);color:#04101f;font-weight:700}
 .btn.go:hover{background:#6ba1ff;border-color:#6ba1ff}
 .btn:disabled{opacity:.55;cursor:not-allowed}
-#phantomConnect.wallet-connected{background:rgba(47,191,135,.12);border-color:#2fbf87;color:#7ee2b7}
-#phantomConnect{max-width:175px;overflow:hidden;text-overflow:ellipsis}
 .riskbox{border-top:1px solid var(--line);padding:11px 14px;
   font:400 10.5px/1.65 var(--mono);color:var(--dim)}
 .riskbox.halt{border-top-color:#e2555f55;color:#f0939a;background:#1a0e10}
@@ -804,7 +802,6 @@ body:before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:60
 
 
 /* Active product scope: FX, gold and US stocks. Legacy crypto modules stay in code, hidden from the desk. */
-#meme-research,#phantomConnect,.bar a[href="#meme-research"]{display:none!important}
 </style>
 <link rel="stylesheet" href="terminal-2029.css">
 <link rel="stylesheet" href="desk-unify-a.css">
@@ -813,8 +810,8 @@ body:before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:60
   html,body{height:auto;min-height:100%;scroll-behavior:smooth}body,body.t2029,body.desk-unified{background:#f4f5f2!important;color:#18221d!important;font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif!important}body::before{display:none!important}
   .bar{position:sticky;top:0;z-index:30;display:grid;grid-template-columns:minmax(155px,auto) minmax(0,1fr) auto;grid-template-rows:auto auto;align-items:center;gap:4px 16px;min-height:88px;padding:10px clamp(18px,3vw,42px);background:#fffffffa!important;border-bottom:1px solid #e2e6e1!important;box-shadow:0 2px 12px #1f2c2309!important;backdrop-filter:blur(14px)}
   .bar .path{grid-column:1;grid-row:1;color:#768078!important;font:700 11px/1.2 system-ui,sans-serif!important;letter-spacing:.13em!important;white-space:nowrap}.bar .path b{color:#18221d!important;font-size:13px}.topnav{grid-column:1/-1;grid-row:2;display:flex;flex-wrap:nowrap!important;justify-content:flex-start;gap:4px;min-width:0;overflow:auto hidden;scrollbar-width:none;background:transparent!important;border:0!important}.topnav a{flex:0 0 auto;white-space:nowrap;padding:9px 10px!important;border:0!important;border-radius:8px!important;color:#68736b!important;font:600 12px/1 system-ui,sans-serif!important}.topnav a.on{color:#9d4c36!important;background:#f9eee9!important;box-shadow:none!important}
-  .bar>#themeToggle{display:none!important}.bar>#phantomConnect{grid-column:3;grid-row:1;min-height:38px!important;margin:0!important;padding:0 13px!important;border:1px solid #d9ded8!important;border-radius:9px!important;background:#fff!important;color:#47544b!important;box-shadow:none!important;font:650 11px/1 system-ui,sans-serif!important;letter-spacing:0!important}.btags{grid-column:2;grid-row:1;justify-content:flex-end;gap:6px!important;margin:0}.btags .tag{padding:5px 8px!important;border:1px solid #e7ebe6!important;border-radius:6px!important;background:#f8f9f7!important;color:#69756d!important;font:600 9px/1 ui-monospace,Consolas,monospace!important;letter-spacing:.04em!important}.btags .tag.live{color:#176b50!important;border-color:#cfe8d8!important;background:#edf7f1!important;animation:none!important}
-  .wrap{display:grid;gap:18px!important;width:min(100%,1580px);margin:0 auto;padding:28px clamp(16px,3vw,42px) 56px!important}#command-deck{order:-2;margin:0!important}#markets{order:-1}#pipeline{order:1}#meme-research{order:2}#positions{order:3}#activity{order:4}#ai{order:5}#ticket{order:6}#kpis{display:none!important}
+  .bar>#themeToggle{display:none!important}.btags{grid-column:2;grid-row:1;justify-content:flex-end;gap:6px!important;margin:0}.btags .tag{padding:5px 8px!important;border:1px solid #e7ebe6!important;border-radius:6px!important;background:#f8f9f7!important;color:#69756d!important;font:600 9px/1 ui-monospace,Consolas,monospace!important;letter-spacing:.04em!important}.btags .tag.live{color:#176b50!important;border-color:#cfe8d8!important;background:#edf7f1!important;animation:none!important}
+  .wrap{display:grid;gap:18px!important;width:min(100%,1580px);margin:0 auto;padding:28px clamp(16px,3vw,42px) 56px!important}#command-deck{order:-2;margin:0!important}#markets{order:-1}#pipeline{order:1}#positions{order:2}#positions{order:3}#activity{order:4}#ai{order:5}#ticket{order:6}#kpis{display:none!important}
   body.desk-unified .sec,body.t2029 .sec,.sec{border:1px solid #e2e6e1!important;border-radius:14px!important;background:#fff!important;box-shadow:0 3px 14px #18221d09!important;overflow:hidden}.sec .hud{display:none!important}body.desk-unified .sechd,body.t2029 .sechd,.sechd{min-height:54px;padding:14px 18px!important;border-bottom:1px solid #edf0ec!important;background:#fff!important}body.desk-unified .sechd h2,body.t2029 .sechd h2,.sechd h2{color:#25322a!important;font:700 12px/1.2 system-ui,sans-serif!important;letter-spacing:.09em!important}.secbd{padding:18px!important}
   #liveArmPanel{margin:0 0 20px!important;padding:14px 16px!important;border:1px solid #eadbc8!important;border-radius:10px!important;background:#fbf7ef!important;box-shadow:none!important;color:#453b30!important}#liveArmPanel *{color:#574b3e!important}#liveArmPanel button.go{background:#b87835!important;color:#fff!important;border:0!important;box-shadow:none!important}
   #modeBar{display:flex;gap:4px!important;margin:0 0 14px!important;padding:4px!important;width:max-content;max-width:100%;border-radius:9px;background:#f1f3f0}#modeBar button.mode-btn{min-width:104px!important;min-height:34px!important;padding:8px 14px!important;border:0!important;border-radius:7px!important;background:transparent!important;color:#69756c!important;font:650 11px/1 system-ui,sans-serif!important;letter-spacing:.04em!important;box-shadow:none!important}#modeBar button.mode-btn.active{background:#fff!important;color:#28362d!important;box-shadow:0 1px 3px #1a261d14!important}
@@ -859,15 +856,12 @@ body:before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:60
         <a class="on" href="#overview">Overview</a>
         <a href="#markets">Markets</a>
         <a href="#pipeline">Agents</a>
-        <a href="#meme-research">Meme</a>
         <a href="#ai">AI Desk</a>
         <a href="#positions">Positions</a>
         <a href="#activity">Events</a>
         <a href="company.html">Office</a>
       </nav>
       <button type="button" class="btn" id="themeToggle" title="Cycle visual theme: terminal → 2029 neon → unified desk" style="font:600 9.5px/1 var(--mono);letter-spacing:.1em;padding:5px 10px;border-radius:5px;margin-left:8px">2029</button>
-      <button type="button" class="btn go" id="phantomConnect" aria-label="Connect Phantom wallet" title="Connect your Phantom wallet; no transactions will be signed" style="font:600 9.5px/1 var(--mono);letter-spacing:.06em;padding:7px 10px;margin-left:6px;white-space:nowrap">CONNECT PHANTOM</button>
-      <span id="walletBalance" class="tag small" style="display:none;margin-left:6px">-- SOL</span>
       <div class="btags">
         <span class="tag" id="clock" title="Coordinated Universal Time">--:--:--</span>
         <span class="tag" id="tagFeed">ECB REFERENCE</span>
@@ -928,9 +922,10 @@ body:before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:60
           <span class="sub err" id="pipeErr" role="status"></span>
         </div>
         <div class="fx-auto-control">
-          <span class="sub" id="fxAutoStatus" role="status">Forex paper agent stopped · AI remains advisory · no live broker execution.</span>
-          <button class="btn go" type="button" id="fxAutoStart">Start FX paper agent</button>
-          <button class="btn" type="button" id="fxAutoStop" disabled>Stop agent</button>
+          <span class="sub" id="fxAutoStatus" role="status">Autonomous AI Forex paper agent stopped · connect and verify a model to start · no live broker execution.</span>
+          <button class="btn" type="button" id="fxAiCycle">Run AI paper cycle</button>
+          <button class="btn go" type="button" id="fxAutoStart">Start autonomous AI paper</button>
+          <button class="btn" type="button" id="fxAutoStop" disabled>Stop AI agent</button>
         </div>
         <div class="fleetbar" aria-label="Fleet reporting share">
           <span class="fl">FLEET SIGNAL</span>
@@ -939,33 +934,6 @@ body:before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:60
           <span class="fn" id="fleetNote">—</span>
         </div>
         <div class="pipe" id="pipe"></div>
-      </section>
-
-      <section class="sec" id="meme-research">
-        <div class="sechd">
-          <h2>Solana Meme-Coin Research</h2>
-          <span class="sub" id="memeMeta">READ-ONLY · NOT A BUY SIGNAL</span>
-          <button class="btn go" id="memeScan">Scan candidates</button>
-        </div>
-        <div class="secbd">
-          <p class="fine" style="margin-top:0">Screens public DEX market data for liquidity, turnover, activity and short-term momentum. This does not check contract safety, holder concentration or sellability. No wallet or transaction execution is connected.</p>
-          <div class="msg" id="memeMsg"></div>
-          <div id="memeResults"><div class="empty">No scan yet. Press “Scan candidates” to run the read-only Solana research pass.</div></div>
-          <div class="sechd" style="margin-top:18px">
-            <h3>Paper Outcome Tracking</h3>
-            <span class="sub" id="memePaperMeta">LOADING</span>
-            <button class="btn" id="memePaperUpdate">Update outcomes</button>
-          </div>
-          <div id="memePaperStatus"><div class="empty">Loading stored paper outcomes…</div></div>
-          <div class="sechd" style="margin-top:18px">
-            <h3>Autonomous Paper Trader</h3>
-            <span class="sub" id="memeTraderMeta">PAPER ONLY · LOADING</span>
-            <button class="btn go" id="memeTraderRun">Run paper cycle</button>
-            <button class="btn" id="memeTraderRefresh">Refresh</button>
-          </div>
-          <div class="msg" id="memeTraderMsg">No wallet or live orders. A cycle scans candidates, applies deterministic entry rules and independent safety gates, then records simulated positions.</div>
-          <div id="memeTraderStatus"><div class="empty">Loading paper portfolio…</div></div>
-        </div>
       </section>
 
       <div class="split">
@@ -1050,9 +1018,6 @@ body:before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:60
                 <select id="pair">
                   <option>EUR/USD</option><option>GBP/USD</option><option>USD/JPY</option>
                   <option>AUD/USD</option><option>USD/CHF</option>
-                  <option>XAU/USD</option>
-                  <option>AAPL/USD</option><option>MSFT/USD</option><option>NVDA/USD</option>
-                  <option>TSLA/USD</option><option>AMZN/USD</option><option>META/USD</option>
                 </select>
               </div>
               <div class="fld">
@@ -1077,8 +1042,7 @@ body:before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:60
 
 <script src="vendor-lightweight-charts.js"></script>
 <script>
-const PAIRS=['EUR/USD','GBP/USD','USD/JPY','AUD/USD','USD/CHF','XAU/USD',
-  'AAPL/USD','MSFT/USD','NVDA/USD','TSLA/USD','AMZN/USD','META/USD'];
+const PAIRS=['EUR/USD','GBP/USD','USD/JPY','AUD/USD','USD/CHF'];
 /* Metals quote per troy ounce, equities per share: two decimals. JPY carries
    three; spot FX five. */
 const decimals=p=>(p==='USD/JPY'?3:(isMetal(p)||isStock(p))?2:5);
@@ -1404,11 +1368,16 @@ async function loadFxAutoStatus(){
   if(!status)return;
   try{
     const s=await api('/api/forex/auto');
+    const decision=s.last_decision;
+    const extra=decision?' · last: '+String(decision.side||'hold').toUpperCase()+' '+String(decision.pair||'')+
+      (decision.rationale?' — '+String(decision.rationale).slice(0,100):'')+
+      (decision.blockers?.length?' · gate: '+decision.blockers.join('; ').slice(0,120):''):'';
+    const budget=s.budget?' · model calls left today: '+(s.budget.calls_left??'—'):'';
     status.textContent=s.stopping
-      ?'Forex agent is finishing its current paper cycle…'
+      ?'Autonomous AI Forex agent is finishing its current paper cycle…'
       :s.running
-      ?'FOREX PAPER AGENT ACTIVE · cycle every '+Math.round((s.interval_seconds||60)/60)+' min · '+(s.cycles||0)+' cycles · no live orders.'
-      :'Forex paper agent stopped · '+(s.cycles||0)+' completed cycle(s) · '+(s.last_error?'Last error: '+s.last_error:'AI remains advisory; deterministic risk controls are active.');
+      ?'AUTONOMOUS FX AI PAPER ACTIVE · every '+Math.round((s.interval_seconds||300)/60)+' min · '+(s.cycles||0)+' cycles'+extra+budget+' · no live orders.'
+      :'Autonomous AI Forex agent stopped · '+(s.cycles||0)+' cycle(s) · '+(s.ai_available?'AI model ready':'connect and verify an AI model')+budget+(s.last_error?' · '+s.last_error:extra)+' · paper only.';
     if(start)start.disabled=!!(s.running||s.stopping);
     if(stop)stop.disabled=!s.running||!!s.stopping;
   }catch(e){
@@ -1428,6 +1397,20 @@ async function setFxAuto(action){
     if(status)status.textContent='Could not '+action+' the FX paper agent: '+e.message;
   }finally{await loadFxAutoStatus()}
 }
+async function runFxAiCycle(){
+  const button=$id('fxAiCycle'),label=button.textContent;
+  button.disabled=true;button.textContent='Running six agents…';
+  try{
+    const result=await api('/api/forex/agents/ai-cycle',{method:'POST',
+      headers:{'Content-Type':'application/json'},body:'{}'});
+    await refresh();
+    const paper=result.paper||{};
+    say(paper.reason||('AI paper cycle completed: '+(paper.executed||[]).length+' paper action(s). No live order was sent.'),
+      paper.executed?.length?'ok':'');
+  }catch(e){say('AI paper cycle did not run: '+e.message,'bad')}
+  finally{button.disabled=false;button.textContent=label;await loadFxAutoStatus()}
+}
+if($id('fxAiCycle'))$id('fxAiCycle').addEventListener('click',runFxAiCycle);
 async function toggleAgent(key,on,box){
   box.disabled=true;
   $id('pipeErr').textContent='';
@@ -1784,235 +1767,6 @@ $id('aiProvider').addEventListener('change',()=>{
 });
 
 
-/* ── Solana meme-coin research: discovery only, no trading action ── */
-function renderMemeResearch(result){
-  const candidates=Array.isArray(result.candidates)?result.candidates:[];
-  $id('memeMeta').textContent=(result.watchlist_count||0)+' WATCH · '+
-    (result.scored_candidates||0)+' SCORED · '+(result.discovered_tokens||0)+' DISCOVERED';
-  const msg=$id('memeMsg');
-  msg.textContent='Research-only scan from '+(result.provider||'market data')+
-    '. Security checks are not performed; WATCH is not a buy signal.';
-  msg.className='msg'+(result.errors&&result.errors.length?'':' ok');
-  if(!candidates.length){
-    $id('memeResults').innerHTML='<div class="empty">No candidates scored in this pass. Check provider errors below, then try another scan later.</div>'+
-      ((result.errors||[]).length?'<div class="notes">'+result.errors.map(e=>esc(e.token_address||'provider')+': '+esc(e.error)).join('<br>')+'</div>':'');
-    return;
-  }
-  $id('memeResults').innerHTML='<div style="overflow-x:auto"><table class="dt"><thead><tr>'+
-    '<th>TOKEN</th><th class="r">SCORE</th><th class="r">LIQUIDITY</th><th class="r">24H VOL</th>'+
-    '<th class="r">24H TXNS</th><th class="r">1H CHANGE</th><th>DECISION</th></tr></thead><tbody>'+
-    candidates.map(c=>{
-      const address=String(c.token_address||'').trim();
-      const pairAddress=String(c.pair_address||'').trim();
-      const tokenUrl=/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address)
-        ?'https://dexscreener.com/solana/'+encodeURIComponent(address):'';
-      const pairUrl=/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(pairAddress)
-        ?'https://dexscreener.com/solana/'+encodeURIComponent(pairAddress):'';
-      const name=esc(c.name||'Unknown')+' ('+esc(c.symbol||'?')+')';
-      const token=tokenUrl?'<a href="'+tokenUrl+'" target="_blank" rel="noopener noreferrer" style="color:var(--accent)" title="Open this token on DexScreener">'+name+'</a>':name;
-      const pairLink=pairUrl?' <a href="'+pairUrl+'" target="_blank" rel="noopener noreferrer" style="color:var(--dim)">PAIR ↗</a>':'';
-      const change=Number(c.price_change_1h_pct)||0;
-      const reasons=(c.rejection_reasons||[]).map(esc).join(', ');
-      const parts=c.score_components||{};
-      const breakdown=[
-        ['Liq',parts.liquidity],['Turn',parts.turnover],['Activity',parts.activity],
-        ['Buy',parts.buy_balance],['Mom',parts.momentum]
-      ].filter(p=>typeof p[1]==='number')
-       .map(p=>p[0]+' '+p[1].toFixed(1)).join(' · ');
-      return '<tr><td>'+token+pairLink+'<span class="sub2">'+esc(address)+
-        (reasons?' · '+reasons:'')+'</span></td>'+
-        '<td class="r mono" title="Score component points: '+esc(breakdown)+'">'+Number(c.score||0).toFixed(1)+
-        (breakdown?'<span class="sub2" style="display:block;white-space:normal;min-width:130px">'+esc(breakdown)+'</span>':'')+'</td>'+
-        '<td class="r mono">$'+money(c.liquidity_usd)+'</td>'+
-        '<td class="r mono">$'+money(c.volume_24h_usd)+'</td>'+
-        '<td class="r mono">'+Number(c.transactions_24h||0).toLocaleString()+'</td>'+
-        '<td class="r mono '+cls(change)+'">'+(change>0?'+':'')+change.toFixed(1)+'%</td>'+
-        '<td><span class="tag '+(c.decision==='WATCH'?'ok':'bad')+'">'+esc(c.decision)+'</span></td></tr>';
-    }).join('')+'</tbody></table></div>'+
-    ((result.errors||[]).length?'<div class="notes">Provider issues: '+result.errors.map(e=>esc(e.token_address||'provider')+': '+esc(e.error)).join(' · ')+'</div>':'')+
-    '<div class="notes">Scanned '+esc(result.generated_at||'')+'. Holder concentration, contract permissions and sellability remain unchecked.</div>';
-}
-function renderMemePaper(status){
-  const horizons=status.horizons||{};
-  $id('memePaperMeta').textContent=(status.snapshots||0)+' SNAPSHOTS · '+
-    (status.pending_horizon_observations||0)+' PENDING';
-  const names=['5m','15m','1h','4h','24h'];
-  $id('memePaperStatus').innerHTML=
-    '<div class="notes">Paper-only · modeled round-trip cost '+
-    Number(status.cost_assumptions?.modeled_round_trip_cost_pct||0).toFixed(2)+
-    '% · no wallet or live orders</div>'+
-    '<div style="overflow-x:auto"><table class="dt"><thead><tr>'+
-    '<th>HORIZON</th><th class="r">SAMPLES</th><th class="r">AVG NET RETURN</th>'+
-    '<th class="r">WIN RATE</th><th class="r">MISSED</th></tr></thead><tbody>'+
-    names.map(name=>{
-      const h=horizons[name]||{};
-      const avg=typeof h.average_net_return_pct==='number'?((h.average_net_return_pct>0?'+':'')+h.average_net_return_pct.toFixed(2)+'%'):'—';
-      const win=typeof h.win_rate_pct==='number'?h.win_rate_pct.toFixed(1)+'%':'—';
-      return '<tr><td>'+name+'</td><td class="r mono">'+(h.samples||0)+'</td>'+
-        '<td class="r mono '+(typeof h.average_net_return_pct==='number'?cls(h.average_net_return_pct):'')+'">'+avg+'</td>'+
-        '<td class="r mono">'+win+'</td><td class="r mono">'+(h.missed_sampling_windows||0)+'</td></tr>';
-    }).join('')+'</tbody></table></div>'+
-    '<div class="notes">Returns are sampled near each target horizon and adjusted using assumed costs, not real fills. Missed sampling windows are excluded. Repeated scans may create overlapping samples.</div>';
-}
-async function loadMemePaper(){
-  try{renderMemePaper(await api('/api/meme/paper'));}
-  catch(e){$id('memePaperStatus').innerHTML='<div class="notes">Paper evaluation unavailable: '+esc(e.message)+'</div>';}
-}
-
-/* ── persistent autonomous paper portfolio; never live execution ── */
-function renderMemeTrader(status){
-  const positions=Array.isArray(status.positions)?status.positions:[];
-  const open=positions.filter(p=>p.status==='OPEN');
-  const events=Array.isArray(status.events)?status.events:[];
-  $id('memeTraderMeta').textContent=(status.risk_halted?'RISK HALT':'PAPER ONLY')+' · '+open.length+'/'+(status.max_open_positions||3)+' OPEN';
-  const cash=Number(status.cash_usd)||0,equity=Number(status.equity_usd)||0;
-  const pnl=Number(status.realized_pnl_usd)||0,unreal=Number(status.unrealized_pnl_usd)||0;
-  const fmt=v=>(v>0?'+':'')+v.toFixed(2);
-  let html='<div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">'+
-    '<div class="kpi"><div class="k">EQUITY</div><div class="v">$'+money(equity)+'</div></div>'+
-    '<div class="kpi"><div class="k">CASH</div><div class="v">$'+money(cash)+'</div></div>'+
-    '<div class="kpi"><div class="k">REALIZED P&L</div><div class="v '+cls(pnl)+'">$'+fmt(pnl)+'</div></div>'+
-    '<div class="kpi"><div class="k">UNREALIZED P&L</div><div class="v '+cls(unreal)+'">$'+fmt(unreal)+'</div></div>'+
-    '<div class="kpi"><div class="k">DAILY LOSS</div><div class="v">$'+money(status.daily_realized_loss_usd)+'</div></div></div>'+
-    '<div class="notes">Initial cash $'+money(status.initial_cash_usd)+' · position size $'+money(status.config?.position_usd)+
-    ' · stop '+(100*Number(status.config?.stop_loss_pct||0)).toFixed(1)+'% · target '+
-    (100*Number(status.config?.take_profit_pct||0)).toFixed(1)+'% · modeled fees/slippage only · no live execution</div>'+
-    '<h3 style="margin:14px 0 8px">Open and recent positions</h3>';
-  if(!positions.length){html+='<div class="empty">No simulated positions yet. Run a paper cycle to start recording decisions.</div>';}
-  else{
-    html+='<div style="overflow-x:auto"><table class="dt"><thead><tr><th>TOKEN</th><th>STATUS</th><th class="r">ENTRY</th><th class="r">LAST</th><th class="r">NOTIONAL</th><th class="r">P&L</th><th>EXIT / AGE</th></tr></thead><tbody>';
-    html+=positions.slice(0,30).map(p=>{
-      const ret=p.status==='CLOSED'?Number(p.realized_pnl||0):(Number(p.current_price)-Number(p.entry_price))*Number(p.quantity)-Number(p.entry_cost||0);
-      const exit=p.status==='CLOSED'?(p.exit_reason||'CLOSED'):'OPEN';
-      return '<tr><td>'+esc(p.symbol||'?')+'<span class="sub2">'+esc((p.token_address||'').slice(0,16))+'</span></td>'+
-        '<td><span class="tag '+(p.status==='OPEN'?'ok':'')+'">'+esc(p.status)+'</span></td>'+
-        '<td class="r mono">$'+money(p.entry_price)+'</td><td class="r mono">$'+money(p.current_price)+'</td>'+
-        '<td class="r mono">$'+money(p.notional)+'</td><td class="r mono '+cls(ret)+'">$'+fmt(ret)+'</td><td>'+esc(exit)+'</td></tr>';
-    }).join('')+'</tbody></table></div>';
-  }
-  html+='<h3 style="margin:14px 0 8px">Latest decisions and audit trail</h3>';
-  if(!events.length)html+='<div class="empty">No decisions recorded yet.</div>';
-  else html+='<div class="log">'+events.slice(0,15).map(e=>{
-    const d=e.details||{};const reason=d.reason||d.exit_reason||d.action||'Recorded';
-    let diagnostic='';
-    if(Number.isFinite(Number(d.score))&&Number.isFinite(Number(d.min_score))&&d.score!==undefined&&d.min_score!==undefined)diagnostic='Score '+Number(d.score).toFixed(1)+' / required '+Number(d.min_score).toFixed(1);
-    else if(Number.isFinite(Number(d.buy_ratio))&&d.buy_ratio!==undefined&&d.min_buy_ratio!==undefined&&d.max_buy_ratio!==undefined)diagnostic='Buy ratio '+(Number(d.buy_ratio)*100).toFixed(1)+'% / allowed '+(Number(d.min_buy_ratio)*100).toFixed(0)+'–'+(Number(d.max_buy_ratio)*100).toFixed(0)+'%';
-    else if(Number.isFinite(Number(d.price_change_1h_pct))&&d.price_change_1h_pct!==undefined){
-      if(d.max_entry_change_1h_pct!==undefined)diagnostic='1h price change '+Number(d.price_change_1h_pct).toFixed(1)+'% / maximum '+Number(d.max_entry_change_1h_pct).toFixed(1)+'%';
-      else if(d.min_entry_change_1h_pct!==undefined)diagnostic='1h price change '+Number(d.price_change_1h_pct).toFixed(1)+'% / minimum '+Number(d.min_entry_change_1h_pct).toFixed(1)+'%';
-    }
-    return '<div class="row"><i class="dot '+(e.event_type==='POSITION_OPENED'?'ok':e.event_type==='REJECTED'?'warn':'')+'"></i><div class="tx"><b>'+esc(e.event_type)+'</b> · '+esc(e.symbol||e.token_address||'portfolio')+' — '+esc(reason)+
-      (diagnostic?'<div class="notes">'+esc(diagnostic)+'</div>':'')+'<div class="notes">'+esc(new Date(Number(e.created_at)*1000).toLocaleString())+'</div></div></div>';
-  }).join('')+'</div>';
-  html+='<div class="notes">Paper simulation only. Public market prices may be stale or non-executable; safety checks are not an audit. Incomplete checks block entries.</div>';
-  $id('memeTraderStatus').innerHTML=html;
-}
-async function loadMemeTrader(){
-  try{renderMemeTrader(await api('/api/meme/trader'));}
-  catch(e){$id('memeTraderStatus').innerHTML='<div class="notes">Paper trader unavailable: '+esc(e.message)+'</div>';}
-}
-async function runMemeTrader(){
-  const b=$id('memeTraderRun'),label=b.textContent;
-  b.disabled=true;b.textContent='Running…';
-  $id('memeTraderMsg').textContent='Scanning up to 30 public candidates, refreshing open positions, checking candidate safety and recording paper decisions. This can take a little while.';
-  $id('memeTraderMsg').className='msg';
-  try{
-    const result=await api('/api/meme/trader/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({limit:30})});
-    renderMemeTrader(result.status||{});
-    const decisions=result.cycle?.decisions||[];
-    const opened=decisions.filter(d=>d.action==='OPEN').length;
-    const closed=decisions.filter(d=>d.action==='CLOSE').length;
-    const rejected=decisions.filter(d=>d.action==='REJECT').length;
-    const scan=result.scan||{},cycle=result.cycle||{};
-    let explanation='';
-    if(opened===0){
-      const blockers=Object.entries(scan.market_rejection_reasons||{}).sort((a,b)=>b[1]-a[1]).slice(0,3);
-      const reasons=Object.entries(cycle.decision_counts||{}).filter(([k])=>!['open','close'].includes(k)).sort((a,b)=>b[1]-a[1]).slice(0,3);
-      if(!(scan.watchlist_count||0)){
-        explanation=' No entries: no token passed the market screen.';
-        if(blockers.length)explanation+=' Main market filters: '+blockers.map(([k,v])=>k.replaceAll('_',' ')+' ('+v+')').join(', ')+'.';
-        const examples=(scan.market_rejection_examples||[]).slice(0,3);
-        if(examples.length){
-          const money=v=>Number.isFinite(Number(v))?'$'+Number(v).toLocaleString(undefined,{maximumFractionDigits:0}):'—';
-          explanation+=' Examples: '+examples.map(e=>(e.name||e.symbol||'Unknown')+' ('+(e.symbol||'?')+') — liquidity '+money(e.liquidity_usd)+', 24h volume '+money(e.volume_24h_usd)+', 1h '+(Number.isFinite(Number(e.price_change_1h_pct))?Number(e.price_change_1h_pct).toFixed(1)+'%':'—')).join('; ')+'.';
-        }
-      }else if(reasons.length){
-        explanation=' No entries: '+reasons.map(([k,v])=>k.replaceAll('_',' ')+' ('+v+')').join(', ')+'.';
-      }else{
-        explanation=' No entries this cycle; market scan found '+(scan.watchlist_count||0)+' watchlist candidate(s), '+(scan.watchlist_considered||0)+' checked.';
-      }
-    }
-    $id('memeTraderMsg').textContent='Cycle complete: '+(scan.scored_candidates||0)+' candidates scored · '+(scan.watchlist_count||0)+' passed market screen · '+(scan.watchlist_considered||0)+' safety-screened · '+opened+' opened · '+closed+' closed · '+rejected+' rejected. No live orders.'+explanation;
-    $id('memeTraderMsg').className=opened>0?'msg ok':((scan.errors||[]).length?'msg bad':'msg');
-    await loadMemePaper();
-  }catch(e){
-    $id('memeTraderMsg').textContent='Paper cycle failed: '+e.message;
-    $id('memeTraderMsg').className='msg bad';
-  }finally{b.disabled=false;b.textContent=label}
-}
-$id('memeTraderRun').addEventListener('click',runMemeTrader);
-$id('memeTraderRefresh').addEventListener('click',loadMemeTrader);
-
-async function loadMemeResearch(){
-  try{
-    const result=await api('/api/meme/research');
-    if(Array.isArray(result.candidates))renderMemeResearch(result);
-  }catch(e){
-    $id('memeMsg').textContent='Research status unavailable: '+e.message;
-    $id('memeMsg').className='msg bad';
-  }
-  await loadMemePaper();
-}
-async function scanMemeResearch(){
-  const button=$id('memeScan'),label=button.textContent;
-  button.disabled=true;button.textContent='Scanning…';
-  $id('memeMsg').textContent='Fetching candidate lists and checking available Solana pools…';
-  $id('memeMsg').className='msg';
-  try{
-    const result=await api('/api/meme/research/run',{method:'POST',
-      headers:{'Content-Type':'application/json'},body:JSON.stringify({limit:20})});
-    renderMemeResearch(result);
-    if(result.paper_status)renderMemePaper(result.paper_status);
-    else await loadMemePaper();
-  }catch(e){
-    $id('memeMsg').textContent='Scan failed: '+e.message;
-    $id('memeMsg').className='msg bad';
-  }finally{button.disabled=false;button.textContent=label}
-}
-async function updateMemePaper(){
-  const button=$id('memePaperUpdate'),label=button.textContent;
-  button.disabled=true;button.textContent='Updating…';
-  try{
-    const result=await api('/api/meme/paper/update',{method:'POST',
-      headers:{'Content-Type':'application/json'},body:JSON.stringify({})});
-    renderMemePaper(result.status||{});
-  }catch(e){
-    $id('memePaperStatus').innerHTML='<div class="notes">Update failed: '+esc(e.message)+'</div>';
-  }finally{button.disabled=false;button.textContent=label}
-}
-$id('memeScan').addEventListener('click',scanMemeResearch);
-$id('memePaperUpdate').addEventListener('click',updateMemePaper);
-
-/* ── data flow ─────────────────────────────────────────── */
-function applyState(s){
-  state=s;
-  renderKpis(s);renderPipeline(s);renderPositions(s);renderFeed(s);renderTags(s);
-  quotes=s.market?.pairs||{};
-  renderTicker();renderTape();loadPair(chartPair);
-  // The metal basis arrives with the quote, so metal bars must be re-based
-  // before they can be drawn against it.
-  if(PAIRS.some(isMetal))refreshSeries();
-  const r=s.risk||{};
-  $id('risk').className='riskbox'+(r.halted?' halt':'');
-  $id('risk').textContent='Max trade $'+money(r.max_trade_notional)+
-    '  ·  Max exposure $'+money(r.max_exposure)+
-    '  ·  Max positions '+r.max_positions+
-    '  ·  Daily loss $'+money(r.max_daily_loss)+
-    '  ·  SL '+Number((r.stop_loss_pct||0)*100).toFixed(1)+'%'+
-    '  ·  TP '+Number((r.take_profit_pct||0)*100).toFixed(1)+'%'+
-    '  ·  Leverage '+r.max_leverage+'x'+(r.halted?'  ·  HALT ACTIVE':'');
-}
-
 async function refresh(){
   try{
     const s=await api('/api/forex');
@@ -2219,85 +1973,10 @@ tickClock();
 })();
 
 // Phantom wallet connection is client-side and read-only: no signing or transactions.
-(function initPhantomWallet(){
-  const btn=document.getElementById('phantomConnect');
-  if(!btn)return;
-  let provider=null;
-  let connectedAddress='';
-  const shortAddress=address=>address.length>12?address.slice(0,5)+'…'+address.slice(-5):address;
-  const setConnected=address=>{
-    connectedAddress=address||'';
-    btn.textContent=connectedAddress?shortAddress(connectedAddress):'CONNECT PHANTOM';
-    btn.title=connectedAddress
-      ?'Connected wallet: '+connectedAddress+' (click to disconnect)'
-      :'Connect your Phantom wallet; no transactions will be signed';
-    btn.setAttribute('aria-label',connectedAddress?'Disconnect Phantom wallet '+connectedAddress:'Connect Phantom wallet');
-    btn.classList.toggle('go',!connectedAddress);
-    btn.classList.toggle('wallet-connected',!!connectedAddress);
-    fetchBalance(connectedAddress);
-  };
-  const fetchBalance=address=>{
-    const el=document.getElementById('walletBalance');
-    if(!el)return;
-    if(!address){el.style.display='none';return;}
-    el.style.display='inline-block';
-    fetch('/api/jupiter/balance?address='+address)
-      .then(r=>r.json())
-      .then(d=>{el.textContent=(d.sol_balance||0).toFixed(4)+' SOL';})
-      .catch(()=>{el.textContent='-- SOL';});
-  };
-  const findProvider=()=>{
-    if(window.phantom&&window.phantom.solana&&window.phantom.solana.isPhantom)return window.phantom.solana;
-    if(window.solana&&window.solana.isPhantom)return window.solana;
-    return null;
-  };
-  provider=findProvider();
-  if(provider&&provider.publicKey)setConnected(String(provider.publicKey));
-  if(provider&&provider.on){
-    provider.on('connect',publicKey=>setConnected(String(publicKey||provider.publicKey||'')));
-    provider.on('disconnect',()=>setConnected(''));
-    provider.on('accountChanged',publicKey=>setConnected(publicKey?String(publicKey):''));
-  }
-  btn.addEventListener('click',async()=>{
-    btn.disabled=true;
-    try{
-      provider=findProvider();
-      if(connectedAddress&&provider){
-        await provider.disconnect();
-        setConnected('');
-        return;
-      }
-      if(!provider){
-        btn.textContent='PHANTOM NOT FOUND';
-        btn.title='Install Phantom from https://phantom.app/ then reload Tradingbo';
-        const install=window.confirm('Phantom was not detected. Open the official Phantom website to install it?');
-        if(install)window.open('https://phantom.app/','_blank','noopener,noreferrer');
-        return;
-      }
-      const result=await provider.connect();
-      const address=String((result&&result.publicKey)||provider.publicKey||'');
-      if(!address)throw new Error('Phantom did not return a public wallet address.');
-      setConnected(address);
-    }catch(error){
-      if(error&&error.code===4001){
-        btn.title='Connection request was rejected in Phantom.';
-        btn.textContent='CONNECT PHANTOM';
-      }else{
-        btn.title=(error&&error.message)||'Unable to connect to Phantom.';
-        btn.textContent='CONNECT PHANTOM';
-      }
-    }finally{
-      btn.disabled=false;
-    }
-  });
-})();
-
 setInterval(tickClock,1000);
 refreshSeries();
 aiStatus();
 aiRestore();
-loadMemeResearch();
-loadMemeTrader();
 refresh();
 $id('fxAutoStart').addEventListener('click',()=>setFxAuto('start'));
 $id('fxAutoStop').addEventListener('click',()=>setFxAuto('stop'));
@@ -2305,7 +1984,6 @@ loadFxAutoStatus();
 setInterval(loadFxAutoStatus,10000);
 setInterval(refresh,15000);
 setInterval(aiStatus,30000);
-setInterval(loadMemeTrader,60000);
 setInterval(()=>{loadSeries(chartPair)},60000);
 </script>
 </body>

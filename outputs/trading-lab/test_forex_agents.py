@@ -3,6 +3,7 @@ import tempfile
 import time
 import unittest
 from datetime import datetime, timezone
+from unittest.mock import patch
 
 from forex_agents import ForexAgentRuntime
 from forex_risk import FXRisk, RiskConfig
@@ -36,6 +37,10 @@ class FakeLab:
         self.positions.append(position)
         return {"position": position}
 
+    def close(self, position_id):
+        self.positions = [p for p in self.positions if p["id"] != position_id]
+        return {"closed": position_id}
+
     def status(self):
         return {"account": {"positions": list(self.positions), "equity": 10000.0}}
 
@@ -46,6 +51,35 @@ class ForexAgentRuntimeTests(unittest.TestCase):
         self.path = os.path.join(self.tmp.name, "agents.sqlite")
         self.lab = FakeLab()
         self.runtime = ForexAgentRuntime(self.path, self.lab)
+
+    class FakeResearch:
+        def __init__(self, calls_left=40, spend_left=5.0, cost_per_call=0.002):
+            self.store = type("Store", (), {
+                "budget_remaining": lambda _self: {
+                    "calls_left": calls_left,
+                    "spend_left_usd": spend_left,
+                    "cost_per_call_usd": cost_per_call,
+                }
+            })()
+
+        def available(self):
+            return True
+
+    @staticmethod
+    def committee_result(*, side="buy", pair="EUR/USD", failed=None, vetoes=None):
+        agents = [
+            {"key": key, "agent": key.title(), "ok": key != failed,
+             "report": ({"veto_reasons": list(vetoes or [])} if key == "risk" else {})}
+            for key in ("market", "technical", "macro", "strategy", "risk", "coordinator")
+        ]
+        return {
+            "ok": any(a["ok"] for a in agents), "cycle_id": "ai-cycle-1",
+            "agents": agents,
+            "final_decision": {"side": side, "decision": side, "pair_or_token": pair,
+                               "rationale": "test recommendation", "size_hint": 250.0,
+                               "concerns": []},
+            "advisory_only": True, "execution_enabled": False,
+        }
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -198,6 +232,42 @@ class ForexAgentRuntimeTests(unittest.TestCase):
         results = self._rising_cycle()
         self.assertTrue(any(r["executed"] for r in results))
         self.assertEqual(len(self.lab.orders), 1)
+
+    def _run_fake_ai_cycle(self, result):
+        self.runtime.attach_research(self.FakeResearch())
+        with patch("multi_agent.MultiAgentEngine.deliberate", return_value=result):
+            return self.runtime.run_ai_cycle()
+
+    def test_ai_paper_cycle_requires_all_six_agents_and_no_risk_veto(self):
+        result = self._run_fake_ai_cycle(self.committee_result(vetoes=["spread risk"]))
+        self.assertEqual(self.lab.orders, [])
+        self.assertFalse(result["ai_gate"]["entry_allowed"])
+        self.assertTrue(any("Risk critic veto" in x for x in result["ai_gate"]["blockers"]))
+
+    def test_ai_paper_cycle_abstains_when_any_agent_fails(self):
+        result = self._run_fake_ai_cycle(self.committee_result(failed="risk"))
+        self.assertEqual(self.lab.orders, [])
+        self.assertFalse(result["ai_gate"]["entry_allowed"])
+
+    def test_ai_paper_cycle_allows_only_supported_instrument_after_unanimous_success(self):
+        result = self._run_fake_ai_cycle(self.committee_result())
+        self.assertEqual(self.lab.orders, [("EUR/USD", "buy", 250.0)])
+        self.assertTrue(result["ai_gate"]["entry_allowed"])
+        self.assertFalse(result["execution_enabled"])
+
+    def test_ai_paper_cycle_rejects_unknown_instrument(self):
+        result = self._run_fake_ai_cycle(self.committee_result(pair="BTC/USD"))
+        self.assertEqual(self.lab.orders, [])
+        self.assertFalse(result["ai_gate"]["entry_allowed"])
+        self.assertTrue(any("unsupported instrument" in x for x in result["ai_gate"]["blockers"]))
+
+    def test_ai_cycle_reserves_six_call_budget_before_any_model_work(self):
+        self.runtime.attach_research(self.FakeResearch(calls_left=5))
+        with patch("multi_agent.MultiAgentEngine.deliberate") as deliberate:
+            result = self.runtime.run_ai_cycle()
+        deliberate.assert_not_called()
+        self.assertEqual(self.lab.orders, [])
+        self.assertIn("Six model calls are required", result["reason"])
 
 
 if __name__ == "__main__":

@@ -18,13 +18,13 @@ def install(handler_cls: type, g: dict) -> Any:
     engine = LiveRiskEngine(data_dir / "live-risk.sqlite")
     g["LIVE_RISK"] = engine
 
-    # Opt-in FX paper worker. Entries still pass through the deterministic
-    # quote-freshness and risk gates in ForexAgentRuntime; no live broker exists.
+    # Opt-in six-agent FX paper worker. AI never submits live broker orders;
+    # lab.open/close remain the only paper execution calls.
     fx_agent = g.get("AGENTS")
     fx_worker_lock = threading.RLock()
     fx_worker_stop = threading.Event()
     fx_worker_thread = None
-    fx_worker_interval = max(15, int(getattr(fx_agent, "interval", 60)))
+    fx_worker_interval = max(60, int(os.environ.get("FX_AI_AUTONOMOUS_INTERVAL", "300")))
     fx_worker_state = {
         "running": False, "stopping": False, "started_at": None,
         "last_cycle_at": None, "last_cycle_id": None, "last_error": None,
@@ -32,25 +32,55 @@ def install(handler_cls: type, g: dict) -> Any:
     }
 
     def fx_worker_status():
+        try:
+            research = getattr(fx_agent, "research", None)
+            ai_available = bool(research and research.available())
+        except Exception:
+            ai_available = False
+        try:
+            budget = fx_agent._ai_cycle_budget().get("budget") if fx_agent is not None else None
+        except Exception:
+            budget = None
         with fx_worker_lock:
             return {
                 **fx_worker_state,
                 "interval_seconds": fx_worker_interval,
-                "mode": "forex_paper",
+                "mode": "fx_ai_paper",
                 "execution_enabled": False,
+                "ai_available": ai_available,
+                "budget": budget,
             }
 
     def fx_worker_loop():
         while not fx_worker_stop.is_set():
             try:
-                result = fx_agent.run_cycle()
+                budget = fx_agent._ai_cycle_budget()
+                if not budget.get("ready"):
+                    with fx_worker_lock:
+                        fx_worker_state["last_error"] = budget.get("reason", "AI budget unavailable")
+                    break
+                result = fx_agent.run_ai_cycle()
+                gate = result.get("ai_gate") or {}
+                final = (result.get("deliberation") or {}).get("final_decision") or {}
                 with fx_worker_lock:
                     fx_worker_state.update({
                         "last_cycle_at": time.time(),
                         "last_cycle_id": result.get("cycle_id"),
-                        "last_error": None,
+                        "last_decision": {
+                            "side": str(final.get("side") or "hold")[:20],
+                            "pair": str(final.get("pair_or_token") or "")[:20],
+                            "rationale": str(final.get("rationale") or result.get("reason") or "")[:180],
+                            "entry_allowed": bool(gate.get("entry_allowed")),
+                            "blockers": gate.get("blockers", []),
+                        },
+                        "last_error": result.get("reason") if not result.get("ok") else None,
                         "cycles": fx_worker_state["cycles"] + 1,
                     })
+                budget = fx_agent._ai_cycle_budget()
+                if not budget.get("ready"):
+                    with fx_worker_lock:
+                        fx_worker_state["last_error"] = budget.get("reason", "Daily AI budget exhausted; worker stopped.")
+                    fx_worker_stop.set()
             except Exception as exc:
                 with fx_worker_lock:
                     fx_worker_state["last_cycle_at"] = time.time()
@@ -66,8 +96,17 @@ def install(handler_cls: type, g: dict) -> Any:
 
     def start_fx_worker():
         nonlocal fx_worker_thread
-        if fx_agent is None or not callable(getattr(fx_agent, "run_cycle", None)):
+        if fx_agent is None or not callable(getattr(fx_agent, "run_ai_cycle", None)):
             return {"ok": False, "error": "Forex paper agent is unavailable"}
+        research = getattr(fx_agent, "research", None)
+        try:
+            if research is None or not research.available():
+                return {"ok": False, "error": "Connect and verify an AI model before starting autonomous FX paper trading"}
+            budget = fx_agent._ai_cycle_budget()
+            if not budget.get("ready"):
+                return {"ok": False, "error": budget.get("reason", "AI model budget cannot cover a six-agent cycle")}
+        except Exception:
+            return {"ok": False, "error": "AI model readiness could not be verified; no worker started"}
         with fx_worker_lock:
             if fx_worker_thread and fx_worker_thread.is_alive():
                 if fx_worker_stop.is_set():
@@ -104,6 +143,26 @@ def install(handler_cls: type, g: dict) -> Any:
         import urllib.parse
 
         path = urllib.parse.urlsplit(self.path).path
+        if path.startswith(("/api/meme/", "/api/jupiter/")):
+            self.send_json({"error": "This Forex-only product does not expose legacy crypto routes."}, 404)
+            return
+        if path == "/api/forex/bars":
+            from instrument_catalog import get_instrument
+            query = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+            pair = (query.get("pair") or ["EUR/USD"])[0]
+            try:
+                get_instrument(pair)
+            except ValueError as exc:
+                self.send_json({"error": str(exc)}, 400)
+                return
+        if path == "/api/forex/agents/audit":
+            if hasattr(self, "_require_auth") and not self._require_auth():
+                return
+            query = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+            cycle_id = (query.get("cycle_id") or [""])[0]
+            audit = fx_agent.get_cycle_audit(cycle_id) if fx_agent is not None else None
+            self.send_json(audit or {"error": "Forex agent audit was not found."}, 200 if audit else 404)
+            return
         if path == "/api/forex/auto":
             self.send_json(fx_worker_status())
             return
@@ -118,11 +177,49 @@ def install(handler_cls: type, g: dict) -> Any:
         import urllib.parse
 
         path = urllib.parse.urlsplit(self.path).path
+        if path.startswith(("/api/meme/", "/api/jupiter/")):
+            if hasattr(self, "_require_auth") and not self._require_auth():
+                return
+            self.send_json({"error": "This Forex-only product does not expose legacy crypto routes."}, 404)
+            return
         if path in ("/api/forex/auto/start", "/api/forex/auto/stop"):
             if hasattr(self, "_require_auth") and not self._require_auth():
                 return
             result = start_fx_worker() if path.endswith("/start") else stop_fx_worker()
             self.send_json(result, 200 if result.get("ok") else 503)
+            return
+        if path == "/api/forex/agents/ai-cycle":
+            if hasattr(self, "_require_auth") and not self._require_auth():
+                return
+            try:
+                result = fx_agent.run_ai_cycle() if fx_agent is not None else {
+                    "ok": False, "reason": "Forex paper agent is unavailable"
+                }
+                self.send_json(result, 200 if result.get("ok") else 503)
+            except Exception as exc:
+                self.send_json({"ok": False, "error": str(exc)[:300]}, 500)
+            return
+        if path == "/api/forex/agents/deliberate":
+            if hasattr(self, "_require_auth") and not self._require_auth():
+                return
+            try:
+                n = int(self.headers.get("Content-Length", "0"))
+                if n < 0 or n > 10000:
+                    raise ValueError("Invalid request size")
+                data = json.loads((self.rfile.read(n) if n else b"{}").decode("utf-8") or "{}")
+                if not isinstance(data, dict):
+                    raise ValueError("JSON object required")
+                if data.get("apply_paper", True):
+                    result = fx_agent.run_ai_cycle() if fx_agent is not None else {
+                        "ok": False, "reason": "Forex paper agent is unavailable"
+                    }
+                else:
+                    result = fx_agent.run_deliberation(apply_paper=False) if fx_agent is not None else {
+                        "ok": False, "reason": "Forex paper agent is unavailable"
+                    }
+                self.send_json(result, 200 if result.get("ok") else 503)
+            except Exception as exc:
+                self.send_json({"ok": False, "error": str(exc)[:300]}, 400)
             return
         if path not in (
             "/api/live/arm",

@@ -1,12 +1,10 @@
-# Ember Capital personal trading desk
+# Ember Capital Forex trading desk
 
-A personal trading desk for FX, gold, and US large-cap stocks. The current
-release is a research and paper-trading product: market data may be delayed or
-reference-only, all simulated orders pass through deterministic risk controls,
-and the six-agent AI committee cannot submit live broker orders. Crypto and
-Polymarket are outside the active product scope; legacy research and execution
-code is retained only for historical compatibility and is not a supported
-trading workflow.
+A Forex-only research and paper-trading product for EUR/USD, GBP/USD, USD/JPY,
+AUD/USD and USD/CHF. Market data may be delayed or reference-only; simulated
+orders pass through deterministic risk controls. The six-agent AI committee
+can recommend paper actions only. No live broker connection or order path is
+enabled. Legacy crypto code remains outside the active UI and API surface.
 
 See [the staged autonomy and release plan](AUTONOMY-ROADMAP.md) and
 [live execution status](LIVE-AUTONOMY.md) before enabling any automated mode.
@@ -22,13 +20,13 @@ python app.py
 
 Open the local dashboard at `http://127.0.0.1:8765`.
 
-The immersive office is available at `http://127.0.0.1:8765/company.html` and has a return link to the Research Floor. It now connects to a real, recorded, deterministic paper-agent pipeline through `/api/forex/agents` and `/api/forex/agents/run`. Press **Run agent cycle** to execute research, strategy, independent risk review, paper-only coordination, and performance/audit recording. Reports are persisted in SQLite and are distinct from the office animations. The baseline strategy uses short observed-price momentum; it is an engineering baseline, not a validated profitable strategy.
+The immersive office is available at `http://127.0.0.1:8765/company.html` and has a return link to the Research Floor. The recorded Forex paper pipeline is available through `/api/forex/agents` and `/api/forex/agents/run`. **Run agent cycle** is a deterministic baseline pass; **Run AI paper cycle** runs the six-agent committee, stores its recommendation and input quote snapshot, and applies only an allowed paper action. Reports are persisted in SQLite and are distinct from office animations. The baseline strategy is an engineering reference, not a validated profitable strategy.
 
-The dashboard also has **Start FX paper agent** and **Stop agent** controls. Starting it runs the existing ForexAgentRuntime every 60 seconds while the server stays up; cycles are serialized with manual cycles and recorded in SQLite. Stop takes effect after an in-progress paper cycle finishes. This is an opt-in rules-based FX paper workflow; AI research stays advisory and cannot authorize an order. The FX paper broker remains the only execution path.
+The dashboard also has **Start autonomous AI paper** and **Stop AI agent** controls. Starting the worker requires a configured model and at least six remaining model calls in the daily budget. It runs one six-agent committee cycle every five minutes by default (`FX_AI_AUTONOMOUS_INTERVAL`, minimum 60 seconds), while the server stays up. The worker is off after restart; cycles are serialized with manual cycles and recorded in SQLite. Stop takes effect after an in-progress model or market-data request completes. AI failures, any missing committee response, a risk-critic veto, unsupported pairs, stale quotes or deterministic risk rejections all result in no entry. The FX paper broker remains the only execution path.
 
-Automatic paper cycles are **off by default**. To opt in, set `EMBER_FOREX_AUTORUN=1` before starting `python app.py`; the server then attempts a cycle every 60 seconds. A cycle may abstain if quotes are stale, there are too few distinct observations, a risk limit is reached, or the broker rejects the paper order. ECB reference rates are not executable prices. No live broker execution is enabled.
+Paper automation is **off by default** and must be started from the authenticated dashboard. The AI cycle costs up to six model calls; it refuses to start if the daily call or spend allowance cannot cover the full committee. After the daily budget is exhausted, the worker stops. No wallet, IBKR credentials or live orders are used.
 
-The live paper-agent snapshot tries Yahoo intraday candles first, using 1-minute candles by default so the strict 5-minute quote-freshness gate can work. Override with `FX_YAHOO_INTERVAL` only if you understand the resulting freshness behavior. If Yahoo fails, the data layer falls back to ECB reference rates through Frankfurter; those daily reference rates are intentionally rejected by the agent freshness gate and must never be treated as executable prices. For historical daily data, Frankfurter can pin to the ECB source: https://frankfurter.dev/providers/ecb/.
+The paper market snapshot tries Yahoo intraday candles first, using 1-minute candles by default. Override `FX_YAHOO_INTERVAL` only if you understand the resulting freshness behavior. If Yahoo fails, the data layer can fall back to ECB reference rates through Frankfurter; those daily reference rates are intentionally rejected by the agent freshness gate and must never be treated as executable prices. For historical daily data, Frankfurter can pin to the ECB source: https://frankfurter.dev/providers/ecb/.
 
 ## Architecture
 
@@ -139,55 +137,9 @@ Do not judge the system from a single backtest return. The useful evidence is
 consistency across unseen windows, drawdown, Sharpe, costs, stability of
 strategy selection, and performance on the untouched final holdout.
 
-## Solana meme-coin research (read-only)
+## Archived code outside the product scope
 
-The initial meme-coin research engine uses the public DexScreener API to combine
-latest token-profile and boost lists, deduplicate Solana token addresses, inspect
-each token's available pools, and score the highest-liquidity matching Solana
-pair. Paid profiles/boosts are discovery sources only and do not add score.
-See the [official DexScreener API reference](https://docs.dexscreener.com/api/reference).
-
-Start the local server, then request a scan:
-
-```bash
-curl -s http://127.0.0.1:8765/api/meme/research
-curl -s -X POST http://127.0.0.1:8765/api/meme/research/run \
-  -H 'Content-Type: application/json' -d '{"limit":20}'
-```
-
-The scan returns a ranked candidate list, market-data rejection reasons, source
-metadata, and provider errors. Defaults require at least $10,000 liquidity,
-$20,000 24-hour volume, 100 transactions, a pair age between 5 minutes and
-72 hours, and reject a one-hour price spike above 80%. The bounded score uses
-liquidity, turnover, activity, buy/sell balance and modest positive momentum.
-These are starting engineering filters, not a validated profitable strategy.
-
-**Important limitations:** DexScreener market data does not establish contract
-safety. A separate on-demand, read-only Solana RPC check is available:
-
-```bash
-curl -s -X POST http://127.0.0.1:8765/api/meme/security/check \
-  -H 'Content-Type: application/json' -d '{"mint_address":"YOUR_SOLANA_MINT_ADDRESS"}'
-```
-
-It checks the mint account's SPL Token program, active mint/freeze authorities,
-token supply, and the percentage of supply represented by the 20 largest token
-accounts. These are risk indicators, not an audit: token accounts are not the
-same as unique beneficial holders, and pools may appear among the largest accounts.
-It does not test swap sellability or comprehensively inspect Token-2022 extensions.
-If RPC checks fail, the response is `INCOMPLETE` and must not be treated as clean.
-A `WATCH` label means only that market-data filters passed; it is not a buy signal.
-The system is read-only: it cannot connect a wallet, prepare a swap, or submit a transaction.
-Do not enable real-money execution on the strength of these checks alone.
-
-## Tests
-
-```
-cd outputs/trading-lab
-python -m unittest -v test_forex.py test_forex_lab.py test_forex_agents.py test_forex_market.py test_meme_research.py test_meme_safety.py test_backtest.py test_strategies.py test_robustness.py test_historical.py test_dataset.py test_intraday.py test_intraday_dataset.py test_true_walkforward.py test_research_selection.py test_research_report.py test_research_runner.py test_portfolio_report.py test_portfolio_backtest.py test_portfolio_selection.py test_portfolio_walkforward.py
-```
-
-Live broker execution remains intentionally out of scope.
+Older Solana, Jupiter, equity and cross-asset modules remain in the repository for historical compatibility. They are not exposed as product navigation or API routes, are not configured in Render, and cannot auto-start. The active product universe and broker are Forex-only.
 
 ## Indicator warm-up in out-of-sample tests
 
@@ -201,96 +153,17 @@ covering the current candidate library's longest EMA lookback. This avoids
 silently evaluating long-lookback strategies with empty indicator history at
 every test-window boundary.
 
-## Equity/stocks evaluation foundation
-
-The repository now includes a separate long-only, cash-only equity backtester in
-`equity_backtest.py`. It reuses the same `Candle` format and the existing
-chronological `true_walk_forward` selector used by FX research. It supports
-explicit spread, slippage and per-fill commission assumptions, next-bar-open
-fills after completed-candle signals, end-of-data liquidation, and trade,
-equity, drawdown and risk-adjusted summaries. It has no broker or live-order
-integration.
-
-Use `true_walk_forward` with an `EquityBacktester` factory and candidate
-signal factories to select on training windows and score later windows. Choose
-a `periods_per_year` value appropriate to the candle interval.
-
-**Important limitations:** fractional shares are assumed; dividends, splits,
-taxes, borrow, halts, delistings and corporate actions are not modeled. This
-module does not fetch stock prices. Historical studies must use timestamped,
-point-in-time data and a survivorship-aware universe, or results can be
-misleading. Neither this module nor its tests imply profitability. See the
-[QuantConnect research guide](https://www.quantconnect.com/docs/v2/writing-algorithms/key-concepts/research-guide)
-for discussion of walk-forward validation and look-ahead/survivorship bias.
-
-### Forward-outcome paper evaluation
-
-Every research scan now records WATCH candidates with a valid observed USD price
-in a local SQLite database (`meme-paper.sqlite`). When a later scan or an
-explicit update runs, the tracker samples current DexScreener prices for due
-snapshots at 5-minute, 15-minute, 1-hour, 4-hour, and 24-hour horizons. It
-reports gross returns, net returns after configurable *modeled* costs, average
-net return, and win rate.
-
-```bash
-# Summary of accumulated paper observations
-curl -s http://127.0.0.1:8765/api/meme/paper
-
-# Sample due outcomes now (useful for a scheduled local task)
-curl -s -X POST http://127.0.0.1:8765/api/meme/paper/update \
-  -H 'Content-Type: application/json' -d '{}'
-```
-
-Default assumptions are 50 bps slippage per side and 30 bps fees per side
-(1.6% modeled round-trip cost). Set `MEME_PAPER_SLIPPAGE_BPS` and
-`MEME_PAPER_FEE_BPS` in the environment before starting the server to change
-them. These are assumptions, not measured fills. Outcome prices are sampled near each target horizon, within a grace window
-(maximum of 60 seconds or 25% of the horizon). Late samples are marked missed
-and excluded from return statistics instead of being misreported as target-time
-returns. Missed provider prices remain pending rather than being counted as
-losses or zeros. Each scan is a
-separate sample, so repeated scans can create overlapping observations. The
-tracker is paper-only and never submits trades.
-
 ## Tests
 
-```
+```bash
 cd outputs/trading-lab
-python -m unittest -v test_forex.py test_forex_lab.py test_forex_agents.py test_forex_market.py test_meme_research.py test_meme_safety.py test_meme_paper.py test_backtest.py test_strategies.py test_robustness.py test_historical.py test_dataset.py test_intraday.py test_intraday_dataset.py test_true_walkforward.py test_research_selection.py test_research_report.py test_research_runner.py test_portfolio_report.py test_portfolio_backtest.py test_portfolio_selection.py test_portfolio_walkforward.py
+python -m unittest -v test_forex.py test_forex_lab.py test_forex_agents.py test_forex_market.py test_execution_safety.py test_deployment_config.py test_backtest.py test_strategies.py test_robustness.py test_historical.py test_dataset.py test_intraday.py test_intraday_dataset.py test_true_walkforward.py test_research_selection.py test_research_report.py test_research_runner.py test_portfolio_report.py test_portfolio_backtest.py test_portfolio_selection.py test_portfolio_walkforward.py
 ```
 
-Live broker execution remains intentionally out of scope.
+Live broker execution remains disabled. The local executor gate is not a broker adapter; see [the live execution boundary](LIVE-AUTONOMY.md).
 
 ## Hosted deployment (Render)
 
-The repository root contains a Render Blueprint at `render.yaml`. In Render, create a new Blueprint Instance from this repository and follow the prompts for `TRADINGLAB_USERNAME` and `TRADINGLAB_PASSWORD`. Use a unique username and a password of at least 16 characters; do not commit either value to Git. Render deploys the Python app from this directory, exposes it on the platform-provided port, and mounts a persistent disk at `/var/data` for both SQLite databases.
+The repository root contains the Render Blueprint at `render.yaml`. It deploys the Python app from `outputs/trading-lab`, requires `TRADINGLAB_USERNAME` and `TRADINGLAB_PASSWORD` to be supplied in Render, and mounts a 1 GB persistent disk at `/data/tradingbo` for SQLite state. Do not commit credentials to Git. The Blueprint uses a Starter web-service plan; service health is checked at `/healthz`.
 
-Hosted mode enables HTTP Basic Authentication for the dashboard, API routes, and static assets. The public `/healthz` endpoint is reserved for Render's health check. Paper-agent auto-run remains disabled by default; you can use the office's **Run agent cycle** control after signing in. This service is for research and paper trading only; it does not enable live broker or wallet execution.
-
-This Blueprint uses Render's Free web-service plan and does not create a persistent disk. It should cost $0 for compute within Render's free usage limits, but the service may sleep after inactivity and SQLite files/local changes can be lost when the instance restarts, spins down, or redeploys. Treat hosted paper-trading history as disposable; do not use this free deployment as a durable ledger. To preserve data, use a durable external database or a paid service with a persistent disk. After the first deploy, test the root dashboard and `/company.html` while signed in. The service remains research/paper-only.
-
-
-
-## Autonomous Solana meme-coin paper trading
-
-The dashboard's **Autonomous Paper Trader** is a separate simulated portfolio; it is not the forward-outcome tracker above. A paper cycle scans candidates, applies deterministic entry gates, requires a complete read-only mint check, and records simulated positions in `meme-trader.sqlite`. It does not connect a wallet, sign, prepare, or submit swaps.
-
-Default controls are intentionally conservative and configurable via environment variables:
-
-- `MEME_PAPER_POSITION_USD=50` — maximum simulated entry notional.
-- `MEME_PAPER_MAX_POSITIONS=3` — concurrent position cap.
-- `MEME_PAPER_DAILY_LOSS_LIMIT_USD=50` — realized-loss halt threshold.
-- `MEME_PAPER_FEE_BPS=30` and `MEME_PAPER_SLIPPAGE_BPS=50` — modeled costs per side.
-- `MEME_PAPER_AUTORUN=1` opts into an in-process scan/management loop; it is **off by default**.
-- `MEME_PAPER_INTERVAL_SECONDS=300` changes the loop interval (minimum 60 seconds).
-
-Each position uses a 12% stop loss, 20% take-profit target, and four-hour maximum holding time. Entry gates also require score >=75, at least $25k liquidity, $50k 24-hour volume, 150 transactions, a bounded buy ratio, and no excessive one-hour pump. These are experimental engineering defaults, not a profitable or validated strategy. Stop/target decisions use sampled provider quotes, so gaps and slippage can make real execution materially different.
-
-API:
-- `GET /api/meme/trader` — portfolio, positions, and audit events.
-- `POST /api/meme/trader/run` with `{"limit":20}` — run discovery, risk/safety checks, and paper decisions.
-- `POST /api/meme/trader/tick` with `{}` — refresh positions and evaluate exits only.
-
-The trader fails closed when safety data is incomplete, when mint/freeze authorities remain active, or when high-severity concentration findings are present. A completed check is still not a token audit or proof of sellability. Paper orders are not executable fills.
-
-**Hosted storage requirement:** SQLite persists across process restarts only when its directory persists. The current Render service uses the free plan and has no configured persistent disk; its local database files can be lost on replacement/deploy. Before relying on history or enabling unattended hosted runs, attach durable storage or move the state to a managed database, set `TRADINGLAB_DATA_DIR` to that persistent location, and verify the database survives a redeploy.
+Hosted mode enables HTTP Basic Authentication for dashboard mutations, the AI paper-cycle endpoint, and static assets. Read-only paper status remains available to the dashboard. Sign in, configure and verify an AI provider in the AI Desk, then explicitly start the autonomous Forex paper worker. It stops after a restart and is not a live broker service. No Vercel deployment is required.

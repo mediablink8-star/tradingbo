@@ -18,19 +18,13 @@ class Instrument:
     tick_size: Optional[float] = None  # Resolve from IBKR contract details.
 
 _FX = ("EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CHF")
-_STOCKS = ("AAPL/USD", "MSFT/USD", "NVDA/USD", "TSLA/USD", "AMZN/USD", "META/USD")
 def _fx(s):
     b, q = s.split("/")
     return Instrument(s, "fx", b, q, "base_currency_units", "FX_WEEKDAY", ("MKT", "LMT"))
 def _stock(s):
     b, q = s.split("/")
     return Instrument(s, "stock", b, q, "shares", "US_EQUITIES", ("MKT", "LMT"))
-INSTRUMENTS = {
-    **{s: _fx(s) for s in _FX},
-    "XAU/USD": Instrument("XAU/USD", "metal", "XAU", "USD", "troy_ounces",
-                          "IBKR_CONTRACT_SESSION", ("MKT", "LMT")),
-    **{s: _stock(s) for s in _STOCKS},
-}
+INSTRUMENTS = {s: _fx(s) for s in _FX}
 SUPPORTED_SYMBOLS = tuple(INSTRUMENTS)
 
 def get_instrument(symbol: str) -> Instrument:
