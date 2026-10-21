@@ -11,16 +11,13 @@ import time
 import urllib.parse
 import urllib.request
 
-DEFAULT_PAIRS = ("EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CHF")
+from instrument_catalog import INSTRUMENTS, SUPPORTED_SYMBOLS
 
-# Metals are quoted per troy ounce against USD and are not currencies. They are
-# exposed as their own contract family rather than forced through the FX paths.
-METALS = ("XAU/USD",)
-# US large-cap equities, represented as SYM/USD ("shares priced in USD") so
-# they flow through the existing pair-shaped quote, ledger and risk paths.
-# Yahoo serves these symbols directly with intraday bars and no key.
-STOCKS = ("AAPL/USD", "MSFT/USD", "NVDA/USD", "TSLA/USD", "AMZN/USD", "META/USD")
-ALL_PAIRS = DEFAULT_PAIRS + METALS + STOCKS
+# The catalog is the single source of truth for the product's active universe.
+DEFAULT_PAIRS = tuple(s for s in SUPPORTED_SYMBOLS if INSTRUMENTS[s].asset_class == "fx")
+METALS = tuple(s for s in SUPPORTED_SYMBOLS if INSTRUMENTS[s].asset_class == "metal")
+STOCKS = tuple(s for s in SUPPORTED_SYMBOLS if INSTRUMENTS[s].asset_class == "stock")
+ALL_PAIRS = SUPPORTED_SYMBOLS
 DEFAULT_SPREAD_BPS = {
     "EUR/USD": 1.0,
     "GBP/USD": 1.2,
@@ -440,7 +437,10 @@ def snapshot(pairs=DEFAULT_PAIRS):
     """Return every usable quote; a failed symbol/provider must not blank all data."""
     pairs = [p.upper() for p in pairs if isinstance(p, str) and "/" in p]
     if not pairs:
-        raise ValueError("At least one valid market pair is required.")
+        raise ValueError("At least one valid market symbol is required.")
+    unsupported = sorted(set(pairs) - set(SUPPORTED_SYMBOLS))
+    if unsupported:
+        raise ValueError("Unsupported active product instrument(s): " + ", ".join(unsupported))
 
     provider = os.environ.get("FX_PROVIDER", "").lower()
     fx_pairs = [p for p in pairs if not is_metal(p) and not is_stock(p)]

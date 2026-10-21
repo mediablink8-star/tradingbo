@@ -24,10 +24,3 @@ services:
         sync: false
       - key: EMBER_FOREX_AUTORUN
         value: "0"
-        sync: false
-        sync: false
-        value: "0"
-        sync: false
-        value: "0.1"
-        value: "24"
-        value: "300"
