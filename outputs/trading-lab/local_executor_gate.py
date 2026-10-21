@@ -88,6 +88,35 @@ class LocalExecutorGate:
                 and stamp < self._armed_until
             )
 
+    def validate_entry_quote(
+        self, symbol: str, quote: dict, *, now: Optional[float] = None,
+        max_quote_age_seconds: float = 5.0,
+    ) -> dict:
+        """Validate both the local arm lease and a fresh executable IBKR quote."""
+        from instrument_catalog import validate_executable_quote
+
+        stamp = time() if now is None else float(now)
+        with self._lock:
+            if (
+                self._kill_switch
+                or not self._connected
+                or not self._is_fresh(stamp)
+                or stamp >= self._armed_until
+            ):
+                raise RuntimeError("Local executor is disarmed or its heartbeat/arm lease expired")
+            normalized = validate_executable_quote(
+                symbol, quote, now=stamp, max_age_seconds=max_quote_age_seconds
+            )
+            # Recheck under the same lock immediately before returning eligibility.
+            if (
+                self._kill_switch
+                or not self._connected
+                or not self._is_fresh(stamp)
+                or stamp >= self._armed_until
+            ):
+                raise RuntimeError("Local executor became disarmed during quote validation")
+            return normalized
+
     def snapshot(self, now: Optional[float] = None) -> ExecutorSnapshot:
         stamp = time() if now is None else float(now)
         fresh = self._is_fresh(stamp)
