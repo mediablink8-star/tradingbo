@@ -52,19 +52,24 @@ Acceptance: model failure, missing data, incomplete committee, budget shortage,
 risk veto or paper-broker rejection results in no new entry and an inspectable
 reason.
 
-## Stage 4 — Local IBKR executor (not implemented)
+## Stage 4 — Local IBKR executor (control foundation implemented)
 
 - [x] Keep a standalone fail-closed heartbeat/arm lease primitive and quote
   validator as design foundations.
-- [ ] Build a local service with authenticated, replay-resistant, expiring
-  commands, durable kill switch and audit.
+- [x] Build a loopback-only local control service with HMAC-authenticated,
+  time-bounded, replay-resistant `kill` and `disarm` commands, durable kill
+  switch and audit trail. Restart forces a disarmed state.
+- [ ] Connect the hosted paper AI to local signed proposals through an
+  authenticated outbound relay; preserve a human-owned local kill switch.
 - [ ] Connect IB Gateway locally; reconcile account, orders, fills, positions,
   partial fills, commissions, disconnects and uncertain submissions.
 - [ ] Re-run deterministic risk and quote checks immediately before every
   order; define safe cancel and risk-reducing behavior.
 
-Acceptance: all live failure and recovery cases pass in an unfunded IBKR paper
-account before any funded trial is considered.
+The control service has no broker connection, arm command or order endpoint.
+Acceptance: the remaining relay and broker adapter must pass failure and
+recovery cases in an unfunded IBKR paper account before any funded trial is
+considered.
 
 ## Stage 5 — Operator desk (paper state complete; live controls pending)
 
@@ -92,8 +97,10 @@ confirmation.
 
 - [x] Provide authenticated Render configuration with persistent SQLite data
   and a health endpoint.
-- [ ] Verify the intended Render workspace, current deploy, `/healthz`,
-  authenticated dashboard, persistent database path and runtime logs.
+- [x] Verify the Tradingbot Render workspace, current deployed commit,
+  `/healthz`, Forex-only universe, disabled legacy routes and runtime logs.
+- [ ] Verify the authenticated operator dashboard and persistent database
+  path through the signed-in owner session.
 - [ ] Before a live pilot, configure local secrets, backups, alerting, recovery,
   upgrade/rollback and incident procedures.
 
