@@ -2295,6 +2295,8 @@ aiRestore();
 loadMemeResearch();
 loadMemeTrader();
 refresh();
+$id('fxAutoStart').addEventListener('click',()=>setFxAuto('start'));
+$id('fxAutoStop').addEventListener('click',()=>setFxAuto('stop'));
 loadFxAutoStatus();
 setInterval(loadFxAutoStatus,10000);
 setInterval(refresh,15000);
