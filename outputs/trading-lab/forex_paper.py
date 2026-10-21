@@ -1,6 +1,7 @@
 """Persistent broker-neutral FX paper execution."""
 import math,sqlite3,time,uuid
 from forex_risk import FXRisk
+from instrument_catalog import get_instrument
 class ForexPaperBroker:
     def __init__(self,path,risk=None):
         self.path=path;self.risk=risk or FXRisk();db=self._db()
@@ -66,18 +67,21 @@ class ForexPaperBroker:
                     equity+=u;unrealized_total+=u
                     if not fresh:
                         mark_data_fresh=False
-                positions.append({"id":iid,"pair":pair,"side":side,"units":units,"entry_price":entry,"opened":opened,"notional":notional,"unrealized_pnl":u,"mark_valid":bool(valid_price),"mark_fresh":bool(fresh)})
+                instrument = get_instrument(pair)
+                positions.append({"id":iid,"pair":pair,"symbol":pair,
+                                  "asset_class":instrument.asset_class,
+                                  "quantity_unit":instrument.quantity_unit,
+                                  "side":side,"units":units,"entry_price":entry,
+                                  "opened":opened,"notional":notional,
+                                  "unrealized_pnl":u,"mark_valid":bool(valid_price),
+                                  "mark_fresh":bool(fresh)})
             complete=not unmarked_positions
             return {"cash":cash,"realized_pnl":pnl,"unrealized_pnl":unrealized_total,"daily_pnl":pnl+unrealized_total,"daily_halted":halted,"equity":equity,"positions":positions,"exposure":sum(float(p["notional"]) for p in positions),"mark_data_complete":complete,"mark_data_fresh":mark_data_fresh,"unmarked_positions":unmarked_positions}
         finally:db.close()
     def open(self,pair,price,notional,side,prices=None):
         if side not in ("buy","sell") or not isinstance(pair,str):raise ValueError("Invalid FX order.")
         pair=pair.strip().upper()
-        parts=pair.split("/")
-        if (len(parts)!=2 or parts[0]==parts[1]
-                or any(not (c.isalpha() and c.isupper() and 3 <= len(c) <= 5)
-                       for c in parts)):
-            raise ValueError("Invalid FX pair.")
+        instrument=get_instrument(pair)
         price=float(price);notional=float(notional)
         if not math.isfinite(price) or price<=0:raise ValueError("Invalid FX price.")
         # Validate conversion support before touching account state.
@@ -125,7 +129,11 @@ class ForexPaperBroker:
                 self.risk.validate_entry(cash,exposure,rows,notional,pair=pair,side=side)
                 iid=uuid.uuid4().hex;units=notional/base_to_usd
                 db.execute("INSERT INTO fx_positions VALUES(?,?,?,?,?,?,?)",(iid,pair,side,units,price,time.time(),notional))
-                return {"id":iid,"pair":pair,"side":side,"units":units,"entry_price":price,"notional":notional}
+                return {"id":iid,"pair":pair,"symbol":pair,
+                        "asset_class":instrument.asset_class,
+                        "quantity_unit":instrument.quantity_unit,
+                        "side":side,"units":units,"entry_price":price,
+                        "notional":notional}
         finally:db.close()
     def close(self,iid,price):
         db=self._db()
