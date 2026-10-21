@@ -440,6 +440,19 @@ def snapshot(pairs=DEFAULT_PAIRS):
         raise ValueError("At least one valid market symbol is required.")
     unsupported = sorted(set(pairs) - set(SUPPORTED_SYMBOLS))
     if unsupported:
+        # Preserve the specific paper-ledger explanation for a syntactically
+        # valid cross-currency pair that has no configured USD conversion.
+        cross_pairs = [
+            symbol for symbol in unsupported
+            if len(symbol.split("/")) == 2
+            and all(part.isalpha() and len(part) == 3 for part in symbol.split("/"))
+            and "USD" not in symbol.split("/")
+        ]
+        if cross_pairs:
+            raise ValueError(
+                f"No built-in USD conversion for {cross_pairs[0]}; "
+                "the pair is outside the configured product universe."
+            )
         raise ValueError("Unsupported active product instrument(s): " + ", ".join(unsupported))
 
     provider = os.environ.get("FX_PROVIDER", "").lower()
