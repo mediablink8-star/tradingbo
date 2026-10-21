@@ -589,6 +589,9 @@ body:after{opacity:1;inset:0;filter:none;animation:none;
    have no attribution data) renders as an em dash, never a guess. */
 #clock{font-variant-numeric:tabular-nums;min-width:74px;text-align:center}
 
+.fx-auto-control{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:8px 14px;border-bottom:1px solid var(--line);background:var(--surface)}
+.fx-auto-control #fxAutoStatus{flex:1;min-width:240px}
 .fleetbar{display:flex;align-items:center;gap:10px;padding:9px 14px;
   border-bottom:1px solid var(--line);background:var(--surface-2)}
 .fleetbar .fl{font:600 9.5px/1 var(--mono);letter-spacing:.16em;color:var(--faint)}
@@ -920,6 +923,11 @@ body:before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:60
           <h2>Trading Fleet</h2>
           <span class="sub" id="pipeMeta">—</span>
           <span class="sub err" id="pipeErr" role="status"></span>
+        </div>
+        <div class="fx-auto-control">
+          <span class="sub" id="fxAutoStatus" role="status">Forex paper agent stopped · AI remains advisory · no live broker execution.</span>
+          <button class="btn go" type="button" id="fxAutoStart">Start FX paper agent</button>
+          <button class="btn" type="button" id="fxAutoStop" disabled>Stop agent</button>
         </div>
         <div class="fleetbar" aria-label="Fleet reporting share">
           <span class="fl">FLEET SIGNAL</span>
@@ -1386,6 +1394,35 @@ function utcTime(ts){
   const d=new Date(ts*1000);
   const p=n=>String(n).padStart(2,'0');
   return p(d.getUTCHours())+':'+p(d.getUTCMinutes())+':'+p(d.getUTCSeconds());
+}
+async function loadFxAutoStatus(){
+  const status=$id('fxAutoStatus'),start=$id('fxAutoStart'),stop=$id('fxAutoStop');
+  if(!status)return;
+  try{
+    const s=await api('/api/forex/auto');
+    status.textContent=s.stopping
+      ?'Forex agent is finishing its current paper cycle…'
+      :s.running
+      ?'FOREX PAPER AGENT ACTIVE · cycle every '+Math.round((s.interval_seconds||60)/60)+' min · '+(s.cycles||0)+' cycles · no live orders.'
+      :'Forex paper agent stopped · '+(s.cycles||0)+' completed cycle(s) · '+(s.last_error?'Last error: '+s.last_error:'AI remains advisory; deterministic risk controls are active.');
+    if(start)start.disabled=!!(s.running||s.stopping);
+    if(stop)stop.disabled=!s.running||!!s.stopping;
+  }catch(e){
+    status.textContent='FX paper-agent status unavailable: '+e.message;
+  }
+}
+async function setFxAuto(action){
+  const start=$id('fxAutoStart'),stop=$id('fxAutoStop');
+  if(start)start.disabled=true;
+  if(stop)stop.disabled=true;
+  try{
+    const s=await api('/api/forex/auto/'+action,{method:'POST',
+      headers:{'Content-Type':'application/json'},body:'{}'});
+    if(!s.ok)throw new Error(s.error||'Request failed');
+  }catch(e){
+    const status=$id('fxAutoStatus');
+    if(status)status.textContent='Could not '+action+' the FX paper agent: '+e.message;
+  }finally{await loadFxAutoStatus()}
 }
 async function toggleAgent(key,on,box){
   box.disabled=true;
@@ -2258,6 +2295,8 @@ aiRestore();
 loadMemeResearch();
 loadMemeTrader();
 refresh();
+loadFxAutoStatus();
+setInterval(loadFxAutoStatus,10000);
 setInterval(refresh,15000);
 setInterval(aiStatus,30000);
 setInterval(loadMemeTrader,60000);
