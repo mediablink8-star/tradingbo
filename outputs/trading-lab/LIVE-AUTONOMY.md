@@ -22,6 +22,8 @@ AI execution.
 
 ## What exists today
 
+- An operator-started Forex paper-agent loop. It uses the existing fresh-quote checks, deterministic FX strategy and risk gate, records paper actions, and exposes start/stop controls in the dashboard. AI remains advisory; no broker orders are submitted.
+
 - Deterministic paper portfolios, research and recorded agent decisions.
 - AI roles that can advise or veto within the paper pipeline; deterministic
   risk controls remain authoritative there.
