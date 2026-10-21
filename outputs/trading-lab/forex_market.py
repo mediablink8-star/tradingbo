@@ -15,9 +15,9 @@ from instrument_catalog import INSTRUMENTS, SUPPORTED_SYMBOLS
 
 # The catalog is the single source of truth for the product's active universe.
 DEFAULT_PAIRS = tuple(s for s in SUPPORTED_SYMBOLS if INSTRUMENTS[s].asset_class == "fx")
-METALS = tuple(s for s in SUPPORTED_SYMBOLS if INSTRUMENTS[s].asset_class == "metal")
-STOCKS = tuple(s for s in SUPPORTED_SYMBOLS if INSTRUMENTS[s].asset_class == "stock")
-ALL_PAIRS = SUPPORTED_SYMBOLS
+METALS = ()
+STOCKS = ()
+ALL_PAIRS = DEFAULT_PAIRS
 DEFAULT_SPREAD_BPS = {
     "EUR/USD": 1.0,
     "GBP/USD": 1.2,

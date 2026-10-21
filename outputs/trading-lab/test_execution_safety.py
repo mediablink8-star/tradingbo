@@ -14,11 +14,13 @@ from local_executor_gate import LocalExecutorGate
 
 class InstrumentCatalogTests(unittest.TestCase):
     def test_catalog_contains_only_supported_product_universe(self):
-        self.assertEqual(len(SUPPORTED_SYMBOLS), 12)
+        self.assertEqual(SUPPORTED_SYMBOLS, (
+            "EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CHF"
+        ))
         self.assertEqual(get_instrument("eur/usd").asset_class, "fx")
-        self.assertEqual(get_instrument("XAU/USD").quantity_unit, "troy_ounces")
-        self.assertEqual(get_instrument("AAPL/USD").quantity_unit, "shares")
-        self.assertNotIn("XAG/USD", INSTRUMENTS)
+        self.assertEqual(get_instrument("USD/JPY").quantity_unit, "base_currency_units")
+        self.assertNotIn("XAU/USD", INSTRUMENTS)
+        self.assertNotIn("AAPL/USD", INSTRUMENTS)
         self.assertNotIn("BTC/USD", INSTRUMENTS)
 
     def test_unknown_instrument_rejected_by_catalog(self):
@@ -30,6 +32,13 @@ class InstrumentCatalogTests(unittest.TestCase):
             broker = ForexPaperBroker(os.path.join(temp_dir, "paper.sqlite3"))
             with self.assertRaisesRegex(ValueError, "Unsupported instrument"):
                 broker.open("BTC/USD", 100.0, 100.0, "buy")
+
+    def test_paper_broker_rejects_non_forex_instruments(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            broker = ForexPaperBroker(os.path.join(temp_dir, "paper.sqlite3"))
+            for symbol in ("XAU/USD", "AAPL/USD"):
+                with self.subTest(symbol=symbol), self.assertRaisesRegex(ValueError, "Unsupported instrument"):
+                    broker.open(symbol, 100.0, 100.0, "buy")
 
 
 class ExecutableQuoteTests(unittest.TestCase):

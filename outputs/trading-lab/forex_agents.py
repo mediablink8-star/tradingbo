@@ -70,6 +70,13 @@ class ForexAgentRuntime:
             db.execute("""CREATE TABLE IF NOT EXISTS fx_agent_config(
                 agent_key TEXT PRIMARY KEY, enabled INTEGER NOT NULL,
                 updated REAL NOT NULL)""")
+            db.execute("""CREATE TABLE IF NOT EXISTS fx_agent_cycle_audits(
+                cycle_id TEXT PRIMARY KEY, timestamp REAL NOT NULL,
+                quote_snapshot_json TEXT NOT NULL,
+                deliberation_json TEXT NOT NULL,
+                risk_gate_json TEXT NOT NULL,
+                paper_json TEXT NOT NULL,
+                account_json TEXT NOT NULL)""")
 
     def get_config(self):
         """Per-agent enable flags. Missing rows default to enabled."""
@@ -386,6 +393,29 @@ class ForexAgentRuntime:
                        "min_distinct_observations": MIN_OBSERVATIONS,
                        "momentum_threshold": MOMENTUM_THRESHOLD,
                        "max_entries_per_cycle": 1},
+            "execution_enabled": False,
+            "ai_budget": self._ai_cycle_budget().get("budget"),
+        }
+
+    def get_cycle_audit(self, cycle_id):
+        key = str(cycle_id or "").strip()[:80]
+        if not key:
+            return None
+        with self._transaction() as db:
+            row = db.execute(
+                "SELECT cycle_id,timestamp,quote_snapshot_json,deliberation_json,"
+                "risk_gate_json,paper_json,account_json FROM fx_agent_cycle_audits "
+                "WHERE cycle_id=?", (key,),
+            ).fetchone()
+        if not row:
+            return None
+        return {
+            "cycle_id": row[0], "timestamp": row[1],
+            "quote_snapshot": json.loads(row[2]),
+            "deliberation": json.loads(row[3]),
+            "risk_gate": json.loads(row[4]),
+            "paper": json.loads(row[5]), "account": json.loads(row[6]),
+            "execution_enabled": False,
         }
 
     def run_deliberation(self, apply_paper: bool = True):
@@ -393,8 +423,52 @@ class ForexAgentRuntime:
 
         The AI conversation is advisory. Any paper order still goes through
         the existing deterministic risk engine inside self.lab.open/close.
+        In autonomous mode every specialist must respond, and the risk critic
+        must not veto the recommendation. The model budget is reserved before
+        the committee starts so it cannot stop halfway through its six calls.
         """
+        if not self._cycle_lock.acquire(blocking=False):
+            return {
+                "ok": True, "skipped": True, "reason": "cycle_in_progress",
+                "paper": {"action": "hold", "executed": []},
+                "execution_enabled": False,
+            }
+        try:
+            return self._run_deliberation_locked(apply_paper=apply_paper)
+        finally:
+            self._cycle_lock.release()
+
+    def _ai_cycle_budget(self):
+        layer = getattr(self, "research", None)
+        store = getattr(layer, "store", None)
+        remaining = getattr(store, "budget_remaining", None)
+        if not callable(remaining):
+            return {"ready": False, "reason": "AI model budget is unavailable."}
+        budget = remaining()
+        calls_left = int(budget.get("calls_left", 0))
+        cost_per_call = float(budget.get("cost_per_call_usd", 0.0))
+        spend_left = float(budget.get("spend_left_usd", 0.0))
+        if calls_left < 6:
+            return {"ready": False, "reason": "Six model calls are required; fewer than six remain today.", "budget": budget}
+        if spend_left + 1e-12 < 6 * cost_per_call:
+            return {"ready": False, "reason": "The remaining model-spend allowance cannot cover a six-agent cycle.", "budget": budget}
+        return {"ready": True, "budget": budget}
+
+    def run_ai_cycle(self):
+        """Run one full six-agent Forex paper cycle, failing closed on budget."""
+        layer = getattr(self, "research", None)
+        if layer is None or not callable(getattr(layer, "available", None)) or not layer.available():
+            return {"ok": False, "reason": "Connect and verify an AI model before running an AI paper cycle.",
+                    "paper": {"action": "hold", "executed": []}, "execution_enabled": False}
+        budget = self._ai_cycle_budget()
+        if not budget["ready"]:
+            return {"ok": False, "reason": budget["reason"], "budget": budget.get("budget"),
+                    "paper": {"action": "hold", "executed": []}, "execution_enabled": False}
+        return self.run_deliberation(apply_paper=True)
+
+    def _run_deliberation_locked(self, apply_paper=True):
         from multi_agent import MultiAgentEngine, apply_decision_to_paper
+        from instrument_catalog import SUPPORTED_SYMBOLS
 
         layer = getattr(self, "research", None)
         engine = MultiAgentEngine(layer, max_rounds=1)
@@ -444,8 +518,28 @@ class ForexAgentRuntime:
                 concerns=final.get("concerns") or [],
             ))
 
+        expected_agents = {"market", "technical", "macro", "strategy", "risk", "coordinator"}
+        agents_by_key = {a.get("key"): a for a in deliberation.get("agents", [])}
+        blockers = []
+        missing = sorted(expected_agents - set(agents_by_key))
+        if missing:
+            blockers.append("Missing committee response: " + ", ".join(missing))
+        failed = sorted(k for k in expected_agents if k in agents_by_key and not agents_by_key[k].get("ok"))
+        if failed:
+            blockers.append("Committee response failed: " + ", ".join(failed))
+        risk_report = (agents_by_key.get("risk", {}).get("report") or {})
+        vetoes = risk_report.get("veto_reasons") or []
+        if vetoes:
+            blockers.append("Risk critic veto: " + "; ".join(str(x)[:120] for x in vetoes[:3]))
+        final = deliberation.get("final_decision") or {}
+        pair = str(final.get("pair_or_token") or "").strip().upper()
+        if pair and pair not in SUPPORTED_SYMBOLS:
+            blockers.append("Coordinator selected an unsupported instrument.")
+        if pair:
+            final["pair_or_token"] = pair
+
         paper_result = {"action": "hold", "executed": [], "reason": "apply_paper=False"}
-        if apply_paper and deliberation.get("ok"):
+        if apply_paper and not blockers and deliberation.get("ok"):
             paper_result = apply_decision_to_paper(
                 final,
                 lab_open=self.lab.open,
@@ -463,16 +557,57 @@ class ForexAgentRuntime:
                         paper_result.get("reason") or "No paper order submitted."
                     ],
                 ))
+        elif apply_paper:
+            reason = "; ".join(blockers) if blockers else "The complete six-agent committee did not approve an action."
+            paper_result = {"action": "hold", "executed": [], "reason": reason}
+            with self._transaction() as db:
+                events.append(self._event(
+                    db, cycle_id, "AI paper execution gate", "Veto / abstain",
+                    reason[:500], approve=[], concerns=blockers or [reason],
+                ))
 
         self.last_cycle = now
+        account_after = self.lab.status().get("account", {})
+        quote_snapshot = {}
+        for symbol, row in (market.get("pairs") or {}).items():
+            symbol = str(symbol).strip().upper()
+            if symbol not in SUPPORTED_SYMBOLS or not isinstance(row, dict):
+                continue
+            quote = {"symbol": symbol, "source": str(row.get("source") or "unknown")[:120],
+                     "provider_date": str(row.get("provider_date") or "")[:40],
+                     "instrument": "fx", "executable": False}
+            for key in ("price", "bid", "ask", "observed"):
+                try:
+                    number = float(row[key])
+                    quote[key] = number if math.isfinite(number) else None
+                except (KeyError, TypeError, ValueError, OverflowError):
+                    quote[key] = None
+            quote_snapshot[symbol] = quote
+        risk_gate = {
+            "committee_complete": not blockers,
+            "risk_vetoes": vetoes,
+            "blockers": blockers,
+            "paper_action": paper_result.get("action", "hold"),
+            "entry_allowed": bool(paper_result.get("executed")),
+            "live_execution_enabled": False,
+        }
+        with self._transaction() as db:
+            db.execute(
+                "INSERT INTO fx_agent_cycle_audits VALUES(?,?,?,?,?,?,?)",
+                (cycle_id, now, json.dumps(quote_snapshot),
+                 json.dumps(deliberation, default=str), json.dumps(risk_gate),
+                 json.dumps(paper_result, default=str), json.dumps(account_after, default=str)),
+            )
         return {
             "ok": True,
             "cycle_id": cycle_id,
             "timestamp": now,
             "deliberation": deliberation,
             "paper": paper_result,
+            "ai_gate": {"entry_allowed": bool(paper_result.get("executed")), "blockers": blockers},
+            "budget": self._ai_cycle_budget().get("budget"),
             "events": events,
-            "account": self.lab.status().get("account", {}),
+            "account": account_after,
             "auto_run_enabled": self.auto_run,
             "mode": "six_agent_deliberation",
             "execution_enabled": False,

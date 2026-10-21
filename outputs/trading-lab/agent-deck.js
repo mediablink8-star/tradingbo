@@ -69,7 +69,7 @@
       if (st) st.textContent = "FAULT";
     } else if (state === "active") {
       card.classList.add("active");
-      if (st) st.textContent = "LIVE";
+      if (st) st.textContent = "PAPER";
     } else {
       if (st) st.textContent = "IDLE";
     }
@@ -286,7 +286,7 @@
       const s = await api("/api/meme/trader");
       paintStatus(s);
       if (s.deliberation_available) {
-        $("deckLive") && ($("deckLive").textContent = "LIVE");
+        $("deckLive") && ($("deckLive").textContent = "PAPER");
       }
     } catch (_) { /* quiet */ }
   }
@@ -344,21 +344,17 @@
 
   async function runDeliberation(kind) {
     const fxBtn = $("deckFx");
-    const memeBtn = $("deckMeme");
+    const memeBtn = null;
     if (fxBtn) fxBtn.disabled = true;
     if (memeBtn) memeBtn.disabled = true;
     resetAgents();
     termClear("Opening floor · six agents · paper only");
     $("deckStatus") && ($("deckStatus").textContent = "DELIBERATING…");
-    $("deckLive") && ($("deckLive").textContent = "LIVE");
+    $("deckLive") && ($("deckLive").textContent = "PAPER");
     logLine("SCAN", `Six-agent ${kind} deliberation requested`, "scan");
 
-    const endpoint = kind === "meme"
-      ? "/api/meme/trader/deliberate"
-      : "/api/forex/agents/deliberate";
-    const body = kind === "meme"
-      ? { limit: 20, apply_paper: true }
-      : { apply_paper: true };
+    const endpoint = "/api/forex/agents/deliberate";
+    const body = { apply_paper: true };
 
     try {
       const r = await api(endpoint, {

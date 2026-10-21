@@ -1,6 +1,1 @@
-# Tradingbo runtime dependencies (rootDir: outputs/trading-lab)
-# The main application (app.py) loads its compressed source and installs
-# live_routes + jupiter_bot routes. base58 and PyNaCl are required for
-# Solana wallet key handling and transaction signing in jupiter_bot.py.
-base58>=2.1.1
-PyNaCl>=24.0.0
+# Forex paper trading runtime dependencies.

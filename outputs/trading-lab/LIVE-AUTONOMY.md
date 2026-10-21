@@ -1,70 +1,44 @@
-# Live execution status and release boundary
+# Release boundary: Forex paper trading only
 
-## Current product boundary
+## Current product
 
-The supported product is a personal FX, metals, and US stocks trading desk.
-The AI committee can deliberate and the existing FX paper workflow can record
-simulated outcomes. There is no supported live broker executor today. AI
-recommendations are not live orders, and no profitability or live readiness is
-claimed.
+The supported instruments are EUR/USD, GBP/USD, USD/JPY, AUD/USD and USD/CHF.
+The six-agent AI committee can deliberate, recommend and record simulated Forex
+actions. The dashboard paper broker and deterministic risk engine are the only
+execution path in this release. Paper prices and fills are simulations; this
+system has not established a profitable strategy.
 
-The hosted dashboard must not store IBKR credentials or reach IB Gateway. The
-future execution service is designed to run on the user's PC beside IB Gateway.
-The new `local_executor_gate.py` contains only fail-closed heartbeat, arm-lease,
-and disarm primitives; it has no broker connection, order submission,
-persistence, authentication, or UI integration. It is a foundation, not an
-execution adapter. Do not configure it as a live trading service.
+The Render service hosts the dashboard and persistent paper ledger. It does
+not store IBKR credentials, connect to IB Gateway, or submit live orders. The
+legacy crypto source is retained for historical compatibility but its
+navigation, API routes, wallet key loading and auto-workers are disabled in the
+Forex product.
 
-Legacy Solana/Jupiter paths remain in the repository for historical reference.
-They are outside the active product, must remain disabled in deployment, and
-must not be used for autonomous execution. The Render service should serve the
-dashboard only.
+## What the AI paper worker does
 
-## Implemented in this branch
+- Starts only after an operator explicitly starts it from the authenticated
+  dashboard; it is stopped after every server restart.
+- Runs a six-agent committee and requires every response, no Risk Critic veto,
+  a supported currency pair and sufficient model-call/spend budget.
+- Records the quote snapshot, recommendation, gate result, simulated action
+  and resulting account in the persistent Forex database.
+- Sends no live order. Every simulated entry still goes through current quote
+  validation and deterministic paper risk limits.
 
-- Explicit supported universe remains the existing five FX pairs, XAU/USD, and
-  six US large-cap stocks. No additional instruments are introduced.
-- A local executor lease primitive requires a fresh heartbeat before arming,
-  caps arm duration, and fails closed on disconnect, stale heartbeat, lease
-  expiry, or explicit disarm.
-- The existing deterministic paper risk engine remains the final authority for
-  the paper workflow. Its current defaults are engineering defaults, not live
-  limits or recommendations.
-- A staged implementation and acceptance checklist is recorded in
-  [AUTONOMY-ROADMAP.md](AUTONOMY-ROADMAP.md).
+## What remains before live trading
 
-## Required before a live release
+The `local_executor_gate.py` module and `instrument_catalog.py` validator are
+only fail-closed foundations. There is no local executor, IBKR API adapter,
+order reconciliation, durable command protocol, broker paper-account test or
+live control UI. The Render dashboard cannot serve as a broker executor.
 
-1. Retire crypto surfaces from active navigation and remove crypto secrets and
-   autorun settings from the Render deployment while preserving legacy data.
-2. Unify instrument metadata and quote freshness; live orders must only use
-   executable IBKR quotes. Reference or synthetic fallback prices must block
-   order entry.
-3. Build the local, authenticated executor beside IB Gateway. Keep broker
-   credentials local. Use outbound authenticated TLS communication with the
-   hosted dashboard, heartbeat leases, idempotent commands, and durable audit.
-4. Implement an IBKR adapter that reconciles orders, executions, positions,
-   balances, commissions, and uncertain submissions. Re-check deterministic
-   risk constraints immediately before every order.
-5. Finish the desk UI with explicit paper/live state, quote source and age,
-   order status, account exposure, loss limits, committee activity, and a
-   persistent kill control.
-6. Complete end-to-end paper integration and failure-recovery checks. Paper
-   mode is an integration gate, not evidence of profitability.
-7. Require a user-reviewed paper record and manual sign-off. Then require
-   user-configured live risk limits and an explicit manual live arm. Only after
-   those gates may the AI submit orders without per-order confirmation, and
-   every proposed order must still pass deterministic controls.
-8. Prepare operations: credential handling, backups, alerts, recovery, kill
-   behavior, and documented incident steps. A disconnected executor blocks
-   new entries; risk-reducing management must be defined and verified before
-   live launch.
+Before any live release, the project still needs a local executor next to IB
+Gateway, authenticated expiring commands, idempotency and replay protection,
+broker account/position/order/fill reconciliation, uncertain-submission
+recovery, verified contract details, a durable kill switch, alerts/backups and
+an operator-reviewed prospective paper record. A user-configured live risk
+policy and a separate explicit live arm are also required. The AI cannot arm
+itself or override deterministic limits.
 
-## Trading and safety model
-
-The AI can propose an action and explain evidence. It cannot change risk
-settings, arm itself, widen limits, or override a rejection. Manual disarm
-blocks new entries and cancels unfilled entry orders; the live design must keep
-risk-reducing management available and must not force liquidation by default.
-No local machine, broker account, or strategy is currently configured for live
-trading.
+No broker credentials, connected account, funding, live trading or profitability
+are claimed. Continue with the [implementation roadmap](AUTONOMY-ROADMAP.md).

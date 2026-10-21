@@ -1,102 +1,101 @@
-# FX, metals, and stocks autonomy roadmap
+# Forex-only AI paper trader: implementation and release roadmap
 
-This checklist is the implementation contract for the personal trading desk.
-The product uses FX, XAU/USD, and the six existing US large-cap stocks. The
-dashboard runs on Render; the broker executor belongs on the user's PC beside
-IB Gateway. Offline PC or lost gateway means no new trades. The AI may submit
-orders only after the paper and manual live-arming gates below.
+This plan describes the supported product: EUR/USD, GBP/USD, USD/JPY,
+AUD/USD and USD/CHF. Render hosts the authenticated dashboard and durable
+paper ledger. A future live executor must run locally beside IB Gateway so the
+hosted AI service never stores broker credentials or reaches a public gateway.
+The current release is paper-only; it is not evidence of profitability.
 
-## Stage 1 — Product boundary and legacy isolation
+## Stage 1 — Forex product boundary (complete)
 
-- [ ] Make FX, gold, and stocks the only active product universe.
-- [ ] Remove crypto/Polymarket active navigation, controls, secrets, and deploy
-  settings while preserving historical code/data where needed.
-- [ ] Replace old live trading claims with the current release boundary.
+- [x] Limit the active market catalog, quote API, charts and paper broker to the
+  five supported currency pairs.
+- [x] Hide legacy crypto/Polymarket navigation and controls; disable legacy
+  crypto API routes, wallet keys and auto-workers while preserving old source
+  and local data for reference.
+- [x] Keep Render configured for the Python dashboard, auth and persistent
+  paper-data disk only.
 
-Acceptance: onboarding, dashboard, deployment docs, and APIs expose one clear
-product; no server-side wallet or unrelated worker can auto-start.
+Acceptance: the active UI, API and Render setup describe one Forex product.
 
-## Stage 2 — Instrument and market-data contract
+## Stage 2 — Instrument and quote contract (partially complete)
 
-- [ ] Define one metadata record per supported instrument: class, symbol,
-  base/quote currency, trading hours, tick size, lot/quantity units, and
-  supported order types.
-- [ ] Separate research/reference data from executable broker quotes.
-- [ ] Display quote source, timestamp, age, and market-open state.
-- [ ] Reject live entries for stale, synthetic, fallback, or non-IBKR quotes.
+- [x] Maintain one canonical five-pair catalog with currencies, units, session
+  labels and supported order types.
+- [x] Reject unsupported symbols in market snapshots, chart history and the
+  paper broker.
+- [x] Preserve quote source, timestamp, bid and ask in the dashboard and AI
+  cycle audit; mark paper quotes as non-executable.
+- [x] Provide a validator that rejects non-IBKR, stale, crossed, or mismatched
+  quotes if a future local execution adapter calls it.
+- [ ] Resolve IBKR contract details, lot sizes, tick sizes, trading hours and
+  adapter-side source provenance; no IBKR adapter exists yet.
 
-Acceptance: each quote and order carries a validated instrument identity and
-source; stale or ineligible data cannot reach an execution command.
+Acceptance: paper use is clearly separated from executable IBKR quotes; no live
+entry can be submitted in this release.
 
-## Stage 3 — Risk and paper workflow
+## Stage 3 — Risk and autonomous paper workflow (implemented)
 
-- [ ] Keep deterministic limits authoritative across FX, metals, and stocks:
-  per-order risk/notional, gross exposure, concentration, open positions,
-  daily loss, leverage, stops, and trading-session controls.
-- [ ] Make paper AI cycles opt-in, serialized, budget-aware, auditable, and
-  reproducible.
-- [ ] Enforce the six-call committee budget and hold when the 40-call daily
-  budget is exhausted.
-- [ ] Capture recommendations, input quote snapshots, risk decisions, orders,
-  fills, fees, and resulting positions.
+- [x] Keep deterministic limits authoritative for notional, exposure, currency
+  concentration, position count, daily loss, leverage, stops and position age.
+- [x] Make the six-agent Forex AI cycle operator-started, single-flight and
+  paper-only. Require all six responses, no Risk Critic veto, a supported pair,
+  fresh entry quotes and passing deterministic broker checks.
+- [x] Require enough remaining daily model-call and spend budget for a complete
+  six-call cycle. Stop the worker when another full cycle cannot be funded.
+- [x] Persist the quote snapshot, committee reports, gate result, paper action
+  and resulting account with a retrievable cycle audit.
+- [ ] Collect and review prospective paper records; no performance edge is
+  established by implementation tests or backtests alone.
 
-Acceptance: all allowed instruments can complete an end-to-end paper cycle;
-every reject has a user-readable reason; model failure or missing data means
-hold.
+Acceptance: model failure, missing data, incomplete committee, budget shortage,
+risk veto or paper-broker rejection results in no new entry and an inspectable
+reason.
 
-## Stage 4 — Local IBKR executor
+## Stage 4 — Local IBKR executor (not implemented)
 
-- [ ] Run beside IB Gateway on the user's PC; keep credentials and API access
-  local.
-- [ ] Authenticate dashboard-to-executor commands over outbound TLS; do not
-  expose IB Gateway to the public internet.
-- [ ] Add heartbeat lease, explicit live arm, persistent kill switch,
-  idempotency, command expiry, replay protection, and durable audit.
-- [ ] Implement IBKR quote/account/order/fill reconciliation and uncertain
-  submission recovery.
-- [ ] Re-check all limits at the executor immediately before submission.
-- [ ] On disconnect or expired lease, block new entries. Define and test
-  risk-reducing order handling and cancellation behavior.
+- [x] Keep a standalone fail-closed heartbeat/arm lease primitive and quote
+  validator as design foundations.
+- [ ] Build a local service with authenticated, replay-resistant, expiring
+  commands, durable kill switch and audit.
+- [ ] Connect IB Gateway locally; reconcile account, orders, fills, positions,
+  partial fills, commissions, disconnects and uncertain submissions.
+- [ ] Re-run deterministic risk and quote checks immediately before every
+  order; define safe cancel and risk-reducing behavior.
 
-Acceptance: fail closed during stale quotes, lost connection, duplicate
-commands, process restart, partial fill, timeout, and kill-switch operation.
-The executor gate in this branch is only a primitive and does not satisfy this
-stage by itself.
+Acceptance: all live failure and recovery cases pass in an unfunded IBKR paper
+account before any funded trial is considered.
 
-## Stage 5 — Trading desk UI
+## Stage 5 — Operator desk (paper state complete; live controls pending)
 
-- [ ] Replace legacy mixed navigation with a dense, polished dark terminal.
-- [ ] Put environment and account state, live/paper status, arm lease, and kill
-  control in persistent view.
-- [ ] Show instruments, quote source/age, exposure, P&L, risk headroom,
-  positions, orders, fills, and agent decisions.
-- [ ] Make AI rationale, dissent, risk veto, and exact execution result
-  inspectable.
+- [x] Show the Forex universe, quote quality, risk limits, agent reports and
+  paper positions with an explicit paper-only label.
+- [x] Add AI cycle, worker start/stop and model-budget state.
+- [ ] Add connected local-executor health, live-arm lease and persistent kill
+  control only after the local executor exists.
+- [ ] Show reconciled broker orders, fills, exposure and execution outcomes.
 
-Acceptance: no visual state implies an order is live unless confirmed by the
-executor; disconnected/stale/paused states are unmistakable.
+Acceptance: no UI state suggests a live order exists without broker
+confirmation.
 
-## Stage 6 — Paper integration and manual graduation
+## Stage 6 — Paper graduation (integration-ready; review pending)
 
-- [ ] Run the complete system in paper mode and verify normal operations and
-  failure paths; treat paper fills as integration evidence, not profitability.
-- [ ] Review the resulting paper record manually; no fixed duration or trade
-  count substitutes for user sign-off.
-- [ ] Require user-configured risk limits and a new explicit live arm before
-  the first live entry.
-- [ ] After manual arming, AI orders may be submitted without per-order human
-  approval, but every order remains subject to deterministic rejection.
+- [x] Verify core paper controls, stale-data rejection, committee failure,
+  risk veto, unsupported symbol and budget-exhaustion paths.
+- [ ] Run and manually review a prospective paper record with the intended
+  provider configuration. A minimum duration or trade count does not prove
+  profitability.
+- [ ] Only after review, configure user-owned live risk limits and explicitly
+  arm a local executor for an unfunded broker paper environment.
 
-Acceptance: there is no path from AI proposal to a live order before the
-review/sign-off, configured limits, and live arm are all present.
+## Stage 7 — Operations and deployment (code ready; account verification pending)
 
-## Stage 7 — Operations and release
+- [x] Provide authenticated Render configuration with persistent SQLite data
+  and a health endpoint.
+- [ ] Verify the intended Render workspace, current deploy, `/healthz`,
+  authenticated dashboard, persistent database path and runtime logs.
+- [ ] Before a live pilot, configure local secrets, backups, alerting, recovery,
+  upgrade/rollback and incident procedures.
 
-- [ ] Secure local credentials, maintain backups, alert on exceptions, define
-  recovery and incident handling, and document upgrades/rollback.
-- [ ] Verify production secrets, access controls, persistent storage, broker
-  environment, and kill behavior before any funded pilot.
-- [ ] Keep the live path off until every prior acceptance item passes.
-
-Acceptance: operator can identify current state, halt new entries, recover
-uncertain orders, and audit every decision and broker event.
+No step in this plan enables real trading automatically. No broker account,
+credentials, funding, live adapter or profitable strategy is assumed.
