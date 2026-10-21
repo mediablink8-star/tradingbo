@@ -31,6 +31,10 @@ class FakeLab:
                             "daily_halted": self.daily_halted,
                             "daily_pnl": self.daily_pnl}}
 
+    @staticmethod
+    def _provider_date_is_today(value):
+        return value == datetime.now(timezone.utc).date().isoformat()
+
     def open(self, pair, side, notional):
         self.orders.append((pair, side, notional))
         position = {"id": "paper-1", "pair": pair, "side": side, "notional": notional}
@@ -249,11 +253,40 @@ class ForexAgentRuntimeTests(unittest.TestCase):
         self.assertEqual(self.lab.orders, [])
         self.assertFalse(result["ai_gate"]["entry_allowed"])
 
-    def test_ai_paper_cycle_allows_only_supported_instrument_after_unanimous_success(self):
+    def test_ai_proposal_never_submits_until_operator_approval(self):
         result = self._run_fake_ai_cycle(self.committee_result())
+        self.assertEqual(self.lab.orders, [])
+        self.assertTrue(result["proposal"]["eligible"])
+        approved = self.runtime.approve_paper_cycle(result["cycle_id"])
         self.assertEqual(self.lab.orders, [("EUR/USD", "buy", 250.0)])
-        self.assertTrue(result["ai_gate"]["entry_allowed"])
+        self.assertTrue(approved["ok"])
         self.assertFalse(result["execution_enabled"])
+
+    def test_direct_apply_request_is_blocked(self):
+        self.runtime.attach_research(self.FakeResearch())
+        with patch("multi_agent.MultiAgentEngine.deliberate") as deliberate:
+            result = self.runtime.run_deliberation(apply_paper=True)
+        deliberate.assert_not_called()
+        self.assertFalse(result["ok"])
+        self.assertEqual(self.lab.orders, [])
+
+    def test_approval_rejects_quote_drift_and_consumes_plan(self):
+        result = self._run_fake_ai_cycle(self.committee_result())
+        self.lab.price = 1.102
+        rejected = self.runtime.approve_paper_cycle(result["cycle_id"])
+        self.assertFalse(rejected["ok"])
+        self.assertIn("10 bps", rejected["reason"])
+        self.assertEqual(self.lab.orders, [])
+        second = self.runtime.approve_paper_cycle(result["cycle_id"])
+        self.assertFalse(second["ok"])
+
+    def test_approval_is_idempotent(self):
+        result = self._run_fake_ai_cycle(self.committee_result())
+        first = self.runtime.approve_paper_cycle(result["cycle_id"])
+        second = self.runtime.approve_paper_cycle(result["cycle_id"])
+        self.assertTrue(first["ok"])
+        self.assertTrue(second["already_approved"])
+        self.assertEqual(len(self.lab.orders), 1)
 
     def test_ai_paper_cycle_rejects_unknown_instrument(self):
         result = self._run_fake_ai_cycle(self.committee_result(pair="BTC/USD"))
@@ -261,7 +294,7 @@ class ForexAgentRuntimeTests(unittest.TestCase):
         self.assertFalse(result["ai_gate"]["entry_allowed"])
         self.assertTrue(any("unsupported instrument" in x for x in result["ai_gate"]["blockers"]))
 
-    def test_ai_cycle_reserves_six_call_budget_before_any_model_work(self):
+    def test_ai_proposal_reserves_six_call_budget_before_any_model_work(self):
         self.runtime.attach_research(self.FakeResearch(calls_left=5))
         with patch("multi_agent.MultiAgentEngine.deliberate") as deliberate:
             result = self.runtime.run_ai_cycle()

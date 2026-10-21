@@ -21,6 +21,11 @@ def install(handler_cls: type, g: dict) -> Any:
     # Opt-in six-agent FX paper worker. AI never submits live broker orders;
     # lab.open/close remain the only paper execution calls.
     fx_agent = g.get("AGENTS")
+    # The legacy startup loop invokes the deterministic baseline engine, which
+    # can open a paper position without reviewing a proposal. Keep it off; the
+    # explicit research worker below only records AI proposals.
+    if fx_agent is not None:
+        fx_agent.auto_run = False
     fx_worker_lock = threading.RLock()
     fx_worker_stop = threading.Event()
     fx_worker_thread = None
@@ -45,7 +50,7 @@ def install(handler_cls: type, g: dict) -> Any:
             return {
                 **fx_worker_state,
                 "interval_seconds": fx_worker_interval,
-                "mode": "fx_ai_paper",
+                "mode": "research_proposals_only",
                 "execution_enabled": False,
                 "ai_available": ai_available,
                 "budget": budget,
@@ -70,7 +75,8 @@ def install(handler_cls: type, g: dict) -> Any:
                             "side": str(final.get("side") or "hold")[:20],
                             "pair": str(final.get("pair_or_token") or "")[:20],
                             "rationale": str(final.get("rationale") or result.get("reason") or "")[:180],
-                            "entry_allowed": bool(gate.get("entry_allowed")),
+                            "entry_allowed": False,
+                            "proposal_eligible": bool((result.get("proposal") or {}).get("eligible")),
                             "blockers": gate.get("blockers", []),
                         },
                         "last_error": result.get("reason") if not result.get("ok") else None,
@@ -101,7 +107,7 @@ def install(handler_cls: type, g: dict) -> Any:
         research = getattr(fx_agent, "research", None)
         try:
             if research is None or not research.available():
-                return {"ok": False, "error": "Connect and verify an AI model before starting autonomous FX paper trading"}
+                return {"ok": False, "error": "Connect and verify an AI model before starting autonomous Forex research"}
             budget = fx_agent._ai_cycle_budget()
             if not budget.get("ready"):
                 return {"ok": False, "error": budget.get("reason", "AI model budget cannot cover a six-agent cycle")}
@@ -188,18 +194,7 @@ def install(handler_cls: type, g: dict) -> Any:
             result = start_fx_worker() if path.endswith("/start") else stop_fx_worker()
             self.send_json(result, 200 if result.get("ok") else 503)
             return
-        if path == "/api/forex/agents/ai-cycle":
-            if hasattr(self, "_require_auth") and not self._require_auth():
-                return
-            try:
-                result = fx_agent.run_ai_cycle() if fx_agent is not None else {
-                    "ok": False, "reason": "Forex paper agent is unavailable"
-                }
-                self.send_json(result, 200 if result.get("ok") else 503)
-            except Exception as exc:
-                self.send_json({"ok": False, "error": str(exc)[:300]}, 500)
-            return
-        if path == "/api/forex/agents/deliberate":
+        if path in ("/api/forex/agents/run", "/api/forex/agents/ai-cycle", "/api/forex/agents/plan", "/api/forex/agents/approve", "/api/forex/agents/deliberate"):
             if hasattr(self, "_require_auth") and not self._require_auth():
                 return
             try:
@@ -209,17 +204,15 @@ def install(handler_cls: type, g: dict) -> Any:
                 data = json.loads((self.rfile.read(n) if n else b"{}").decode("utf-8") or "{}")
                 if not isinstance(data, dict):
                     raise ValueError("JSON object required")
-                if data.get("apply_paper", True):
-                    result = fx_agent.run_ai_cycle() if fx_agent is not None else {
-                        "ok": False, "reason": "Forex paper agent is unavailable"
-                    }
+                if path == "/api/forex/agents/approve":
+                    result = fx_agent.approve_paper_cycle(data.get("cycle_id")) if fx_agent is not None else {"ok": False, "reason": "Forex paper agent is unavailable"}
                 else:
-                    result = fx_agent.run_deliberation(apply_paper=False) if fx_agent is not None else {
+                    result = fx_agent.run_ai_proposal(pair=data.get("pair")) if fx_agent is not None else {
                         "ok": False, "reason": "Forex paper agent is unavailable"
                     }
                 self.send_json(result, 200 if result.get("ok") else 503)
             except Exception as exc:
-                self.send_json({"ok": False, "error": str(exc)[:300]}, 400)
+                self.send_json({"ok": False, "error": str(exc)[:300]}, 500)
             return
         if path not in (
             "/api/live/arm",

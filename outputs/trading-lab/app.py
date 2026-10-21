@@ -105,7 +105,7 @@ if __name__ == "__main__":
         threading.Thread(target=_agent_loop, daemon=True).start()
         print("Forex paper-agent auto-run enabled.", flush=True)
     else:
-        print("Forex paper-agent auto-run disabled; use Run agent cycle in dashboard.", flush=True)
+        print("Forex autonomous proposals are disabled; run research from the dashboard.", flush=True)
 
     print("Legacy crypto paper workers are disabled in the Forex-only product.", flush=True)
 

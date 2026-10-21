@@ -311,7 +311,7 @@ body:before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:60
     <span class="tag" id="clock" title="Coordinated Universal Time">--:--:--</span>
     <span class="tag" id="modeTag">CONNECTING</span>
     <span class="tag live"><i class="dot ok" id="sysDot"></i><span class="t" id="sysTxt">LIVE</span></span>
-    <button class="btn" id="cycle">Run agent cycle</button>
+    <button class="btn" id="cycle">Run AI proposal</button>
     <button class="btn" id="pauseBtn">Pause</button>
   </div>
 </div>
@@ -1162,11 +1162,11 @@ $('cycle').addEventListener('click',async()=>{
       headers:{'Content-Type':'application/json'},body:'{}'});
     const d=await r.json();
     if(!r.ok)throw Error(d.error||'Cycle failed');
-    $('notice').textContent='Cycle complete — '+(d.events||[]).length+
-      ' recorded report(s), '+(d.executed||[]).length+' paper entr(ies).';
+    $('notice').textContent='Proposal cycle complete — '+(d.events||[]).length+
+      ' report(s) recorded. Review the plan on the Forex desk; no entry was submitted.';
     await poll();
   }catch(e){$('notice').textContent='Cycle error: '+e.message}
-  finally{b.disabled=false;b.textContent='Run agent cycle'}
+  finally{b.disabled=false;b.textContent='Run AI proposal'}
 });
 
 $('pauseBtn').addEventListener('click',()=>{
